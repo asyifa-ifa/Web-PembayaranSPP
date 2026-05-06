@@ -1,0 +1,204 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//////////////////////////////
+// AUTH LOGIN
+//////////////////////////////
+
+model Login {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  role      Role
+   isActive  Boolean  @default(true)
+  student   Student? @relation(fields: [studentId], references: [id])
+  studentId Int?     @unique
+  createdAt DateTime @default(now())
+
+  resetToken        String?
+  resetTokenExpiry  DateTime?
+  email String
+}
+
+enum Role {
+  ADMIN
+  SANTRI
+  KEPALA
+}
+
+//////////////////////////////
+// MASTER DATA
+//////////////////////////////
+
+model Class {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  students  Student[]
+  classHistories ClassHistory[]
+  ustadz         Ustadz?   
+  createdAt DateTime  @default(now())
+}
+
+model Semester {
+  id        Int       @id @default(autoincrement())
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  payments  Payment[]
+  createdAt DateTime  @default(now())
+}
+
+//////////////////////////////
+// STUDENT
+//////////////////////////////
+
+model Student {
+  id         Int       @id @default(autoincrement())
+  name       String
+  nisn       String   @unique
+  gender     String
+  phone      String
+  email      String
+  address    String
+  birthplace String
+  birthdate  DateTime
+  guardian   String
+  classId    Int
+  class      Class     @relation(fields: [classId], references: [id])
+  payments   Payment[]
+  bills      Bill[]
+  login      Login?
+  entryYear  String?
+  status     StudentStatus @default(ACTIVE)       
+  classHistories ClassHistory[]                   
+  createdAt  DateTime  @default(now())
+}
+enum Gender {
+  L
+  P
+}
+enum StudentStatus {
+  ACTIVE
+  GRADUATED
+  DROPPED
+}
+
+//////////////////////////////
+// HISTORI KELAS
+//////////////////////////////
+
+model ClassHistory {
+  id           Int      @id @default(autoincrement())
+  studentId    Int
+  student      Student  @relation(fields: [studentId], references: [id])
+  classId      Int
+  class        Class    @relation(fields: [classId], references: [id])
+  academicYear String   // "2024/2025"
+  createdAt    DateTime @default(now())
+}
+
+//////////////////////////////
+// JENIS PEMBAYARAN
+//////////////////////////////
+
+model PaymentType {
+  id        Int       @id @default(autoincrement())
+  name      String // SPP, Kitab, OSMA, dll
+  amount    Int
+  isMonthly Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  payments  Payment[]
+  bills     Bill[]
+}
+
+//////////////////////////////
+// TAGIHAN (UNTUK SANTRI)
+//////////////////////////////
+
+model Bill {
+  id            Int         @id @default(autoincrement())
+  studentId     Int
+  student       Student     @relation(fields: [studentId], references: [id])
+  paymentTypeId Int
+  paymentType   PaymentType @relation(fields: [paymentTypeId], references: [id])
+  amount        Int
+  status        BillStatus  @default(UNPAID)
+  dueDate       DateTime?
+  createdAt     DateTime    @default(now())
+}
+
+enum BillStatus {
+  UNPAID
+  PAID
+}
+
+//////////////////////////////
+// PAYMENT
+//////////////////////////////
+
+model Payment {
+  id        Int     @id @default(autoincrement())
+  studentId Int
+  student   Student @relation(fields: [studentId], references: [id])
+
+  paymentTypeId Int
+  paymentType   PaymentType @relation(fields: [paymentTypeId], references: [id])
+
+  semesterId Int?
+  semester   Semester? @relation(fields: [semesterId], references: [id])
+
+  amount Int
+  method PaymentMethod
+  status PaymentStatus @default(PENDING)
+
+  gatewayRef String? // id transaksi midtrans
+  note       String? // catatan admin (manual cash)
+
+  createdAt DateTime @default(now())
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+//////////////////////////////
+// PENGELUARAN
+//////////////////////////////
+
+model Expense {
+  id        Int      @id @default(autoincrement())
+  title     String
+  amount    Int
+  note      String?
+  date      DateTime
+  createdAt DateTime @default(now())
+}
+//////////////////////////////
+// USTADZ
+//////////////////////////////
+
+model Ustadz {
+  id         Int       @id @default(autoincrement())
+  name       String
+  jabatan    String?
+  phone      String?
+  email      String?
+  address    String?
+  subjects   String[]  // array mata pelajaran, misal ["Fiqih", "Nahwu"]
+  classId    Int?      @unique  // wali kelas (opsional, unique = 1 ustadz 1 kelas)
+  class      Class?    @relation(fields: [classId], references: [id])
+  createdAt  DateTime  @default(now())
+}
