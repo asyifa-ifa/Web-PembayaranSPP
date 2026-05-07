@@ -6,11 +6,12 @@ import { useState } from "react";
 const menuItems = [
   { href: "/admin/dashboard",        icon: "🏠", label: "Dashboard" },
   { href: "/admin/students",         icon: "👩‍🎓", label: "Data Santri" },
-  { href: "/admin/ustadz",           icon: "🧑‍🏫", label: "Data Ustadz" },
+  { href: "/admin/ustadz",           icon: "🧑", label: "Data Ustadz" },
   { href: "/admin/accounts",         icon: "👤", label: "Akun Santri" },
   { href: "/admin/payment-types",    icon: "🧾", label: "Jenis Pembayaran" },
   { href: "/admin/payments",         icon: "💰", label: "Pembayaran Santri" },
   { href: "/admin/payments/manual",  icon: "✍️", label: "Input Manual" },
+  { href: "/admin/pengeluaran",      icon: "💸", label: "Pengeluaran" },
   { href: "/admin/notifications",    icon: "📧", label: "Notifikasi Email" },
   {
     href: "/admin/reports",
@@ -18,7 +19,7 @@ const menuItems = [
     label: "Laporan",
     children: [
       { href: "/admin/reports",                   icon: "📈", label: "Laporan Pembayaran" },
-      { href: "/admin/laporan/rekap-santri",       icon: "🎓", label: "Rekap Santri" },
+      { href: "/admin/reports/rekap-santri",       icon: "🎓", label: "Rekap Santri" },
     ]
   },
 ];
@@ -45,7 +46,7 @@ export default function AdminLayout({ children }) {
 
   const currentPath = router.pathname;
 
-  const isLaporanActive = currentPath.startsWith("/admin/reports") || currentPath.startsWith("/admin/laporan")
+  const isLaporanActive = currentPath.startsWith("/admin/reports") || currentPath.startsWith("/admin/pengeluaran")
 
   return (
     <>
