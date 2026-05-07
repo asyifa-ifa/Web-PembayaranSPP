@@ -118,10 +118,10 @@ export default function KepalaDashboard() {
               </div>
               <div className="quick-links">
                 {[
-                  { href: "/kepala/laporan/pembayaran", icon: "📈", label: "Laporan Pembayaran", sub: "Ringkasan pemasukan" },
-                  { href: "/kepala/laporan/rekap-pembayaran", icon: "✅", label: "Rekap Pembayaran", sub: "Status sudah/belum bayar" },
-                  { href: "/kepala/laporan/rekap-santri", icon: "🎓", label: "Rekap Santri", sub: "Data santri per tahun ajaran" },
-                  { href: "/kepala/laporan/absensi", icon: "📋", label: "Absensi Santri", sub: "Cetak lembar absensi" },
+                  { href: "/kepala/reports/pembayaran", icon: "📈", label: "Laporan Pembayaran", sub: "Ringkasan pemasukan" },
+                  { href: "/kepala/reports/rekap-pembayaran", icon: "✅", label: "Rekap Pembayaran", sub: "Status sudah/belum bayar" },
+                  { href: "/kepala/reports/rekap-santri", icon: "🎓", label: "Rekap Santri", sub: "Data santri per tahun ajaran" },
+                  { href: "/kepala/reports/absensi", icon: "📋", label: "Absensi Santri", sub: "Cetak lembar absensi" },
                 ].map(item => (
                   <a key={item.href} href={item.href} className="quick-link">
                     <div className="quick-link-icon">{item.icon}</div>
