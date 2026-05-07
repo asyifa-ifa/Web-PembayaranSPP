@@ -10,10 +10,10 @@ const menuItems = [
     icon: "📊",
     label: "Laporan",
     children: [
-      { href: "/kepala/laporan/pembayaran",    icon: "📈", label: "Laporan Pembayaran" },
-      { href: "/kepala/laporan/rekap-pembayaran", icon: "✅", label: "Rekap Pembayaran" },
-      { href: "/kepala/laporan/rekap-santri",  icon: "🎓", label: "Rekap Santri" },
-      { href: "/kepala/laporan/absensi",       icon: "📋", label: "Absensi Santri" },
+      { href: "/admin/reports/pembayaran",    icon: "📈", label: "Laporan Pembayaran" },
+      { href: "/admin/reports/rekap-pembayaran", icon: "✅", label: "Rekap Pembayaran" },
+      { href: "/admin/reports/rekap-santri",  icon: "🎓", label: "Rekap Santri" },
+      { href: "/admin/reports/absensi",       icon: "📋", label: "Absensi Santri" },
     ]
   },
 ];
@@ -41,10 +41,10 @@ export default function KepalaLayout({ children }) {
 
   const getTitle = () => {
     if (currentPath === "/kepala/dashboard") return "Dashboard"
-    if (currentPath === "/kepala/laporan/pembayaran") return "Laporan Pembayaran"
-    if (currentPath === "/kepala/laporan/rekap-pembayaran") return "Rekap Pembayaran"
-    if (currentPath === "/kepala/laporan/rekap-santri") return "Rekap Santri"
-    if (currentPath === "/kepala/laporan/absensi") return "Absensi Santri"
+    if (currentPath === "/admin/reports/pembayaran") return "Laporan Pembayaran"
+    if (currentPath === "/admin/reports/rekap-pembayaran") return "Rekap Pembayaran"
+    if (currentPath === "/admin/reports/rekap-santri") return "Rekap Santri"
+    if (currentPath === "/admin/reports/absensi") return "Absensi Santri"
     return "Kepala Madrasah"
   }
 
