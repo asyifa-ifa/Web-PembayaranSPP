@@ -1,8 +1,15 @@
 // pages/api/laporan/rekap-pembayaran.js
 import prisma from "@/lib/prisma"
+import { getToken } from "next-auth/jwt"
 
 export default async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ message: "Method tidak diizinkan" })
+
+  // ✅ Cek role — ADMIN dan KEPALA boleh akses
+  const token = await getToken({ req })
+  if (!token || !["ADMIN", "KEPALA"].includes(token.role)) {
+    return res.status(403).json({ message: "Akses ditolak" })
+  }
 
   try {
     const { classId, paymentTypeId, status, academicYear } = req.query
@@ -12,7 +19,6 @@ export default async function handler(req, res) {
     if (status) where.status = status
     if (paymentTypeId) where.paymentTypeId = parseInt(paymentTypeId)
 
-    // Filter berdasarkan kelas
     if (classId) {
       where.student = { classId: parseInt(classId) }
     }
@@ -39,7 +45,6 @@ export default async function handler(req, res) {
       ]
     })
 
-    // Filter tahun ajaran jika ada
     let result = bills
     if (academicYear) {
       result = bills.filter(b => b.student?.entryYear === academicYear)

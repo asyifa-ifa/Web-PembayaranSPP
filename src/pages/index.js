@@ -1,536 +1,424 @@
 import { useRouter } from "next/router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function Home() {
   const router = useRouter();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const style = document.createElement("style");
     style.innerHTML = `
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html { scroll-behavior: smooth; }
+      body { overflow-x: hidden; font-family: 'Segoe UI', sans-serif; }
+
       @keyframes floatLogo {
         0%   { transform: translateY(0px) rotate(-1deg) scale(1); }
-        50%  { transform: translateY(-20px) rotate(1.5deg) scale(1.03); }
+        50%  { transform: translateY(-16px) rotate(1.5deg) scale(1.03); }
         100% { transform: translateY(0px) rotate(-1deg) scale(1); }
       }
       @keyframes fadeSlideLeft {
-        from { opacity: 0; transform: translateX(-50px); }
+        from { opacity: 0; transform: translateX(-40px); }
         to   { opacity: 1; transform: translateX(0); }
       }
       @keyframes fadeSlideRight {
-        from { opacity: 0; transform: translateX(50px); }
+        from { opacity: 0; transform: translateX(40px); }
         to   { opacity: 1; transform: translateX(0); }
       }
       @keyframes softGlow {
         0%, 100% { filter: drop-shadow(0 12px 40px rgba(34,197,94,0.20)); }
         50%       { filter: drop-shadow(0 20px 60px rgba(34,197,94,0.40)); }
       }
-      .hero-text-anim {
-        animation: fadeSlideLeft 0.9s cubic-bezier(.22,.68,0,1.2) both;
+
+      .hero-text-anim { animation: fadeSlideLeft 0.9s cubic-bezier(.22,.68,0,1.2) both; }
+      .hero-logo-anim { animation: fadeSlideRight 0.9s cubic-bezier(.22,.68,0,1.2) 0.2s both; }
+      .float-logo { animation: floatLogo 5s ease-in-out infinite, softGlow 5s ease-in-out infinite; }
+
+      /* NAVBAR */
+      .navbar {
+        display: flex; justify-content: space-between;
+        padding: 14px 60px; align-items: center;
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+        position: sticky; top: 0; z-index: 1000;
+        box-shadow: 0 2px 16px rgba(0,0,0,0.06);
       }
-      .hero-logo-anim {
-        animation: fadeSlideRight 0.9s cubic-bezier(.22,.68,0,1.2) 0.2s both;
+      .nav-logo-wrap { display: flex; align-items: center; gap: 10px; }
+      .nav-logo-img  { height: 38px; object-fit: contain; }
+      .nav-brand-name { font-weight: 800; color: #14532d; font-size: 15px; }
+      .nav-brand-sub  { font-size: 11px; color: #6b7280; }
+      .nav-menu { display: flex; gap: 24px; align-items: center; }
+      .nav-link {
+        color: #374151; font-weight: 500; cursor: pointer;
+        font-size: 14px; text-decoration: none; transition: color 0.15s;
+        background: none; border: none; font-family: inherit;
       }
-      .float-logo {
-        animation: floatLogo 5s ease-in-out infinite, softGlow 5s ease-in-out infinite;
-      }
-      .login-btn-hover:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(34,197,94,0.45) !important;
+      .nav-link:hover { color: #14532d; }
+      .nav-login-btn {
+        padding: 9px 22px; border-radius: 10px; border: none;
+        background: linear-gradient(135deg, #14532d, #22c55e);
+        color: white; font-weight: 600; cursor: pointer; font-size: 14px;
         transition: all 0.2s ease;
       }
-      .secondary-btn-hover:hover {
-        background: #f0fdf4 !important;
-        transition: all 0.2s ease;
+      .nav-login-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(34,197,94,0.45); }
+
+      .hamburger {
+        display: none; flex-direction: column; gap: 5px;
+        cursor: pointer; background: none; border: none; padding: 4px;
+      }
+      .hamburger span {
+        display: block; width: 24px; height: 2.5px;
+        background: #14532d; border-radius: 2px; transition: 0.3s;
+      }
+
+      .mobile-menu {
+        display: none; flex-direction: column;
+        background: #fff; padding: 16px 24px 24px;
+        gap: 4px; border-top: 1px solid #e8f0e8;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        position: sticky; top: 60px; z-index: 999;
+      }
+      .mobile-menu.open { display: flex; }
+      .mobile-link {
+        font-size: 15px; font-weight: 500; color: #374151;
+        padding: 12px 0; border-bottom: 1px solid #f3f4f6;
+        background: none; border-left: none; border-right: none; border-top: none;
+        text-align: left; cursor: pointer; font-family: inherit; width: 100%;
+      }
+      .mobile-login-btn {
+        margin-top: 12px; padding: 13px;
+        background: linear-gradient(135deg, #14532d, #22c55e);
+        color: white; font-weight: 700; border-radius: 10px;
+        border: none; cursor: pointer; font-size: 15px; font-family: inherit;
+      }
+
+      /* HERO */
+      .hero {
+        position: relative; padding: 80px;
+        background: linear-gradient(135deg, #fefce8 0%, #dcfce7 55%, #bbf7d0 100%);
+        overflow: hidden; min-height: 88vh;
+        display: flex; align-items: center;
+      }
+      .hero-grid {
+        position: relative; z-index: 2;
+        display: grid; grid-template-columns: 1fr 1fr;
+        gap: 60px; align-items: center;
+        max-width: 1100px; margin: 0 auto; width: 100%;
+      }
+      .hero-left  { display: flex; flex-direction: column; align-items: flex-start; }
+      .hero-right { display: flex; justify-content: center; align-items: center; }
+
+      .hero-badge {
+        display: inline-block;
+        background: linear-gradient(135deg, #14532d, #22c55e);
+        padding: 7px 18px; border-radius: 50px;
+        color: white; font-size: 12px; font-weight: 600;
+        letter-spacing: 0.5px; margin-bottom: 20px;
+      }
+      .hero-title {
+        font-size: 44px; font-weight: 800; color: #111827;
+        line-height: 1.2; margin-bottom: 16px;
+      }
+      .hero-accent { color: #14532d; }
+      .hero-desc {
+        color: #4b5563; font-size: 15px; line-height: 1.8;
+        max-width: 460px; margin-bottom: 36px;
+      }
+      .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
+
+      .btn-primary {
+        padding: 14px 28px;
+        background: linear-gradient(135deg, #14532d, #22c55e);
+        border: none; color: white; border-radius: 12px;
+        font-weight: 700; font-size: 15px; cursor: pointer;
+        box-shadow: 0 4px 16px rgba(34,197,94,0.35);
+        transition: all 0.2s; font-family: inherit;
+      }
+      .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(34,197,94,0.45); }
+
+      .btn-secondary {
+        padding: 14px 28px; border-radius: 12px;
+        border: 2px solid #14532d; background: transparent;
+        color: #14532d; font-weight: 700; font-size: 15px;
+        cursor: pointer; transition: all 0.2s; font-family: inherit;
+      }
+      .btn-secondary:hover { background: #f0fdf4; border-color: #22c55e; }
+
+      .logo-circle {
+        width: 360px; height: 360px; border-radius: 50%;
+        background: radial-gradient(circle, rgba(255,255,255,0.85) 40%, rgba(187,247,208,0.5) 100%);
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 8px 48px rgba(34,197,94,0.12);
+      }
+      .logo-circle img { width: 260px; height: 260px; object-fit: contain; }
+
+      .blob { position: absolute; border-radius: 50%; z-index: 1; pointer-events: none; }
+      .blob1 { width:500px; height:500px; top:-120px; right:-100px; background: radial-gradient(circle, rgba(34,197,94,0.13) 0%, transparent 70%); }
+      .blob2 { width:350px; height:350px; bottom:-80px; left:-80px; background: radial-gradient(circle, rgba(20,83,45,0.09) 0%, transparent 70%); }
+      .blob3 { width:200px; height:200px; bottom:60px; right:30%; background: radial-gradient(circle, rgba(34,197,94,0.10) 0%, transparent 70%); }
+
+      /* FEATURES */
+      .features-section { padding: 80px 60px; background: #fff; text-align: center; }
+      .section-title { font-size: 30px; font-weight: 800; color: #14532d; margin-bottom: 8px; }
+      .section-sub   { color: #6b7280; font-size: 15px; margin-bottom: 48px; }
+
+      .features-grid {
+        display: grid; grid-template-columns: repeat(3, 1fr);
+        gap: 20px; max-width: 960px; margin: 0 auto;
+      }
+      .feature-card {
+        background: #f8faf8; border-radius: 20px; padding: 28px 22px;
+        border: 1px solid #e4e9e6; text-align: left; transition: all 0.2s;
+      }
+      .feature-card:hover { transform: translateY(-4px); box-shadow: 0 8px 32px rgba(0,0,0,0.08); }
+      .feature-icon  { font-size: 34px; margin-bottom: 14px; }
+      .feature-title { font-size: 15px; font-weight: 700; color: #1a3d28; margin-bottom: 8px; }
+      .feature-desc  { font-size: 13px; color: #6b7280; line-height: 1.7; }
+
+      /* KONTAK */
+      .contact-section { padding: 80px 60px; background: #f9fafb; text-align: center; }
+      .contact-grid {
+        display: grid; grid-template-columns: 1fr 1.4fr;
+        gap: 28px; max-width: 960px; margin: 0 auto; text-align: left;
+      }
+      .contact-card {
+        background: #fff; border-radius: 20px; padding: 32px 28px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+        display: flex; flex-direction: column; gap: 24px;
+        transition: all 0.2s;
+      }
+      .contact-card:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,0.1); }
+      .contact-item { display: flex; gap: 16px; align-items: flex-start; }
+      .contact-icon {
+        width: 44px; height: 44px; min-width: 44px;
+        background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+        border-radius: 12px; display: flex; align-items: center;
+        justify-content: center; font-size: 20px;
+      }
+      .contact-label { font-size: 11px; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 4px 0; }
+      .contact-val   { font-size: 14px; color: #111827; font-weight: 500; line-height: 1.6; margin: 0; }
+      .map-wrap { border-radius: 20px; overflow: hidden; height: 360px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+      .map-wrap iframe { width: 100%; height: 100%; border: 0; display: block; }
+      .social-link {
+        display: flex; align-items: center; gap: 8px;
+        color: #14532d; font-weight: 600; font-size: 14px;
+        text-decoration: none; transition: opacity 0.15s;
+      }
+      .social-link:hover { opacity: 0.7; }
+
+      /* FOOTER */
+      .footer { background: #111827; color: #9ca3af; padding: 28px 60px; text-align: center; font-size: 13px; }
+
+      /* ── TABLET (max 1024px) ── */
+      @media (max-width: 1024px) {
+        .navbar { padding: 14px 32px; }
+        .hero { padding: 60px 40px; min-height: auto; }
+        .hero-title { font-size: 36px; }
+        .logo-circle { width: 280px; height: 280px; }
+        .logo-circle img { width: 200px; height: 200px; }
+        .features-section { padding: 60px 32px; }
+        .features-grid { grid-template-columns: repeat(2, 1fr); }
+        .contact-section { padding: 60px 32px; }
+        .footer { padding: 24px 32px; }
+      }
+
+      /* ── MOBILE (max 768px) ── */
+      @media (max-width: 768px) {
+        .navbar { padding: 12px 20px; }
+        .nav-menu { display: none; }
+        .hamburger { display: flex; }
+
+        .hero { padding: 40px 20px 56px; min-height: auto; }
+        .hero-grid { grid-template-columns: 1fr; gap: 28px; text-align: center; }
+        .hero-left  { align-items: center; }
+        .hero-right { order: -1; }
+        .hero-title { font-size: 28px; }
+        .hero-desc  { font-size: 14px; max-width: 100%; margin-bottom: 28px; }
+        .hero-btns  { justify-content: center; }
+        .btn-primary, .btn-secondary { padding: 12px 22px; font-size: 14px; }
+
+        .logo-circle { width: 200px; height: 200px; }
+        .logo-circle img { width: 140px; height: 140px; }
+        .blob1 { width: 220px; height: 220px; top: -60px; right: -50px; }
+        .blob2 { width: 160px; height: 160px; bottom: -40px; left: -40px; }
+        .blob3 { display: none; }
+
+        .features-section { padding: 48px 20px; }
+        .section-title { font-size: 24px; }
+        .section-sub   { font-size: 14px; margin-bottom: 32px; }
+        .features-grid { grid-template-columns: 1fr; gap: 14px; }
+
+        .contact-section { padding: 48px 20px; }
+        .contact-grid { grid-template-columns: 1fr; gap: 20px; }
+        .contact-card { padding: 24px 20px; }
+        .map-wrap { height: 240px; }
+
+        .footer { padding: 20px; font-size: 12px; }
+      }
+
+      /* ── SMALL MOBILE (max 400px) ── */
+      @media (max-width: 400px) {
+        .hero-title { font-size: 22px; }
+        .hero-badge { font-size: 11px; padding: 6px 12px; }
+        .logo-circle { width: 160px; height: 160px; }
+        .logo-circle img { width: 110px; height: 110px; }
+        .hero-btns { flex-direction: column; width: 100%; }
+        .btn-primary, .btn-secondary { width: 100%; text-align: center; }
       }
     `;
     document.head.appendChild(style);
     return () => document.head.removeChild(style);
   }, []);
 
-  function scrollToSection(id) {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-    }
+  function scrollTo(id) {
+    setMenuOpen(false);
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    }, 80);
   }
 
-  return (
-    <div style={styles.container}>
+  const features = [
+    { icon: "💳", title: "Pembayaran Digital", desc: "Santri dapat membayar SPP kapan saja dan di mana saja melalui berbagai metode pembayaran." },
+    { icon: "📊", title: "Laporan Otomatis", desc: "Laporan keuangan tersaji otomatis dan dapat diekspor ke Excel maupun PDF dengan mudah." },
+    { icon: "🔔", title: "Notifikasi Real-time", desc: "Admin dan santri mendapat notifikasi otomatis untuk setiap tagihan dan pembayaran." },
+    { icon: "👩‍🎓", title: "Manajemen Santri", desc: "Kelola data santri, histori kelas, dan rekap per tahun ajaran dengan mudah." },
+    { icon: "📋", title: "Absensi Digital", desc: "Cetak lembar absensi per kelas lengkap dengan wali kelas dan TTD kepala madrasah." },
+    { icon: "🔒", title: "Aman & Terpercaya", desc: "Data tersimpan aman dengan autentikasi berlapis untuk admin, santri, dan kepala madrasah." },
+  ];
 
+  return (
+    <div>
       {/* NAVBAR */}
-      <nav style={styles.nav}>
-        <div style={styles.logoWrap}>
-          <img
-            src="/logo-sibatamu.png"
-            alt="SIBATAMU"
-            style={{ height: 38, objectFit: "contain" }}
-            onError={(e) => { e.target.style.display = "none"; }}
-          />
-          <div style={styles.logoText}>
-            <b style={{ color: "#14532d", fontSize: 15 }}>SIBATAMU-SPP</b>
-            <p style={{ fontSize: 11, margin: 0, color: "#6b7280" }}>
-              Madrasah Tarbiyatul Mubalighin Sumberjo
-            </p>
+      <nav className="navbar">
+        <div className="nav-logo-wrap">
+          <img src="/logo-sibatamu.png" alt="logo" className="nav-logo-img"
+            onError={e => e.target.style.display = "none"} />
+          <div>
+            <div className="nav-brand-name">SIBATAMU-SPP</div>
+            <div className="nav-brand-sub">Madrasah Tarbiyatul Mubalighin</div>
           </div>
         </div>
 
-        <div style={styles.menu}>
-          <a style={styles.menuItem} onClick={() => scrollToSection("beranda")}>
-            🏠 Beranda
-          </a>
-          <a style={styles.menuItem} onClick={() => scrollToSection("kontak")}>
-            📞 Kontak
-          </a>
-          <button
-            className="login-btn-hover"
-            style={styles.loginBtn}
-            onClick={() => router.push("/login")}
-          >
-            Login
-          </button>
+        <div className="nav-menu">
+          <button className="nav-link" onClick={() => scrollTo("beranda")}>🏠 Beranda</button>
+          <button className="nav-link" onClick={() => scrollTo("fitur")}>✨ Fitur</button>
+          <button className="nav-link" onClick={() => scrollTo("kontak")}>📞 Kontak</button>
+          <button className="nav-login-btn" onClick={() => router.push("/login")}>Login</button>
         </div>
+
+        <button className="hamburger" onClick={() => setMenuOpen(o => !o)} aria-label="menu">
+          <span style={{ transform: menuOpen ? "rotate(45deg) translate(5px,5px)" : "none" }} />
+          <span style={{ opacity: menuOpen ? 0 : 1 }} />
+          <span style={{ transform: menuOpen ? "rotate(-45deg) translate(5px,-5px)" : "none" }} />
+        </button>
       </nav>
 
-      {/* HERO — dua kolom: teks kiri, logo kanan */}
-      <section id="beranda" style={styles.hero}>
-        {/* Decorative blobs */}
-        <div style={styles.blob1} />
-        <div style={styles.blob2} />
-        <div style={styles.blob3} />
+      {/* MOBILE MENU */}
+      <div className={`mobile-menu ${menuOpen ? "open" : ""}`}>
+        <button className="mobile-link" onClick={() => scrollTo("beranda")}>🏠 Beranda</button>
+        <button className="mobile-link" onClick={() => scrollTo("fitur")}>✨ Fitur</button>
+        <button className="mobile-link" onClick={() => scrollTo("kontak")}>📞 Kontak</button>
+        <button className="mobile-login-btn" onClick={() => router.push("/login")}>🚀 Login Sekarang</button>
+      </div>
 
-        <div style={styles.heroGrid}>
-
-          {/* KIRI — teks */}
-          <div className="hero-text-anim" style={styles.heroLeft}>
-            <span style={styles.badge}>🌿 SISTEM TERPERCAYA & MODERN</span>
-
-            <h1 style={styles.title}>
+      {/* HERO */}
+      <section id="beranda" className="hero">
+        <div className="blob blob1" />
+        <div className="blob blob2" />
+        <div className="blob blob3" />
+        <div className="hero-grid">
+          <div className="hero-left hero-text-anim">
+            <span className="hero-badge">🌿 SISTEM TERPERCAYA & MODERN</span>
+            <h1 className="hero-title">
               Kelola Pembayaran<br />
-              <span style={styles.titleAccent}>SPP Lebih Mudah</span>
+              <span className="hero-accent">SPP Lebih Mudah</span>
             </h1>
-
-            <p style={styles.desc}>
-              Platform pembayaran SPP digital yang transparan, efisien,
-              dan mudah digunakan untuk seluruh civitas Madrasah Tarbiyatul
-              Mubalighin Sumberjo.
+            <p className="hero-desc">
+              Platform pembayaran SPP digital yang transparan, efisien, dan mudah
+              digunakan untuk seluruh civitas Madrasah Tarbiyatul Mubalighin Sumberjo.
             </p>
-
-            <div style={styles.heroButtons}>
-              <button
-                className="login-btn-hover"
-                style={styles.primaryBtn}
-                onClick={() => router.push("/login")}
-              >
-                🚀 Login Sekarang
-              </button>
-              <button
-                className="secondary-btn-hover"
-                style={styles.secondaryBtn}
-                onClick={() => scrollToSection("kontak")}
-              >
-                📞 Hubungi Kami
-              </button>
+            <div className="hero-btns">
+              <button className="btn-primary" onClick={() => router.push("/login")}>🚀 Login Sekarang</button>
+              <button className="btn-secondary" onClick={() => scrollTo("kontak")}>📞 Hubungi Kami</button>
             </div>
           </div>
 
-          {/* KANAN — logo floating */}
-          <div className="hero-logo-anim" style={styles.heroRight}>
-            <div style={styles.logoCircleBg}>
-              <img
-                className="float-logo"
-                src="/logo-sibatamu.png"
-                alt="SIBATAMU Logo"
-                style={styles.heroLogoImg}
-              />
+          <div className="hero-right hero-logo-anim">
+            <div className="logo-circle">
+              <img className="float-logo" src="/logo-sibatamu.png" alt="SIBATAMU Logo" />
             </div>
           </div>
+        </div>
+      </section>
 
+      {/* FITUR */}
+      <section id="fitur" className="features-section">
+        <h2 className="section-title">✨ Fitur Unggulan</h2>
+        <p className="section-sub">Semua yang dibutuhkan untuk pengelolaan SPP madrasah modern</p>
+        <div className="features-grid">
+          {features.map((f, i) => (
+            <div key={i} className="feature-card">
+              <div className="feature-icon">{f.icon}</div>
+              <div className="feature-title">{f.title}</div>
+              <p className="feature-desc">{f.desc}</p>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* KONTAK */}
-      <section id="kontak" style={styles.contactSection}>
-        <h2 style={styles.sectionTitle}>📞 Kontak Kami</h2>
-        <p style={styles.sectionSub}>
-          Hubungi kami untuk informasi lebih lanjut tentang sistem SPP Digital.
-        </p>
-
-        <div style={styles.contactGrid}>
-          {/* Info Kontak */}
-          <div style={styles.contactCard}>
-            <div style={styles.contactItem}>
-              <div style={styles.contactIconBox}>📍</div>
-              <div>
-                <p style={styles.contactLabel}>Alamat</p>
-                <p style={styles.contactValue}>
-                  Ds. Sumberjo, Kec. Sanankulon,<br />Kab. Blitar, Jawa Timur
-                </p>
+      <section id="kontak" className="contact-section">
+        <h2 className="section-title">📞 Kontak Kami</h2>
+        <p className="section-sub">Hubungi kami untuk informasi lebih lanjut tentang sistem SPP Digital.</p>
+        <div className="contact-grid">
+          <div className="contact-card">
+            {[
+              { icon: "📍", label: "Alamat", val: "Ds. Sumberjo, Kec. Sanankulon,\nKab. Blitar, Jawa Timur" },
+              { icon: "📧", label: "Email", val: "madrasahtaribiyatulsumberjo@gmail.com" },
+              { icon: "📱", label: "Telepon / WhatsApp", val: "08xxxxxxxxxx" },
+            ].map((item, i) => (
+              <div key={i} className="contact-item">
+                <div className="contact-icon">{item.icon}</div>
+                <div>
+                  <p className="contact-label">{item.label}</p>
+                  <p className="contact-val" style={{ whiteSpace: "pre-line" }}>{item.val}</p>
+                </div>
               </div>
-            </div>
-
-            <div style={styles.contactItem}>
-              <div style={styles.contactIconBox}>📧</div>
+            ))}
+            <div className="contact-item">
+              <div className="contact-icon">📲</div>
               <div>
-                <p style={styles.contactLabel}>Email</p>
-                <p style={styles.contactValue}>email@madrasah.com</p>
-              </div>
-            </div>
-
-            <div style={styles.contactItem}>
-              <div style={styles.contactIconBox}>📱</div>
-              <div>
-                <p style={styles.contactLabel}>Telepon / WhatsApp</p>
-                <p style={styles.contactValue}>08xxxxxxxxxx</p>
-              </div>
-            </div>
-
-            <div style={styles.contactItem}>
-              <div style={styles.contactIconBox}>📲</div>
-              <div>
-                <p style={styles.contactLabel}>Media Sosial</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 4 }}>
-                  <a href="https://instagram.com/" target="_blank" rel="noreferrer" style={styles.socialLink}>
-                    <span style={styles.socialIcon}>📸</span> Instagram
-                  </a>
-                  <a href="https://facebook.com/" target="_blank" rel="noreferrer" style={styles.socialLink}>
-                    <span style={styles.socialIcon}>📘</span> Facebook
-                  </a>
-                  <a href="https://youtube.com/" target="_blank" rel="noreferrer" style={styles.socialLink}>
-                    <span style={styles.socialIcon}>▶️</span> YouTube
-                  </a>
+                <p className="contact-label">Media Sosial</p>
+                <div style={{ display:"flex", flexDirection:"column", gap:8, marginTop:6 }}>
+                  {[
+                    { icon:"📸", label:"Instagram", href:"https://instagram.com/" },
+                    { icon:"📘", label:"Facebook",  href:"https://facebook.com/" },
+                    { icon:"▶️", label:"YouTube",   href:"https://youtube.com/" },
+                  ].map((s, i) => (
+                    <a key={i} href={s.href} target="_blank" rel="noreferrer" className="social-link">
+                      {s.icon} {s.label}
+                    </a>
+                  ))}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Google Maps Embed */}
-          <div style={styles.mapWrapper}>
+          <div className="map-wrap">
             <iframe
               title="Lokasi Madrasah"
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3951.8!2d112.1623!3d-8.0512!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e78f2e1c3b8b1e5%3A0xabcdef1234567890!2sSumberjo%2C%20Sanankulon%2C%20Blitar%2C%20Jawa%20Timur!5e0!3m2!1sid!2sid!4v1746000000000!5m2!1sid!2sid"
-              width="100%"
-              height="100%"
-              style={{ border: 0, borderRadius: 16 }}
-              allowFullScreen=""
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
+              allowFullScreen="" loading="lazy" referrerPolicy="no-referrer-when-downgrade"
             />
           </div>
         </div>
       </section>
 
       {/* FOOTER */}
-      <footer style={styles.footer}>
+      <footer className="footer">
         🌿 © 2026 Madrasah Tarbiyatul Mubalighin Sumberjo. All rights reserved.
       </footer>
     </div>
   );
 }
-
-/* ================= STYLE ================= */
-
-const styles = {
-  container: {
-    fontFamily: "'Segoe UI', sans-serif",
-    scrollBehavior: "smooth",
-    overflowX: "hidden",
-  },
-
-  nav: {
-    display: "flex",
-    justifyContent: "space-between",
-    padding: "14px 60px",
-    alignItems: "center",
-    background: "#ffffff",
-    position: "sticky",
-    top: 0,
-    zIndex: 100,
-    boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
-  },
-
-  logoWrap: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-  },
-
-  logoText: {
-    lineHeight: 1.4,
-  },
-
-  menu: { display: "flex", gap: 24, alignItems: "center" },
-
-  menuItem: {
-    color: "#374151",
-    fontWeight: 500,
-    cursor: "pointer",
-    fontSize: 14,
-    textDecoration: "none",
-  },
-
-  loginBtn: {
-    padding: "9px 22px",
-    borderRadius: 10,
-    border: "none",
-    background: "linear-gradient(135deg, #14532d, #22c55e)",
-    color: "white",
-    fontWeight: 600,
-    cursor: "pointer",
-    fontSize: 14,
-    transition: "all 0.2s ease",
-  },
-
-  /* HERO */
-  hero: {
-    position: "relative",
-    padding: "80px 80px",
-    background: "linear-gradient(135deg, #fefce8 0%, #dcfce7 55%, #bbf7d0 100%)",
-    overflow: "hidden",
-    minHeight: "85vh",
-    display: "flex",
-    alignItems: "center",
-  },
-
-  heroGrid: {
-    position: "relative",
-    zIndex: 2,
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 60,
-    alignItems: "center",
-    maxWidth: 1100,
-    marginInline: "auto",
-    width: "100%",
-  },
-
-  heroLeft: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "flex-start",
-  },
-
-  heroRight: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  logoCircleBg: {
-    width: 360,
-    height: 360,
-    borderRadius: "50%",
-    background: "radial-gradient(circle, rgba(255,255,255,0.85) 40%, rgba(187,247,208,0.5) 100%)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: "0 8px 48px rgba(34,197,94,0.12)",
-  },
-
-  heroLogoImg: {
-    width: 260,
-    height: 260,
-    objectFit: "contain",
-  },
-
-  blob1: {
-    position: "absolute",
-    width: 500,
-    height: 500,
-    borderRadius: "50%",
-    background: "radial-gradient(circle, rgba(34,197,94,0.13) 0%, transparent 70%)",
-    top: -120,
-    right: -100,
-    zIndex: 1,
-  },
-
-  blob2: {
-    position: "absolute",
-    width: 350,
-    height: 350,
-    borderRadius: "50%",
-    background: "radial-gradient(circle, rgba(20,83,45,0.09) 0%, transparent 70%)",
-    bottom: -80,
-    left: -80,
-    zIndex: 1,
-  },
-
-  blob3: {
-    position: "absolute",
-    width: 200,
-    height: 200,
-    borderRadius: "50%",
-    background: "radial-gradient(circle, rgba(34,197,94,0.10) 0%, transparent 70%)",
-    bottom: 60,
-    right: "30%",
-    zIndex: 1,
-  },
-
-  badge: {
-    display: "inline-block",
-    background: "linear-gradient(135deg, #14532d, #22c55e)",
-    padding: "7px 18px",
-    borderRadius: 50,
-    color: "white",
-    fontSize: 12,
-    fontWeight: 600,
-    letterSpacing: 0.5,
-    marginBottom: 20,
-  },
-
-  title: {
-    fontSize: 44,
-    fontWeight: 800,
-    color: "#111827",
-    lineHeight: 1.2,
-    marginTop: 10,
-    marginBottom: 10,
-  },
-
-  titleAccent: {
-    color: "#14532d",
-  },
-
-  desc: {
-    marginTop: 16,
-    color: "#4b5563",
-    fontSize: 15,
-    lineHeight: 1.8,
-    maxWidth: 460,
-  },
-
-  heroButtons: {
-    marginTop: 36,
-    display: "flex",
-    gap: 14,
-    flexWrap: "wrap",
-  },
-
-  primaryBtn: {
-    padding: "14px 28px",
-    background: "linear-gradient(135deg, #14532d, #22c55e)",
-    border: "none",
-    color: "white",
-    borderRadius: 12,
-    fontWeight: 700,
-    fontSize: 15,
-    cursor: "pointer",
-    boxShadow: "0 4px 16px rgba(34,197,94,0.35)",
-    transition: "all 0.2s ease",
-  },
-
-  secondaryBtn: {
-    padding: "14px 28px",
-    borderRadius: 12,
-    border: "2px solid #14532d",
-    background: "transparent",
-    color: "#14532d",
-    fontWeight: 700,
-    fontSize: 15,
-    cursor: "pointer",
-    transition: "all 0.2s ease",
-  },
-
-  /* KONTAK */
-  contactSection: {
-    padding: "80px 60px",
-    background: "#f9fafb",
-    textAlign: "center",
-  },
-
-  sectionTitle: {
-    fontSize: 30,
-    fontWeight: 800,
-    color: "#14532d",
-    marginBottom: 8,
-  },
-
-  sectionSub: {
-    color: "#6b7280",
-    fontSize: 15,
-    marginBottom: 48,
-  },
-
-  contactGrid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1.4fr",
-    gap: 28,
-    maxWidth: 960,
-    marginInline: "auto",
-    textAlign: "left",
-  },
-
-  contactCard: {
-    background: "#ffffff",
-    borderRadius: 20,
-    padding: "32px 28px",
-    boxShadow: "0 4px 24px rgba(0,0,0,0.06)",
-    display: "flex",
-    flexDirection: "column",
-    gap: 28,
-  },
-
-  contactItem: {
-    display: "flex",
-    gap: 16,
-    alignItems: "flex-start",
-  },
-
-  contactIconBox: {
-    width: 44,
-    height: 44,
-    minWidth: 44,
-    background: "linear-gradient(135deg, #dcfce7, #bbf7d0)",
-    borderRadius: 12,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 20,
-  },
-
-  contactLabel: {
-    fontSize: 12,
-    color: "#9ca3af",
-    fontWeight: 600,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    margin: "0 0 4px 0",
-  },
-
-  contactValue: {
-    fontSize: 14,
-    color: "#111827",
-    fontWeight: 500,
-    lineHeight: 1.6,
-    margin: 0,
-  },
-
-  mapWrapper: {
-    borderRadius: 20,
-    overflow: "hidden",
-    height: 340,
-    boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
-  },
-
-  socialLink: {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    color: "#14532d",
-    fontWeight: 600,
-    fontSize: 14,
-    textDecoration: "none",
-  },
-
-  socialIcon: {
-    fontSize: 16,
-  },
-
-  /* FOOTER */
-  footer: {
-    background: "#111827",
-    color: "#9ca3af",
-    padding: "28px 60px",
-    textAlign: "center",
-    fontSize: 13,
-  },
-};

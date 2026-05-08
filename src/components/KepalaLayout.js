@@ -4,16 +4,15 @@ import { useRouter } from "next/router";
 import { useState } from "react";
 
 const menuItems = [
-  { href: "/kepala/dashboard",                icon: "🏠", label: "Dashboard" },
+  { href: "/kepala/dashboard", icon: "🏠", label: "Dashboard" },
   {
     href: "/kepala/laporan",
     icon: "📊",
     label: "Laporan",
     children: [
-      { href: "/admin/reports/pembayaran",    icon: "📈", label: "Laporan Pembayaran" },
-      { href: "/admin/reports/rekap-pembayaran", icon: "✅", label: "Rekap Pembayaran" },
-      { href: "/admin/reports/rekap-santri",  icon: "🎓", label: "Rekap Santri" },
-      { href: "/admin/reports/absensi",       icon: "📋", label: "Absensi Santri" },
+      { href: "/kepala/laporan/rekap-pembayaran", icon: "✅", label: "Rekap Pembayaran" },
+      { href: "/kepala/laporan/data-santri",      icon: "🎓", label: "Data Santri" },
+      { href: "/kepala/laporan/pengeluaran",      icon: "💸", label: "Laporan Pengeluaran" },
     ]
   },
 ];
@@ -40,11 +39,10 @@ export default function KepalaLayout({ children }) {
   const isLaporanActive = currentPath.startsWith("/kepala/laporan");
 
   const getTitle = () => {
-    if (currentPath === "/kepala/dashboard") return "Dashboard"
-    if (currentPath === "/admin/reports/pembayaran") return "Laporan Pembayaran"
-    if (currentPath === "/admin/reports/rekap-pembayaran") return "Rekap Pembayaran"
-    if (currentPath === "/admin/reports/rekap-santri") return "Rekap Santri"
-    if (currentPath === "/admin/reports/absensi") return "Absensi Santri"
+    if (currentPath === "/kepala/dashboard")                return "Dashboard"
+    if (currentPath === "/kepala/laporan/rekap-pembayaran") return "Rekap Pembayaran"
+    if (currentPath === "/kepala/laporan/data-santri")      return "Data Santri"
+    if (currentPath === "/kepala/laporan/pengeluaran")      return "Laporan Pengeluaran"
     return "Kepala Madrasah"
   }
 
@@ -69,25 +67,21 @@ export default function KepalaLayout({ children }) {
           padding: 24px 20px 20px; border-bottom: 1px solid #f0f4f0;
           display: flex; align-items: center; gap: 10px;
         }
-
         .brand-logo-fallback {
           width: 36px; height: 36px;
           background: linear-gradient(135deg,#14532d,#22c55e);
           border-radius: 10px; display: flex; align-items: center;
           justify-content: center; font-size: 18px; flex-shrink: 0;
         }
-
         .brand-text { display: flex; flex-direction: column; line-height: 1.3; }
         .brand-name { font-size: 14px; font-weight: 800; color: #14532d; letter-spacing: -0.3px; }
-        .brand-sub { font-size: 10px; color: #9ca3af; font-weight: 500; }
+        .brand-sub  { font-size: 10px; color: #9ca3af; font-weight: 500; }
 
         .sidebar-nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 2px; }
-
         .nav-section-label {
           font-size: 10px; font-weight: 700; color: #9ca3af;
           text-transform: uppercase; letter-spacing: 0.8px; padding: 12px 8px 6px;
         }
-
         .nav-item {
           display: flex; align-items: center; gap: 10px; padding: 10px 12px;
           border-radius: 10px; color: #4b5563; font-size: 13.5px; font-weight: 500;
@@ -99,7 +93,6 @@ export default function KepalaLayout({ children }) {
           background: linear-gradient(135deg, #dcfce7, #f0fdf4);
           color: #14532d; font-weight: 700; box-shadow: inset 3px 0 0 #22c55e;
         }
-
         .nav-icon { font-size: 16px; width: 22px; text-align: center; flex-shrink: 0; }
 
         .nav-parent {
@@ -123,7 +116,6 @@ export default function KepalaLayout({ children }) {
           overflow: hidden; max-height: 0; transition: max-height 0.25s ease;
         }
         .submenu.open { max-height: 300px; }
-
         .submenu-item {
           display: flex; align-items: center; gap: 8px; padding: 8px 10px;
           border-radius: 8px; color: #6b7280; font-size: 12.5px; font-weight: 500;
@@ -194,6 +186,11 @@ export default function KepalaLayout({ children }) {
           .hamburger { display: flex; }
           .overlay.show { display: block; }
           .page-content { padding: 20px 16px; }
+          .topbar { padding: 0 16px; }
+          .topbar-date { display: none; }
+        }
+        @media (max-width: 480px) {
+          .role-badge { display: none; }
         }
       `}</style>
 
@@ -213,11 +210,15 @@ export default function KepalaLayout({ children }) {
 
           <nav className="sidebar-nav">
             <span className="nav-section-label">Menu</span>
-            <a href="/kepala/dashboard" className={`nav-item ${currentPath === "/kepala/dashboard" ? "active" : ""}`} onClick={() => setOpenMenu(false)}>
+
+            <a href="/kepala/dashboard"
+              className={`nav-item ${currentPath === "/kepala/dashboard" ? "active" : ""}`}
+              onClick={() => setOpenMenu(false)}>
               <span className="nav-icon">🏠</span> Dashboard
             </a>
 
-            <button className={`nav-parent ${isLaporanActive ? "active" : ""}`} onClick={() => setOpenLaporan(p => !p)}>
+            <button className={`nav-parent ${isLaporanActive ? "active" : ""}`}
+              onClick={() => setOpenLaporan(p => !p)}>
               <div className="nav-parent-left">
                 <span className="nav-icon">📊</span> Laporan
               </div>
