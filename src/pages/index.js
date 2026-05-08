@@ -157,24 +157,6 @@ export default function Home() {
       .blob2 { width:350px; height:350px; bottom:-80px; left:-80px; background: radial-gradient(circle, rgba(20,83,45,0.09) 0%, transparent 70%); }
       .blob3 { width:200px; height:200px; bottom:60px; right:30%; background: radial-gradient(circle, rgba(34,197,94,0.10) 0%, transparent 70%); }
 
-      /* FEATURES */
-      .features-section { padding: 80px 60px; background: #fff; text-align: center; }
-      .section-title { font-size: 30px; font-weight: 800; color: #14532d; margin-bottom: 8px; }
-      .section-sub   { color: #6b7280; font-size: 15px; margin-bottom: 48px; }
-
-      .features-grid {
-        display: grid; grid-template-columns: repeat(3, 1fr);
-        gap: 20px; max-width: 960px; margin: 0 auto;
-      }
-      .feature-card {
-        background: #f8faf8; border-radius: 20px; padding: 28px 22px;
-        border: 1px solid #e4e9e6; text-align: left; transition: all 0.2s;
-      }
-      .feature-card:hover { transform: translateY(-4px); box-shadow: 0 8px 32px rgba(0,0,0,0.08); }
-      .feature-icon  { font-size: 34px; margin-bottom: 14px; }
-      .feature-title { font-size: 15px; font-weight: 700; color: #1a3d28; margin-bottom: 8px; }
-      .feature-desc  { font-size: 13px; color: #6b7280; line-height: 1.7; }
-
       /* KONTAK */
       .contact-section { padding: 80px 60px; background: #f9fafb; text-align: center; }
       .contact-grid {
@@ -216,8 +198,6 @@ export default function Home() {
         .hero-title { font-size: 36px; }
         .logo-circle { width: 280px; height: 280px; }
         .logo-circle img { width: 200px; height: 200px; }
-        .features-section { padding: 60px 32px; }
-        .features-grid { grid-template-columns: repeat(2, 1fr); }
         .contact-section { padding: 60px 32px; }
         .footer { padding: 24px 32px; }
       }
@@ -242,11 +222,6 @@ export default function Home() {
         .blob1 { width: 220px; height: 220px; top: -60px; right: -50px; }
         .blob2 { width: 160px; height: 160px; bottom: -40px; left: -40px; }
         .blob3 { display: none; }
-
-        .features-section { padding: 48px 20px; }
-        .section-title { font-size: 24px; }
-        .section-sub   { font-size: 14px; margin-bottom: 32px; }
-        .features-grid { grid-template-columns: 1fr; gap: 14px; }
 
         .contact-section { padding: 48px 20px; }
         .contact-grid { grid-template-columns: 1fr; gap: 20px; }
@@ -278,15 +253,6 @@ export default function Home() {
     }, 80);
   }
 
-  const features = [
-    { icon: "💳", title: "Pembayaran Digital", desc: "Santri dapat membayar SPP kapan saja dan di mana saja melalui berbagai metode pembayaran." },
-    { icon: "📊", title: "Laporan Otomatis", desc: "Laporan keuangan tersaji otomatis dan dapat diekspor ke Excel maupun PDF dengan mudah." },
-    { icon: "🔔", title: "Notifikasi Real-time", desc: "Admin dan santri mendapat notifikasi otomatis untuk setiap tagihan dan pembayaran." },
-    { icon: "👩‍🎓", title: "Manajemen Santri", desc: "Kelola data santri, histori kelas, dan rekap per tahun ajaran dengan mudah." },
-    { icon: "📋", title: "Absensi Digital", desc: "Cetak lembar absensi per kelas lengkap dengan wali kelas dan TTD kepala madrasah." },
-    { icon: "🔒", title: "Aman & Terpercaya", desc: "Data tersimpan aman dengan autentikasi berlapis untuk admin, santri, dan kepala madrasah." },
-  ];
-
   return (
     <div>
       {/* NAVBAR */}
@@ -302,7 +268,6 @@ export default function Home() {
 
         <div className="nav-menu">
           <button className="nav-link" onClick={() => scrollTo("beranda")}>🏠 Beranda</button>
-          <button className="nav-link" onClick={() => scrollTo("fitur")}>✨ Fitur</button>
           <button className="nav-link" onClick={() => scrollTo("kontak")}>📞 Kontak</button>
           <button className="nav-login-btn" onClick={() => router.push("/login")}>Login</button>
         </div>
@@ -317,7 +282,6 @@ export default function Home() {
       {/* MOBILE MENU */}
       <div className={`mobile-menu ${menuOpen ? "open" : ""}`}>
         <button className="mobile-link" onClick={() => scrollTo("beranda")}>🏠 Beranda</button>
-        <button className="mobile-link" onClick={() => scrollTo("fitur")}>✨ Fitur</button>
         <button className="mobile-link" onClick={() => scrollTo("kontak")}>📞 Kontak</button>
         <button className="mobile-login-btn" onClick={() => router.push("/login")}>🚀 Login Sekarang</button>
       </div>
@@ -349,21 +313,6 @@ export default function Home() {
               <img className="float-logo" src="/logo-sibatamu.png" alt="SIBATAMU Logo" />
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* FITUR */}
-      <section id="fitur" className="features-section">
-        <h2 className="section-title">✨ Fitur Unggulan</h2>
-        <p className="section-sub">Semua yang dibutuhkan untuk pengelolaan SPP madrasah modern</p>
-        <div className="features-grid">
-          {features.map((f, i) => (
-            <div key={i} className="feature-card">
-              <div className="feature-icon">{f.icon}</div>
-              <div className="feature-title">{f.title}</div>
-              <p className="feature-desc">{f.desc}</p>
-            </div>
-          ))}
         </div>
       </section>
 
