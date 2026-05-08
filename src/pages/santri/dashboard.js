@@ -123,10 +123,10 @@ export default function Dashboard() {
         @keyframes tin{from{opacity:0;top:4px}to{opacity:1;top:16px}}
 
         /* APP */
-        .app{min-height:100vh;display:flex;flex-direction:column;background:#eef5f0}
+        .app{min-height:100vh;display:flex;flex-direction:column;background:#eef5f0;width:100%}
 
         /* TOPBAR */
-        .topbar{background:#fff;border-bottom:1px solid #e4ede6;height:58px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+        .topbar{background:#fff;border-bottom:1px solid #e4ede6;height:58px;padding:0 20px;width:100%;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 1px 6px rgba(0,0,0,.04)}
         .tb-brand{display:flex;align-items:center;gap:9px}
         .tb-logo{width:32px;height:32px;background:linear-gradient(135deg,#1a3d28,#3a8f50);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
         .tb-name{font-family:'Lora',serif;font-size:16px;font-weight:700;color:#1a3d28}
@@ -137,10 +137,10 @@ export default function Dashboard() {
         .btn-out:hover{background:#ffe4e4}
 
         /* MAIN */
-        .main{display:flex;flex:1;max-width:1200px;width:100%;margin:0 auto}
+        .main{display:flex;flex:1;width:100%}
 
         /* SIDEBAR (desktop) */
-        .snav{display:none;width:196px;flex-shrink:0;padding:20px 10px;position:sticky;top:58px;height:calc(100vh - 58px);overflow-y:auto;border-right:1px solid #e4ede6;background:#fff}
+        .snav{display:none;width:196px;min-width:196px;flex-shrink:0;padding:20px 10px;position:sticky;top:58px;height:calc(100vh - 58px);overflow-y:auto;border-right:1px solid #e4ede6;background:#fff}
         .snav-lbl{font-size:10px;font-weight:700;color:#9ab5a3;text-transform:uppercase;letter-spacing:.8px;padding:0 8px;margin-bottom:8px}
         .snav-btn{display:flex;align-items:center;gap:9px;width:100%;padding:10px 12px;border-radius:10px;border:none;background:transparent;font-family:inherit;font-size:13px;font-weight:600;color:#5a7a66;cursor:pointer;transition:.15s;text-align:left;margin-bottom:2px}
         .snav-btn:hover{background:#f0fdf4;color:#1a3d28}
@@ -148,7 +148,7 @@ export default function Dashboard() {
         .snav-em{font-size:16px;width:20px;text-align:center;flex-shrink:0}
 
         /* PAGE */
-        .page{flex:1;min-width:0;padding-bottom:74px}
+        .page{flex:1;min-width:0;width:0;padding-bottom:74px}
 
         /* HERO */
         .hero{background:linear-gradient(135deg,#1a3d28 0%,#2e6b3e 55%,#3a8f50 100%);padding:26px 20px 68px;position:relative;overflow:hidden}
@@ -300,7 +300,7 @@ export default function Dashboard() {
           .card{border-radius:18px}
         }
         @media(min-width:1024px){
-          .main{padding:0 16px}
+          .ct-wrap{max-width:900px;margin:0 auto}
           .hero{padding:34px 36px 76px}
           .ct{padding:0 28px}
         }
