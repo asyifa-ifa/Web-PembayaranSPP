@@ -3,16 +3,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 
 export default function Dashboard() {
-  const [student, setStudent]         = useState(null);
-  const [bills, setBills]             = useState([]);
-  const [payments, setPayments]       = useState([]);
-  const [loading, setLoading]         = useState(false);
-  const [activeTab, setActiveTab]     = useState("beranda");
+  const [student, setStudent]             = useState(null);
+  const [bills, setBills]                 = useState([]);
+  const [payments, setPayments]           = useState([]);
+  const [loading, setLoading]             = useState(false);
+  const [activeTab, setActiveTab]         = useState("beranda");
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showPayModal, setShowPayModal]   = useState(null); // bill object
-  const [editForm, setEditForm]       = useState({});
-  const [editLoading, setEditLoading] = useState(false);
-  const [toast, setToast]             = useState(null);
+  const [showPayModal, setShowPayModal]   = useState(null);
+  const [editForm, setEditForm]           = useState({});
+  const [editLoading, setEditLoading]     = useState(false);
+  const [toast, setToast]                 = useState(null);
   const router = useRouter();
 
   useEffect(() => { fetchData(); }, []);
@@ -49,7 +49,7 @@ export default function Dashboard() {
       if (data.paymentUrl) {
         window.open(data.paymentUrl, "_blank");
       } else {
-        showToast("Gagal membuat pembayaran: " + data.message, "error");
+        showToast("Gagal: " + data.message, "error");
       }
     } catch (err) {
       showToast("Error: " + err.message, "error");
@@ -81,700 +81,522 @@ export default function Dashboard() {
   const rp = (v) => "Rp " + new Intl.NumberFormat("id-ID").format(v || 0);
 
   if (!student) return (
-    <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#f0f7f1", fontFamily:"'Plus Jakarta Sans', sans-serif" }}>
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#f0f7f1", fontFamily:"sans-serif" }}>
       <div style={{ textAlign:"center" }}>
-        <div style={{ fontSize:44, marginBottom:14 }}>🌿</div>
+        <p style={{ fontSize:40, marginBottom:12 }}>🌿</p>
         <p style={{ color:"#7a9a85", fontSize:14, fontWeight:600 }}>Memuat data...</p>
       </div>
     </div>
   );
 
-  const unpaidBills   = bills.filter(b => b.status === "UNPAID");
-  const paidBills     = bills.filter(b => b.status === "PAID");
-  const totalTagihan  = unpaidBills.reduce((s, b) => s + (b.amount || 0), 0);
-  const totalTerbayar = paidBills.reduce((s, b) => s + (b.amount || 0), 0);
-  const initials      = student.name?.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
-
+  const unpaidBills    = bills.filter(b => b.status === "UNPAID");
+  const paidBills      = bills.filter(b => b.status === "PAID");
+  const totalTagihan   = unpaidBills.reduce((s, b) => s + (b.amount || 0), 0);
+  const totalTerbayar  = paidBills.reduce((s, b) => s + (b.amount || 0), 0);
+  const initials       = student.name?.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
   const recentPayments = payments.slice(0, 3);
 
   const tabs = [
-    { key: "beranda", icon: "🏠", label: "Beranda" },
-    { key: "tagihan", icon: "💳", label: "Tagihan" },
-    { key: "riwayat", icon: "📜", label: "Riwayat" },
-    { key: "biodata", icon: "👤", label: "Profil" },
+    { key:"beranda", label:"Beranda", em:"🏠" },
+    { key:"tagihan", label:"Tagihan", em:"💳" },
+    { key:"riwayat", label:"Riwayat", em:"📜" },
+    { key:"biodata", label:"Profil",  em:"👤" },
   ];
+
+  const si = (status) => {
+    if (status === "SUCCESS") return { cls:"success", label:"Sukses", em:"✅" };
+    if (status === "FAILED")  return { cls:"failed",  label:"Gagal",  em:"❌" };
+    return                           { cls:"pending", label:"Pending",em:"⏳" };
+  };
 
   return (
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Lora:wght@600;700&display=swap');
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        html{scroll-behavior:smooth}
+        body{font-family:'Plus Jakarta Sans',sans-serif;background:#eef5f0;-webkit-font-smoothing:antialiased}
 
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #eef5f0; -webkit-font-smoothing: antialiased; }
+        .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;padding:11px 20px;border-radius:12px;font-size:13px;font-weight:600;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.15);animation:tin .3s ease;pointer-events:none}
+        .toast.success{background:#1a3d28;color:#fff}
+        .toast.error{background:#c62828;color:#fff}
+        @keyframes tin{from{opacity:0;top:4px}to{opacity:1;top:16px}}
 
-        /* ── TOAST ── */
-        .toast {
-          position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
-          z-index: 9999; padding: 12px 20px; border-radius: 12px;
-          font-size: 13px; font-weight: 600; white-space: nowrap;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-          animation: toastIn .3s ease;
-        }
-        .toast.success { background: #1a3d28; color: #fff; }
-        .toast.error   { background: #d32f2f; color: #fff; }
-        @keyframes toastIn { from { opacity:0; top:0 } to { opacity:1; top:16px } }
+        /* APP */
+        .app{min-height:100vh;display:flex;flex-direction:column;background:#eef5f0}
 
-        /* ── LAYOUT ── */
-        .app { min-height: 100vh; background: #eef5f0; padding-bottom: 80px; }
+        /* TOPBAR */
+        .topbar{background:#fff;border-bottom:1px solid #e4ede6;height:58px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+        .tb-brand{display:flex;align-items:center;gap:9px}
+        .tb-logo{width:32px;height:32px;background:linear-gradient(135deg,#1a3d28,#3a8f50);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+        .tb-name{font-family:'Lora',serif;font-size:16px;font-weight:700;color:#1a3d28}
+        .tb-name span{color:#3a8f50}
+        .tb-right{display:flex;align-items:center;gap:10px}
+        .tb-user{font-size:12px;font-weight:600;color:#5a7a66;display:none}
+        .btn-out{background:#fff0f0;color:#c62828;border:1px solid #fecaca;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;display:flex;align-items:center;gap:5px}
+        .btn-out:hover{background:#ffe4e4}
 
-        /* ── TOPBAR ── */
-        .topbar {
-          background: rgba(255,255,255,0.92); backdrop-filter: blur(16px);
-          border-bottom: 1px solid rgba(58,143,80,0.1);
-          height: 56px; padding: 0 20px;
-          display: flex; align-items: center; justify-content: space-between;
-          position: sticky; top: 0; z-index: 100;
-        }
-        .topbar-brand { display: flex; align-items: center; gap: 8px; }
-        .brand-dot {
-          width: 28px; height: 28px; border-radius: 8px;
-          background: linear-gradient(135deg, #1a3d28, #3a8f50);
-          display: flex; align-items: center; justify-content: center;
-          font-size: 14px;
-        }
-        .brand-name {
-          font-family: 'Lora', serif;
-          font-size: 15px; font-weight: 700; color: #1a3d28;
-        }
-        .brand-name span { color: #3a8f50; }
-        .btn-logout {
-          background: transparent; color: #9ab5a3; border: 1px solid #dde8e0;
-          padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600;
-          cursor: pointer; font-family: inherit; transition: .15s; display: flex; align-items: center; gap: 4px;
-        }
-        .btn-logout:hover { background: #fff0f0; color: #d32f2f; border-color: #f5bebe; }
+        /* MAIN */
+        .main{display:flex;flex:1;max-width:1200px;width:100%;margin:0 auto}
 
-        /* ── HERO ── */
-        .hero {
-          background: linear-gradient(135deg, #1a3d28 0%, #2e6b3e 60%, #3a8f50 100%);
-          padding: 28px 20px 72px; position: relative; overflow: hidden;
-        }
-        .hero-deco1 {
-          position: absolute; top: -50px; right: -50px;
-          width: 180px; height: 180px; border-radius: 50%;
-          background: rgba(255,255,255,0.05);
-        }
-        .hero-deco2 {
-          position: absolute; bottom: -30px; left: 20px;
-          width: 100px; height: 100px; border-radius: 50%;
-          background: rgba(255,255,255,0.04);
-        }
-        .hero-deco3 {
-          position: absolute; top: 20px; left: 40%;
-          width: 60px; height: 60px; border-radius: 50%;
-          background: rgba(255,255,255,0.03);
-        }
-        .hero-inner {
-          max-width: 640px; margin: 0 auto;
-          display: flex; align-items: center; gap: 16px; position: relative; z-index: 1;
-        }
-        .avatar {
-          width: 64px; height: 64px; border-radius: 50%;
-          background: rgba(255,255,255,0.18); border: 2.5px solid rgba(255,255,255,0.35);
-          display: flex; align-items: center; justify-content: center;
-          font-size: 22px; font-weight: 800; color: #fff; flex-shrink: 0;
-          letter-spacing: -1px;
-        }
-        .hero-text h2 {
-          font-family: 'Lora', serif;
-          font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 3px;
-        }
-        .hero-text p { font-size: 12px; color: rgba(255,255,255,0.65); }
-        .hero-chips { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
-        .hero-chip {
-          background: rgba(255,255,255,0.13); color: rgba(255,255,255,0.88);
-          border: 1px solid rgba(255,255,255,0.2); padding: 3px 10px;
-          border-radius: 20px; font-size: 11px; font-weight: 600;
-        }
+        /* SIDEBAR (desktop) */
+        .snav{display:none;width:196px;flex-shrink:0;padding:20px 10px;position:sticky;top:58px;height:calc(100vh - 58px);overflow-y:auto;border-right:1px solid #e4ede6;background:#fff}
+        .snav-lbl{font-size:10px;font-weight:700;color:#9ab5a3;text-transform:uppercase;letter-spacing:.8px;padding:0 8px;margin-bottom:8px}
+        .snav-btn{display:flex;align-items:center;gap:9px;width:100%;padding:10px 12px;border-radius:10px;border:none;background:transparent;font-family:inherit;font-size:13px;font-weight:600;color:#5a7a66;cursor:pointer;transition:.15s;text-align:left;margin-bottom:2px}
+        .snav-btn:hover{background:#f0fdf4;color:#1a3d28}
+        .snav-btn.active{background:linear-gradient(135deg,#dcfce7,#f0fdf4);color:#14532d;font-weight:700;box-shadow:inset 3px 0 0 #22c55e}
+        .snav-em{font-size:16px;width:20px;text-align:center;flex-shrink:0}
 
-        /* ── CONTENT ── */
-        .content {
-          max-width: 640px; margin: -52px auto 0;
-          padding: 0 16px; position: relative; z-index: 2;
-        }
+        /* PAGE */
+        .page{flex:1;min-width:0;padding-bottom:74px}
 
-        /* ── STAT CARDS ── */
-        .stat-grid {
-          display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
-          margin-bottom: 18px;
-        }
-        .stat-card {
-          background: #fff; border-radius: 16px; padding: 16px 14px;
-          box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-          border: 1px solid rgba(58,143,80,0.07);
-        }
-        .stat-icon { font-size: 20px; margin-bottom: 6px; }
-        .stat-label { font-size: 10px; font-weight: 700; color: #9ab5a3; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
-        .stat-val { font-size: 17px; font-weight: 800; color: #1a3d28; line-height: 1; }
-        .stat-sub { font-size: 10px; color: #b0c4b8; margin-top: 3px; }
-        .stat-card.red  .stat-val { color: #d32f2f; }
-        .stat-card.green .stat-val { color: #2e6b3e; }
+        /* HERO */
+        .hero{background:linear-gradient(135deg,#1a3d28 0%,#2e6b3e 55%,#3a8f50 100%);padding:26px 20px 68px;position:relative;overflow:hidden}
+        .hdeco{position:absolute;border-radius:50%;background:rgba(255,255,255,.05);pointer-events:none}
+        .hero-in{max-width:760px;display:flex;align-items:center;gap:14px;position:relative;z-index:1}
+        .av{width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,.18);border:2.5px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;flex-shrink:0;letter-spacing:-1px;font-family:'Lora',serif}
+        .hi h2{font-family:'Lora',serif;font-size:19px;font-weight:700;color:#fff;margin-bottom:3px}
+        .hi p{font-size:12px;color:rgba(255,255,255,.6);margin-bottom:7px}
+        .chips{display:flex;gap:6px;flex-wrap:wrap}
+        .chip{background:rgba(255,255,255,.13);color:rgba(255,255,255,.9);border:1px solid rgba(255,255,255,.2);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+        .chip.danger{background:rgba(198,40,40,.3);border-color:rgba(198,40,40,.4)}
 
-        /* ── SECTION CARD ── */
-        .card {
-          background: #fff; border-radius: 18px;
-          box-shadow: 0 4px 18px rgba(0,0,0,0.06);
-          border: 1px solid rgba(58,143,80,0.07);
-          margin-bottom: 14px; overflow: hidden;
-        }
-        .card-head {
-          padding: 16px 18px 12px;
-          display: flex; align-items: center; justify-content: space-between;
-          border-bottom: 1px solid #f0f5f1;
-        }
-        .card-title { font-size: 13.5px; font-weight: 700; color: #1a3d28; }
-        .card-badge {
-          background: #edf7ef; color: #2e6b3e; border: 1px solid #c3dfc9;
-          padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
-        }
-        .card-badge.red { background: #fff0f0; color: #d32f2f; border-color: #f5bebe; }
-        .card-link {
-          font-size: 12px; font-weight: 600; color: #3a8f50;
-          text-decoration: none; cursor: pointer; background: none; border: none;
-          font-family: inherit;
-        }
+        /* CONTENT */
+        .ct{margin:-46px 0 0;padding:0 14px;position:relative;z-index:2}
 
-        /* ── BILL ITEM ── */
-        .bill-item {
-          display: flex; align-items: center; gap: 12px;
-          padding: 14px 18px; border-bottom: 1px solid #f5f8f5;
-        }
-        .bill-item:last-child { border-bottom: none; }
-        .bill-ico {
-          width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
-          display: flex; align-items: center; justify-content: center; font-size: 18px;
-        }
-        .bill-ico.unpaid { background: #fff8e6; }
-        .bill-ico.paid   { background: #edf7ef; }
-        .bill-info { flex: 1; min-width: 0; }
-        .bill-name { font-size: 13px; font-weight: 700; color: #1a3d28; margin-bottom: 2px;
-          white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .bill-amount { font-size: 12.5px; font-weight: 700; }
-        .bill-amount.unpaid { color: #d32f2f; }
-        .bill-amount.paid   { color: #2e6b3e; }
-        .bill-due { font-size: 11px; color: #b0c4b8; margin-top: 1px; }
+        /* STAT */
+        .sg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+        .sc{background:#fff;border-radius:14px;padding:15px 13px;box-shadow:0 2px 10px rgba(0,0,0,.06);border:1px solid #e8f0e8}
+        .sc-em{font-size:19px;margin-bottom:5px;line-height:1}
+        .sc-lbl{font-size:9.5px;font-weight:700;color:#9ab5a3;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+        .sc-val{font-size:20px;font-weight:800;color:#1a3d28;line-height:1.1}
+        .sc-sub{font-size:10px;color:#b0c4b8;margin-top:3px}
+        .sc.red .sc-val{color:#c62828}
+        .sc.grn .sc-val{color:#1a6b35}
 
-        .btn-pay {
-          background: linear-gradient(135deg, #2e6b3e, #3a8f50);
-          color: #fff; border: none; padding: 9px 14px; border-radius: 10px;
-          font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit;
-          transition: .2s; white-space: nowrap;
-          box-shadow: 0 3px 10px rgba(58,143,80,0.3); flex-shrink: 0;
-        }
-        .btn-pay:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(58,143,80,0.4); }
-        .btn-pay:disabled { opacity: .6; cursor: not-allowed; }
-        .btn-pay.outline {
-          background: transparent; color: #3a8f50; border: 1.5px solid #c3dfc9;
-          box-shadow: none;
-        }
+        /* CARD */
+        .card{background:#fff;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.06);border:1px solid #e8f0e8;margin-bottom:13px;overflow:hidden}
+        .ch{padding:14px 17px 11px;border-bottom:1px solid #f0f5f1;display:flex;align-items:center;justify-content:space-between}
+        .ct2{font-size:13.5px;font-weight:700;color:#1a3d28}
+        .bdg{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1px solid}
+        .bdg.grn{background:#edf7ef;color:#1a6b35;border-color:#c3dfc9}
+        .bdg.red{background:#fff0f0;color:#c62828;border-color:#fecaca}
+        .bdg.amb{background:#fffbeb;color:#92400e;border-color:#fde68a}
+        .lnk{font-size:12px;font-weight:600;color:#3a8f50;background:none;border:none;cursor:pointer;font-family:inherit;padding:0}
+        .lnk:hover{text-decoration:underline}
 
-        /* ── PAYMENT HISTORY ITEM ── */
-        .pay-item {
-          display: flex; align-items: center; gap: 12px;
-          padding: 13px 18px; border-bottom: 1px solid #f5f8f5;
-        }
-        .pay-item:last-child { border-bottom: none; }
-        .pay-ico {
-          width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
-          display: flex; align-items: center; justify-content: center; font-size: 16px;
-        }
-        .pay-ico.success { background: #edf7ef; }
-        .pay-ico.failed  { background: #fff0f0; }
-        .pay-ico.pending { background: #fff8e6; }
-        .pay-info { flex: 1; min-width: 0; }
-        .pay-name { font-size: 13px; font-weight: 700; color: #1a3d28; margin-bottom: 2px;
-          white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .pay-meta { font-size: 11px; color: #9ab5a3; }
-        .pay-right { text-align: right; flex-shrink: 0; }
-        .pay-amount { font-size: 13px; font-weight: 700; color: #1a3d28; margin-bottom: 4px; }
-        .pay-status {
-          display: inline-block; padding: 2px 9px; border-radius: 20px;
-          font-size: 10.5px; font-weight: 700;
-        }
-        .pay-status.success { background: #edf7ef; color: #2e6b3e; }
-        .pay-status.failed  { background: #fff0f0; color: #d32f2f; }
-        .pay-status.pending { background: #fff8e6; color: #b07800; }
+        /* ALERT */
+        .alert{display:flex;gap:9px;align-items:flex-start;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:12px 13px;margin-bottom:13px}
+        .al-bod{font-size:12.5px;color:#78350f;line-height:1.5}
+        .al-bod strong{display:block;font-size:13px;color:#451a03;margin-bottom:1px}
 
-        /* ── BIODATA ── */
-        .bio-row {
-          display: flex; gap: 12px; padding: 12px 18px;
-          border-bottom: 1px solid #f5f8f5; align-items: flex-start;
-        }
-        .bio-row:last-child { border-bottom: none; }
-        .bio-label { font-size: 10.5px; font-weight: 700; color: #9ab5a3; text-transform: uppercase; letter-spacing: 0.3px; width: 100px; flex-shrink: 0; padding-top: 2px; }
-        .bio-val { font-size: 13px; color: #1a3d28; flex: 1; font-weight: 500; }
+        /* QUICK */
+        .qg{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:13px 15px}
+        .qi{display:flex;align-items:center;gap:9px;padding:12px 13px;background:#f7faf8;border:1px solid #e4ede6;border-radius:12px;cursor:pointer;font-family:inherit;text-align:left;transition:.15s;width:100%}
+        .qi:hover{background:#edf7ef;transform:translateY(-1px)}
+        .qi:active{transform:translateY(0)}
+        .qi-em{font-size:21px;line-height:1;flex-shrink:0}
+        .qi-lbl{font-size:12px;font-weight:700;color:#1a3d28}
+        .qi-sub{font-size:10.5px;color:#9ab5a3;margin-top:1px}
 
-        /* ── QUICK ACTIONS (Beranda) ── */
-        .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px 18px; }
-        .quick-btn {
-          display: flex; align-items: center; gap: 10px; padding: 14px;
-          background: #f7faf8; border: 1px solid #e4ede6; border-radius: 12px;
-          cursor: pointer; border: none; font-family: inherit; text-align: left;
-          transition: .15s; text-decoration: none; color: inherit;
-        }
-        .quick-btn:hover { background: #edf7ef; border-color: #c3dfc9; transform: translateY(-1px); }
-        .quick-btn-icon { font-size: 22px; flex-shrink: 0; }
-        .quick-btn-label { font-size: 12px; font-weight: 700; color: #1a3d28; }
-        .quick-btn-sub   { font-size: 10.5px; color: #9ab5a3; margin-top: 1px; }
+        /* BILL ROW */
+        .br{display:flex;align-items:center;gap:11px;padding:13px 17px;border-bottom:1px solid #f5f8f5}
+        .br:last-child{border-bottom:none}
+        .bi{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+        .bi.u{background:#fffbeb}
+        .bi.p{background:#f0fdf4}
+        .bin{flex:1;min-width:0}
+        .bn{font-size:13px;font-weight:700;color:#1a3d28;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+        .ba{font-size:12.5px;font-weight:700}
+        .ba.u{color:#c62828}
+        .ba.p{color:#1a6b35}
+        .bd{font-size:11px;color:#b0c4b8;margin-top:1px}
+        .btn-b{background:linear-gradient(135deg,#1a6b35,#3a8f50);color:#fff;border:none;padding:9px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;transition:.15s;box-shadow:0 2px 7px rgba(26,107,53,.3)}
+        .btn-b:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 12px rgba(26,107,53,.4)}
+        .btn-b:disabled{opacity:.55;cursor:not-allowed}
+        .btn-b.ol{background:transparent;color:#3a8f50;border:1.5px solid #c3dfc9;box-shadow:none}
 
-        /* ── ALERT ── */
-        .alert {
-          display: flex; align-items: flex-start; gap: 10px;
-          background: #fff8e6; border: 1px solid #f0d57a; border-radius: 12px;
-          padding: 12px 14px; margin-bottom: 14px;
-        }
-        .alert-icon { font-size: 18px; flex-shrink: 0; }
-        .alert-text { font-size: 12.5px; color: #7a5c00; font-weight: 500; }
-        .alert-text strong { display: block; font-size: 13px; color: #5a4000; margin-bottom: 2px; }
+        /* PAY ROW */
+        .pr{display:flex;align-items:center;gap:11px;padding:12px 17px;border-bottom:1px solid #f5f8f5}
+        .pr:last-child{border-bottom:none}
+        .pi{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+        .pi.success{background:#f0fdf4}
+        .pi.failed{background:#fff0f0}
+        .pi.pending{background:#fffbeb}
+        .pif{flex:1;min-width:0}
+        .pn{font-size:13px;font-weight:700;color:#1a3d28;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+        .pm{font-size:11px;color:#9ab5a3}
+        .pr-r{text-align:right;flex-shrink:0}
+        .pa{font-size:13px;font-weight:700;color:#1a3d28;margin-bottom:4px}
+        .ps{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:700}
+        .ps.success{background:#f0fdf4;color:#1a6b35}
+        .ps.failed{background:#fff0f0;color:#c62828}
+        .ps.pending{background:#fffbeb;color:#92400e}
 
-        /* ── EMPTY ── */
-        .empty { padding: 36px 20px; text-align: center; color: #9ab5a3; }
-        .empty-icon { font-size: 36px; margin-bottom: 8px; }
-        .empty p { font-size: 13px; font-weight: 500; }
+        /* BIO */
+        .brow{display:flex;gap:11px;padding:11px 17px;border-bottom:1px solid #f5f8f5;align-items:flex-start}
+        .brow:last-child{border-bottom:none}
+        .blbl{font-size:10.5px;font-weight:700;color:#9ab5a3;text-transform:uppercase;letter-spacing:.3px;width:106px;flex-shrink:0;padding-top:2px}
+        .bval{font-size:13px;color:#1a3d28;font-weight:500;flex:1}
 
-        /* ── BOTTOM NAV ── */
-        .bottom-nav {
-          position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-          background: rgba(255,255,255,0.96); backdrop-filter: blur(16px);
-          border-top: 1px solid rgba(58,143,80,0.1);
-          display: flex; align-items: center; justify-content: space-around;
-          padding: 8px 0 max(8px, env(safe-area-inset-bottom));
-        }
-        .nav-btn {
-          display: flex; flex-direction: column; align-items: center; gap: 3px;
-          background: none; border: none; cursor: pointer; font-family: inherit;
-          padding: 4px 16px; border-radius: 12px; transition: .15s; flex: 1;
-        }
-        .nav-btn:hover { background: #f0fdf4; }
-        .nav-icon { font-size: 20px; line-height: 1; }
-        .nav-label { font-size: 10px; font-weight: 600; color: #9ab5a3; }
-        .nav-btn.active .nav-label { color: #2e6b3e; font-weight: 700; }
-        .nav-dot {
-          width: 4px; height: 4px; border-radius: 50%;
-          background: #3a8f50; margin-top: 1px; display: none;
-        }
-        .nav-btn.active .nav-dot { display: block; }
+        /* EMPTY */
+        .empty{padding:34px 20px;text-align:center;color:#9ab5a3}
+        .empty p{font-size:13px;font-weight:500;margin-top:6px}
 
-        /* ── MODAL ── */
-        .overlay {
-          position: fixed; inset: 0; background: rgba(0,0,0,0.45);
-          backdrop-filter: blur(4px); z-index: 200;
-          display: flex; align-items: flex-end; justify-content: center;
-        }
-        .modal {
-          background: #fff; border-radius: 24px 24px 0 0;
-          padding: 20px 20px max(32px, env(safe-area-inset-bottom));
-          width: 100%; max-width: 640px; max-height: 92vh; overflow-y: auto;
-          animation: slideUp .3s cubic-bezier(.4,0,.2,1);
-        }
-        @keyframes slideUp { from { transform: translateY(100%); opacity:0; } to { transform: translateY(0); opacity:1; } }
-        .modal-handle { width: 36px; height: 4px; background: #dde8e0; border-radius: 2px; margin: 0 auto 18px; }
-        .modal-title { font-family: 'Lora', serif; font-size: 17px; font-weight: 700; color: #1a3d28; margin-bottom: 18px; }
+        /* BOTTOM NAV */
+        .bnav{position:fixed;bottom:0;left:0;right:0;z-index:49;background:rgba(255,255,255,.97);border-top:1px solid #e4ede6;display:flex;padding:5px 0 max(5px,env(safe-area-inset-bottom))}
+        .nb{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0;transition:.15s}
+        .nb-em{font-size:20px;line-height:1.2}
+        .nb-lbl{font-size:10px;font-weight:600;color:#9ab5a3}
+        .nb.active .nb-lbl{color:#1a6b35;font-weight:700}
+        .nb-dot{width:4px;height:4px;border-radius:50%;background:#3a8f50;display:none}
+        .nb.active .nb-dot{display:block}
 
-        .field { margin-bottom: 14px; }
-        .field label { font-size: 11.5px; font-weight: 700; color: #5a7a66; display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px; }
-        .field input, .field textarea {
-          width: 100%; border: 1.5px solid #dde5e0; border-radius: 10px;
-          padding: 11px 14px; font-size: 14px; color: #1a3d28;
-          background: #fafcfb; outline: none; font-family: inherit; transition: .2s;
-        }
-        .field input:focus, .field textarea:focus { border-color: #3a8f50; box-shadow: 0 0 0 3px rgba(58,143,80,0.1); }
-        .field textarea { resize: vertical; min-height: 80px; }
+        /* MODAL */
+        .ov{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.42);display:flex;align-items:flex-end;justify-content:center}
+        .mo{background:#fff;border-radius:24px 24px 0 0;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;padding:20px 20px max(28px,env(safe-area-inset-bottom));animation:su .28s cubic-bezier(.4,0,.2,1)}
+        @keyframes su{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+        .mh{width:36px;height:4px;background:#dde8e0;border-radius:2px;margin:0 auto 17px}
+        .mt{font-family:'Lora',serif;font-size:17px;font-weight:700;color:#1a3d28;margin-bottom:17px}
+        .cico{font-size:38px;text-align:center;margin-bottom:9px}
+        .ctit{font-family:'Lora',serif;font-size:17px;font-weight:700;color:#1a3d28;text-align:center;margin-bottom:5px}
+        .cdesc{font-size:13px;color:#7a9a85;text-align:center;line-height:1.6;margin-bottom:17px}
+        .cbox{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:13px;text-align:center;margin-bottom:18px}
+        .cbl{font-size:11px;color:#7a9a85;font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px}
+        .cbv{font-size:22px;font-weight:800;color:#1a3d28}
+        .cbd{font-size:11px;color:#9ab5a3;margin-top:3px}
+        .field{margin-bottom:13px}
+        .field label{display:block;font-size:11px;font-weight:700;color:#5a7a66;text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px}
+        .field input,.field textarea{width:100%;border:1.5px solid #dde5e0;border-radius:10px;padding:11px 13px;font-size:14px;color:#1a3d28;background:#fafcfb;outline:none;font-family:inherit;transition:border-color .2s}
+        .field input:focus,.field textarea:focus{border-color:#3a8f50;box-shadow:0 0 0 3px rgba(58,143,80,.1)}
+        .field textarea{resize:vertical;min-height:78px}
+        .mac{display:flex;gap:10px;margin-top:17px}
+        .btn-sv{flex:1;background:linear-gradient(135deg,#1a6b35,#3a8f50);color:#fff;border:none;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(26,107,53,.3);transition:.15s}
+        .btn-sv:hover:not(:disabled){opacity:.9}
+        .btn-sv:disabled{opacity:.55;cursor:not-allowed}
+        .btn-cn{background:#f5f8f5;color:#5a7a66;border:none;padding:13px 18px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+        .btn-cn:hover{background:#eaefeb}
 
-        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
-        .btn-save {
-          flex: 1; background: linear-gradient(135deg, #2e6b3e, #3a8f50);
-          color: #fff; border: none; padding: 13px; border-radius: 12px;
-          font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
-          box-shadow: 0 4px 14px rgba(58,143,80,0.3);
+        /* RESPONSIVE */
+        @media(max-width:380px){
+          .sg{grid-template-columns:1fr 1fr}
+          .sg .sc:last-child{grid-column:span 2}
+          .qg{grid-template-columns:1fr}
+          .hi h2{font-size:16px}
         }
-        .btn-save:disabled { opacity: .6; cursor: not-allowed; }
-        .btn-cancel {
-          background: #f5f8f5; color: #5a7a66; border: none;
-          padding: 13px 20px; border-radius: 12px; font-size: 14px;
-          font-weight: 600; cursor: pointer; font-family: inherit;
+        @media(min-width:640px){
+          .topbar{padding:0 28px}
+          .tb-user{display:block}
+          .hero{padding:30px 28px 68px}
+          .ct{padding:0 20px}
+          .page{padding-bottom:0}
+          .bnav{display:none}
+          .snav{display:flex;flex-direction:column}
+          .sg{gap:13px}
+          .sc{padding:17px 15px}
+          .sc-val{font-size:22px}
+          .qg{grid-template-columns:repeat(4,1fr);padding:15px}
+          .hi h2{font-size:21px}
+          .card{border-radius:18px}
         }
-
-        /* ── CONFIRM MODAL ── */
-        .confirm-modal { padding: 24px 20px max(32px, env(safe-area-inset-bottom)); border-radius: 24px 24px 0 0; }
-        .confirm-icon { font-size: 40px; text-align: center; margin-bottom: 12px; }
-        .confirm-title { font-family: 'Lora', serif; font-size: 17px; font-weight: 700; color: #1a3d28; text-align: center; margin-bottom: 6px; }
-        .confirm-desc { font-size: 13px; color: #7a9a85; text-align: center; margin-bottom: 20px; line-height: 1.6; }
-        .confirm-amount {
-          background: #f0fdf4; border: 1px solid #c3dfc9; border-radius: 12px;
-          padding: 14px; text-align: center; margin-bottom: 20px;
-        }
-        .confirm-amount-label { font-size: 11px; color: #7a9a85; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 4px; }
-        .confirm-amount-val { font-size: 22px; font-weight: 800; color: #1a3d28; }
-
-        /* ── RESPONSIVE ── */
-        @media (max-width: 400px) {
-          .stat-grid { grid-template-columns: 1fr 1fr; }
-          .stat-grid .stat-card:last-child { grid-column: span 2; }
-          .quick-grid { grid-template-columns: 1fr; }
-          .hero-text h2 { font-size: 17px; }
-          .stat-val { font-size: 15px; }
-        }
-        @media (min-width: 640px) {
-          .topbar { padding: 0 32px; }
-          .hero { padding: 36px 32px 80px; }
-          .content { padding: 0 24px; }
-          .bottom-nav { border-radius: 16px 16px 0 0; max-width: 640px; left: 50%; transform: translateX(-50%); }
+        @media(min-width:1024px){
+          .main{padding:0 16px}
+          .hero{padding:34px 36px 76px}
+          .ct{padding:0 28px}
         }
       `}</style>
 
-      {/* TOAST */}
       {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
 
       <div className="app">
         {/* TOPBAR */}
         <div className="topbar">
-          <div className="topbar-brand">
-            <div className="brand-dot">🌿</div>
-            <div className="brand-name">SIBATAMU<span>-SPP</span></div>
+          <div className="tb-brand">
+            <div className="tb-logo">🌿</div>
+            <div className="tb-name">SIBATAMU<span>-SPP</span></div>
           </div>
-          <button className="btn-logout" onClick={() => router.push("/api/auth/signout")}>
-            🚪 Keluar
-          </button>
+          <div className="tb-right">
+            <span className="tb-user">Halo, {student.name?.split(" ")[0]} 👋</span>
+            <button className="btn-out" onClick={() => router.push("/api/auth/signout")}>
+              <span>🚪</span> Keluar
+            </button>
+          </div>
         </div>
 
-        {/* HERO */}
-        <div className="hero">
-          <div className="hero-deco1" /><div className="hero-deco2" /><div className="hero-deco3" />
-          <div className="hero-inner">
-            <div className="avatar">{initials}</div>
-            <div className="hero-text">
-              <h2>{student.name}</h2>
-              <p>NISN: {student.nisn}</p>
-              <div className="hero-chips">
-                {student.class?.name && <span className="hero-chip">📚 {student.class.name}</span>}
-                {student.entryYear   && <span className="hero-chip">📅 {student.entryYear}</span>}
-                {unpaidBills.length > 0 && (
-                  <span className="hero-chip" style={{ background:"rgba(211,47,47,0.25)", borderColor:"rgba(211,47,47,0.3)" }}>
-                    ⚠️ {unpaidBills.length} Tagihan
-                  </span>
-                )}
+        {/* MAIN */}
+        <div className="main">
+
+          {/* SIDEBAR desktop */}
+          <nav className="snav">
+            <div className="snav-lbl">Menu</div>
+            {tabs.map(t => (
+              <button key={t.key} className={`snav-btn ${activeTab===t.key?"active":""}`} onClick={() => setActiveTab(t.key)}>
+                <span className="snav-em">{t.em}</span>{t.label}
+              </button>
+            ))}
+          </nav>
+
+          {/* PAGE */}
+          <div className="page">
+
+            {/* HERO */}
+            <div className="hero">
+              <div className="hdeco" style={{top:-50,right:-50,width:180,height:180}}/>
+              <div className="hdeco" style={{bottom:-30,left:20,width:100,height:100}}/>
+              <div className="hero-in">
+                <div className="av">{initials}</div>
+                <div className="hi">
+                  <h2>{student.name}</h2>
+                  <p>NISN: {student.nisn}</p>
+                  <div className="chips">
+                    {student.class?.name && <span className="chip">📚 {student.class.name}</span>}
+                    {student.entryYear   && <span className="chip">📅 {student.entryYear}</span>}
+                    {unpaidBills.length > 0 && <span className="chip danger">⚠️ {unpaidBills.length} Tagihan</span>}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* CONTENT */}
-        <div className="content">
+            {/* CONTENT */}
+            <div className="ct">
 
-          {/* ── BERANDA ── */}
-          {activeTab === "beranda" && (
-            <>
-              {/* Alert tagihan */}
-              {unpaidBills.length > 0 && (
-                <div className="alert">
-                  <div className="alert-icon">⚠️</div>
-                  <div className="alert-text">
-                    <strong>Ada {unpaidBills.length} tagihan belum dibayar</strong>
-                    Total {rp(totalTagihan)} — segera lunasi sebelum jatuh tempo.
+              {/* BERANDA */}
+              {activeTab==="beranda" && <>
+                {unpaidBills.length > 0 && (
+                  <div className="alert">
+                    <span style={{fontSize:17}}>⚠️</span>
+                    <div className="al-bod">
+                      <strong>Ada {unpaidBills.length} tagihan belum dibayar</strong>
+                      Total {rp(totalTagihan)} — segera lunasi sebelum jatuh tempo.
+                    </div>
+                  </div>
+                )}
+
+                <div className="sg">
+                  <div className="sc red"><div className="sc-em">🧾</div><div className="sc-lbl">Tagihan</div><div className="sc-val">{unpaidBills.length}</div><div className="sc-sub">{rp(totalTagihan)}</div></div>
+                  <div className="sc grn"><div className="sc-em">✅</div><div className="sc-lbl">Terbayar</div><div className="sc-val">{paidBills.length}</div><div className="sc-sub">{rp(totalTerbayar)}</div></div>
+                  <div className="sc"><div className="sc-em">📊</div><div className="sc-lbl">Riwayat</div><div className="sc-val">{payments.length}</div><div className="sc-sub">Transaksi</div></div>
+                </div>
+
+                <div className="card">
+                  <div className="ch"><span className="ct2">Menu Cepat</span></div>
+                  <div className="qg">
+                    {[
+                      {em:"💳",lbl:"Bayar Tagihan",sub:"Lihat semua tagihan",fn:()=>setActiveTab("tagihan")},
+                      {em:"📜",lbl:"Riwayat Bayar",sub:"Histori transaksi",fn:()=>setActiveTab("riwayat")},
+                      {em:"✏️",lbl:"Edit Profil",sub:"Perbarui data diri",fn:()=>{setActiveTab("biodata");setShowEditModal(true)}},
+                      {em:"👤",lbl:"Biodata",sub:"Lihat data lengkap",fn:()=>setActiveTab("biodata")},
+                    ].map((x,i)=>(
+                      <button key={i} className="qi" onClick={x.fn}>
+                        <span className="qi-em">{x.em}</span>
+                        <div><div className="qi-lbl">{x.lbl}</div><div className="qi-sub">{x.sub}</div></div>
+                      </button>
+                    ))}
                   </div>
                 </div>
-              )}
 
-              {/* Stat 3 kolom */}
-              <div className="stat-grid">
-                <div className="stat-card red">
-                  <div className="stat-icon">🧾</div>
-                  <div className="stat-label">Tagihan</div>
-                  <div className="stat-val">{unpaidBills.length}</div>
-                  <div className="stat-sub">{rp(totalTagihan)}</div>
-                </div>
-                <div className="stat-card green">
-                  <div className="stat-icon">✅</div>
-                  <div className="stat-label">Terbayar</div>
-                  <div className="stat-val">{paidBills.length}</div>
-                  <div className="stat-sub">{rp(totalTerbayar)}</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-icon">📊</div>
-                  <div className="stat-label">Riwayat</div>
-                  <div className="stat-val">{payments.length}</div>
-                  <div className="stat-sub">Transaksi</div>
-                </div>
-              </div>
+                {unpaidBills.length > 0 && (
+                  <div className="card">
+                    <div className="ch"><span className="ct2">Tagihan Menunggu</span><span className="bdg red">{unpaidBills.length}</span></div>
+                    {unpaidBills.slice(0,3).map(bill=>(
+                      <div key={bill.id} className="br">
+                        <div className="bi u">🧾</div>
+                        <div className="bin">
+                          <div className="bn">{bill.paymentType?.name}</div>
+                          <div className="ba u">{rp(bill.amount)}</div>
+                          {bill.dueDate && <div className="bd">Jatuh tempo: {new Date(bill.dueDate).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})}</div>}
+                        </div>
+                        <button className="btn-b" onClick={()=>setShowPayModal(bill)} disabled={loading}>Bayar</button>
+                      </div>
+                    ))}
+                    {unpaidBills.length > 3 && (
+                      <div style={{padding:"11px 17px",textAlign:"center"}}>
+                        <button className="lnk" onClick={()=>setActiveTab("tagihan")}>Lihat {unpaidBills.length-3} tagihan lainnya →</button>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-              {/* Quick actions */}
-              <div className="card">
-                <div className="card-head"><span className="card-title">Menu Cepat</span></div>
-                <div className="quick-grid">
+                {recentPayments.length > 0 && (
+                  <div className="card">
+                    <div className="ch"><span className="ct2">Pembayaran Terakhir</span><button className="lnk" onClick={()=>setActiveTab("riwayat")}>Semua →</button></div>
+                    {recentPayments.map(pay=>{
+                      const s=si(pay.status);
+                      return(
+                        <div key={pay.id} className="pr">
+                          <div className={`pi ${s.cls}`}>{s.em}</div>
+                          <div className="pif">
+                            <div className="pn">{pay.paymentType?.name}</div>
+                            <div className="pm">{pay.method} · {new Date(pay.createdAt).toLocaleDateString("id-ID",{day:"numeric",month:"short"})}</div>
+                          </div>
+                          <div className="pr-r">
+                            <div className="pa">{rp(pay.amount)}</div>
+                            <span className={`ps ${s.cls}`}>{s.label}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>}
+
+              {/* TAGIHAN */}
+              {activeTab==="tagihan" && <>
+                <div style={{height:14}}/>
+                <div className="card">
+                  <div className="ch"><span className="ct2">Belum Dibayar</span>{unpaidBills.length>0&&<span className="bdg red">{unpaidBills.length}</span>}</div>
+                  {unpaidBills.length===0
+                    ? <div className="empty"><p>🎉</p><p>Semua tagihan lunas!</p></div>
+                    : unpaidBills.map(bill=>(
+                      <div key={bill.id} className="br">
+                        <div className="bi u">🧾</div>
+                        <div className="bin">
+                          <div className="bn">{bill.paymentType?.name}</div>
+                          <div className="ba u">{rp(bill.amount)}</div>
+                          {bill.dueDate && <div className="bd">Jatuh tempo: {new Date(bill.dueDate).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})}</div>}
+                        </div>
+                        <button className="btn-b" onClick={()=>setShowPayModal(bill)} disabled={loading}>{loading?"...":"Bayar"}</button>
+                      </div>
+                    ))
+                  }
+                </div>
+                <div className="card">
+                  <div className="ch"><span className="ct2">Sudah Dibayar</span>{paidBills.length>0&&<span className="bdg grn">{paidBills.length}</span>}</div>
+                  {paidBills.length===0
+                    ? <div className="empty"><p>💳</p><p>Belum ada tagihan lunas</p></div>
+                    : paidBills.map(bill=>(
+                      <div key={bill.id} className="br">
+                        <div className="bi p">✅</div>
+                        <div className="bin"><div className="bn">{bill.paymentType?.name}</div><div className="ba p">{rp(bill.amount)}</div></div>
+                        <span className="bdg grn">Lunas</span>
+                      </div>
+                    ))
+                  }
+                </div>
+              </>}
+
+              {/* RIWAYAT */}
+              {activeTab==="riwayat" && <>
+                <div style={{height:14}}/>
+                <div className="card">
+                  <div className="ch"><span className="ct2">Riwayat Pembayaran</span></div>
+                  {payments.length===0
+                    ? <div className="empty"><p>📜</p><p>Belum ada riwayat</p></div>
+                    : payments.map(pay=>{
+                      const s=si(pay.status);
+                      return(
+                        <div key={pay.id} className="pr">
+                          <div className={`pi ${s.cls}`}>{s.em}</div>
+                          <div className="pif">
+                            <div className="pn">{pay.paymentType?.name}</div>
+                            <div className="pm">{pay.method} · {new Date(pay.createdAt).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})}</div>
+                          </div>
+                          <div className="pr-r">
+                            <div className="pa">{rp(pay.amount)}</div>
+                            <span className={`ps ${s.cls}`}>{s.label}</span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  }
+                </div>
+              </>}
+
+              {/* BIODATA */}
+              {activeTab==="biodata" && <>
+                <div style={{height:14}}/>
+                <div className="card">
+                  <div className="ch">
+                    <span className="ct2">Data Diri</span>
+                    <button className="btn-b ol" style={{padding:"7px 13px",fontSize:12}} onClick={()=>setShowEditModal(true)}>✏️ Edit</button>
+                  </div>
                   {[
-                    { icon:"💳", label:"Bayar Tagihan", sub:"Lihat semua tagihan", tab:"tagihan" },
-                    { icon:"📜", label:"Riwayat Bayar", sub:"Histori transaksi", tab:"riwayat" },
-                    { icon:"👤", label:"Edit Profil",   sub:"Perbarui data diri", tab:"biodata" },
-                    { icon:"📋", label:"Biodata",       sub:"Lihat data lengkap", tab:"biodata" },
-                  ].map(item => (
-                    <button key={item.tab + item.label} className="quick-btn" style={{ background:"#f7faf8", border:"1px solid #e4ede6", borderRadius:12 }}
-                      onClick={() => { setActiveTab(item.tab); if(item.label === "Edit Profil") setShowEditModal(true); }}>
-                      <div className="quick-btn-icon">{item.icon}</div>
-                      <div>
-                        <div className="quick-btn-label">{item.label}</div>
-                        <div className="quick-btn-sub">{item.sub}</div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Tagihan terbaru */}
-              {unpaidBills.length > 0 && (
-                <div className="card">
-                  <div className="card-head">
-                    <span className="card-title">Tagihan Menunggu</span>
-                    <span className="card-badge red">{unpaidBills.length}</span>
-                  </div>
-                  {unpaidBills.slice(0, 2).map(bill => (
-                    <div key={bill.id} className="bill-item">
-                      <div className="bill-ico unpaid">🧾</div>
-                      <div className="bill-info">
-                        <div className="bill-name">{bill.paymentType?.name}</div>
-                        <div className="bill-amount unpaid">{rp(bill.amount)}</div>
-                        {bill.dueDate && <div className="bill-due">Jatuh tempo: {new Date(bill.dueDate).toLocaleDateString("id-ID", {day:"numeric",month:"short",year:"numeric"})}</div>}
-                      </div>
-                      <button className="btn-pay" onClick={() => setShowPayModal(bill)} disabled={loading}>
-                        Bayar
-                      </button>
+                    {l:"Nama Lengkap", v:student.name},
+                    {l:"NISN",         v:student.nisn},
+                    {l:"Kelas",        v:student.class?.name},
+                    {l:"Jenis Kelamin",v:student.gender==="L"?"Laki-laki":student.gender==="P"?"Perempuan":"-"},
+                    {l:"Tempat Lahir", v:student.birthplace},
+                    {l:"Tanggal Lahir",v:student.birthdate?new Date(student.birthdate).toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"}):"-"},
+                    {l:"Alamat",       v:student.address},
+                    {l:"No HP",        v:student.phone},
+                    {l:"Email",        v:student.email},
+                    {l:"Nama Wali",    v:student.guardian},
+                    {l:"Tahun Masuk",  v:student.entryYear},
+                  ].map((x,i)=>(
+                    <div key={i} className="brow">
+                      <span className="blbl">{x.l}</span>
+                      <span className="bval">{x.v||"-"}</span>
                     </div>
                   ))}
-                  {unpaidBills.length > 2 && (
-                    <div style={{ padding:"12px 18px", textAlign:"center" }}>
-                      <button className="card-link" onClick={() => setActiveTab("tagihan")}>
-                        Lihat {unpaidBills.length - 2} tagihan lainnya →
-                      </button>
-                    </div>
-                  )}
                 </div>
-              )}
+              </>}
 
-              {/* Riwayat terbaru */}
-              {recentPayments.length > 0 && (
-                <div className="card">
-                  <div className="card-head">
-                    <span className="card-title">Pembayaran Terakhir</span>
-                    <button className="card-link" onClick={() => setActiveTab("riwayat")}>Semua →</button>
-                  </div>
-                  {recentPayments.map(pay => {
-                    const st = pay.status === "SUCCESS" ? "success" : pay.status === "FAILED" ? "failed" : "pending"
-                    const icons = { success:"✅", failed:"❌", pending:"⏳" }
-                    return (
-                      <div key={pay.id} className="pay-item">
-                        <div className={`pay-ico ${st}`}>{icons[st]}</div>
-                        <div className="pay-info">
-                          <div className="pay-name">{pay.paymentType?.name}</div>
-                          <div className="pay-meta">{pay.method} · {new Date(pay.createdAt).toLocaleDateString("id-ID",{day:"numeric",month:"short"})}</div>
-                        </div>
-                        <div className="pay-right">
-                          <div className="pay-amount">{rp(pay.amount)}</div>
-                          <span className={`pay-status ${st}`}>
-                            {st === "success" ? "Sukses" : st === "failed" ? "Gagal" : "Pending"}
-                          </span>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </>
-          )}
+              <div style={{height:8}}/>
+            </div>{/* .ct */}
+          </div>{/* .page */}
+        </div>{/* .main */}
+      </div>{/* .app */}
 
-          {/* ── TAGIHAN ── */}
-          {activeTab === "tagihan" && (
-            <>
-              <div style={{ height: 16 }} />
-              {/* Belum Bayar */}
-              <div className="card">
-                <div className="card-head">
-                  <span className="card-title">Belum Dibayar</span>
-                  {unpaidBills.length > 0 && <span className="card-badge red">{unpaidBills.length}</span>}
-                </div>
-                {unpaidBills.length === 0 ? (
-                  <div className="empty"><div className="empty-icon">🎉</div><p>Semua tagihan lunas!</p></div>
-                ) : unpaidBills.map(bill => (
-                  <div key={bill.id} className="bill-item">
-                    <div className="bill-ico unpaid">🧾</div>
-                    <div className="bill-info">
-                      <div className="bill-name">{bill.paymentType?.name}</div>
-                      <div className="bill-amount unpaid">{rp(bill.amount)}</div>
-                      {bill.dueDate && <div className="bill-due">Jatuh tempo: {new Date(bill.dueDate).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})}</div>}
-                    </div>
-                    <button className="btn-pay" onClick={() => setShowPayModal(bill)} disabled={loading}>
-                      {loading ? "..." : "Bayar"}
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              {/* Sudah Bayar */}
-              <div className="card">
-                <div className="card-head">
-                  <span className="card-title">Sudah Dibayar</span>
-                  {paidBills.length > 0 && <span className="card-badge">{paidBills.length}</span>}
-                </div>
-                {paidBills.length === 0 ? (
-                  <div className="empty"><div className="empty-icon">💳</div><p>Belum ada pembayaran</p></div>
-                ) : paidBills.map(bill => (
-                  <div key={bill.id} className="bill-item">
-                    <div className="bill-ico paid">✅</div>
-                    <div className="bill-info">
-                      <div className="bill-name">{bill.paymentType?.name}</div>
-                      <div className="bill-amount paid">{rp(bill.amount)}</div>
-                    </div>
-                    <span style={{ fontSize:11, fontWeight:700, color:"#2e6b3e", background:"#edf7ef", padding:"4px 10px", borderRadius:20 }}>Lunas</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* ── RIWAYAT ── */}
-          {activeTab === "riwayat" && (
-            <>
-              <div style={{ height: 16 }} />
-              <div className="card">
-                <div className="card-head"><span className="card-title">Riwayat Pembayaran</span></div>
-                {payments.length === 0 ? (
-                  <div className="empty"><div className="empty-icon">📜</div><p>Belum ada riwayat</p></div>
-                ) : payments.map(pay => {
-                  const st = pay.status === "SUCCESS" ? "success" : pay.status === "FAILED" ? "failed" : "pending"
-                  const icons = { success:"✅", failed:"❌", pending:"⏳" }
-                  return (
-                    <div key={pay.id} className="pay-item">
-                      <div className={`pay-ico ${st}`}>{icons[st]}</div>
-                      <div className="pay-info">
-                        <div className="pay-name">{pay.paymentType?.name}</div>
-                        <div className="pay-meta">
-                          {pay.method} · {new Date(pay.createdAt).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})}
-                        </div>
-                      </div>
-                      <div className="pay-right">
-                        <div className="pay-amount">{rp(pay.amount)}</div>
-                        <span className={`pay-status ${st}`}>
-                          {st === "success" ? "Sukses" : st === "failed" ? "Gagal" : "Pending"}
-                        </span>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </>
-          )}
-
-          {/* ── BIODATA ── */}
-          {activeTab === "biodata" && (
-            <>
-              <div style={{ height: 16 }} />
-              <div className="card">
-                <div className="card-head">
-                  <span className="card-title">Data Diri</span>
-                  <button className="btn-pay outline" style={{ padding:"7px 14px", fontSize:12 }} onClick={() => setShowEditModal(true)}>✏️ Edit</button>
-                </div>
-                {[
-                  { label: "Nama Lengkap", val: student.name },
-                  { label: "NISN",         val: student.nisn },
-                  { label: "Kelas",        val: student.class?.name },
-                  { label: "Jenis Kelamin",val: student.gender === "L" ? "Laki-laki" : student.gender === "P" ? "Perempuan" : "-" },
-                  { label: "Tempat Lahir", val: student.birthplace },
-                  { label: "Tanggal Lahir",val: student.birthdate ? new Date(student.birthdate).toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"}) : "-" },
-                  { label: "Alamat",       val: student.address },
-                  { label: "No HP",        val: student.phone },
-                  { label: "Email",        val: student.email },
-                  { label: "Nama Wali",    val: student.guardian },
-                  { label: "Tahun Masuk",  val: student.entryYear },
-                ].map((item, i) => (
-                  <div key={i} className="bio-row">
-                    <span className="bio-label">{item.label}</span>
-                    <span className="bio-val">{item.val || "-"}</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          <div style={{ height: 8 }} />
-        </div>
-      </div>
-
-      {/* ── BOTTOM NAV ── */}
-      <div className="bottom-nav">
-        {tabs.map(t => (
-          <button key={t.key} className={`nav-btn ${activeTab === t.key ? "active" : ""}`} onClick={() => setActiveTab(t.key)}>
-            <div className="nav-icon">{t.icon}</div>
-            <div className="nav-label">{t.label}</div>
-            <div className="nav-dot" />
+      {/* BOTTOM NAV — mobile */}
+      <div className="bnav">
+        {tabs.map(t=>(
+          <button key={t.key} className={`nb ${activeTab===t.key?"active":""}`} onClick={()=>setActiveTab(t.key)}>
+            <span className="nb-em">{t.em}</span>
+            <span className="nb-lbl">{t.label}</span>
+            <div className="nb-dot"/>
           </button>
         ))}
       </div>
 
-      {/* ── MODAL KONFIRMASI BAYAR ── */}
+      {/* MODAL BAYAR */}
       {showPayModal && (
-        <div className="overlay" onClick={e => { if(e.target === e.currentTarget) setShowPayModal(null) }}>
-          <div className="modal confirm-modal">
-            <div className="modal-handle" />
-            <div className="confirm-icon">💳</div>
-            <div className="confirm-title">Konfirmasi Pembayaran</div>
-            <div className="confirm-desc">
-              Kamu akan membayar tagihan berikut.<br />Kamu akan diarahkan ke halaman pembayaran.
+        <div className="ov" onClick={e=>{if(e.target===e.currentTarget)setShowPayModal(null)}}>
+          <div className="mo">
+            <div className="mh"/>
+            <div className="cico">💳</div>
+            <div className="ctit">Konfirmasi Pembayaran</div>
+            <div className="cdesc">Kamu akan diarahkan ke halaman pembayaran untuk menyelesaikan transaksi.</div>
+            <div className="cbox">
+              <div className="cbl">{showPayModal.paymentType?.name}</div>
+              <div className="cbv">{rp(showPayModal.amount)}</div>
+              {showPayModal.dueDate && <div className="cbd">Jatuh tempo: {new Date(showPayModal.dueDate).toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"})}</div>}
             </div>
-            <div className="confirm-amount">
-              <div className="confirm-amount-label">{showPayModal.paymentType?.name}</div>
-              <div className="confirm-amount-val">{rp(showPayModal.amount)}</div>
-              {showPayModal.dueDate && (
-                <div style={{ fontSize:11, color:"#9ab5a3", marginTop:4 }}>
-                  Jatuh tempo: {new Date(showPayModal.dueDate).toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"})}
-                </div>
-              )}
-            </div>
-            <div className="modal-actions">
-              <button className="btn-cancel" onClick={() => setShowPayModal(null)}>Batal</button>
-              <button className="btn-save" onClick={() => handleBayar(showPayModal)} disabled={loading}>
-                {loading ? "Memproses..." : "Bayar Sekarang"}
+            <div className="mac">
+              <button className="btn-cn" onClick={()=>setShowPayModal(null)}>Batal</button>
+              <button className="btn-sv" onClick={()=>handleBayar(showPayModal)} disabled={loading}>
+                {loading?"Memproses...":"Bayar Sekarang"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── MODAL EDIT PROFIL ── */}
+      {/* MODAL EDIT */}
       {showEditModal && (
-        <div className="overlay" onClick={e => { if(e.target === e.currentTarget) setShowEditModal(false) }}>
-          <div className="modal">
-            <div className="modal-handle" />
-            <div className="modal-title">Edit Profil</div>
+        <div className="ov" onClick={e=>{if(e.target===e.currentTarget)setShowEditModal(false)}}>
+          <div className="mo">
+            <div className="mh"/>
+            <div className="mt">Edit Profil</div>
             <form onSubmit={handleEditSubmit}>
               <div className="field">
                 <label>No HP</label>
                 <input placeholder="08xxxxxxxxxx" value={editForm.phone}
-                  onChange={e => setEditForm(p => ({ ...p, phone: e.target.value.replace(/\D/g,"") }))} />
+                  onChange={e=>setEditForm(p=>({...p,phone:e.target.value.replace(/\D/g,"")}))}/>
               </div>
               <div className="field">
                 <label>Email</label>
                 <input type="email" placeholder="email@gmail.com" value={editForm.email}
-                  onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} />
+                  onChange={e=>setEditForm(p=>({...p,email:e.target.value}))}/>
               </div>
               <div className="field">
                 <label>Alamat</label>
                 <textarea placeholder="Alamat lengkap" value={editForm.address}
-                  onChange={e => setEditForm(p => ({ ...p, address: e.target.value }))} />
+                  onChange={e=>setEditForm(p=>({...p,address:e.target.value}))}/>
               </div>
-              <div className="modal-actions">
-                <button type="button" className="btn-cancel" onClick={() => setShowEditModal(false)}>Batal</button>
-                <button type="submit" className="btn-save" disabled={editLoading}>
-                  {editLoading ? "Menyimpan..." : "Simpan"}
+              <div className="mac">
+                <button type="button" className="btn-cn" onClick={()=>setShowEditModal(false)}>Batal</button>
+                <button type="submit" className="btn-sv" disabled={editLoading}>
+                  {editLoading?"Menyimpan...":"Simpan"}
                 </button>
               </div>
             </form>
