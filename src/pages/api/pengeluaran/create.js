@@ -6,6 +6,7 @@ export default async function handler(req, res) {
   try {
     const { title, amount, note, date, receiptUrl } = req.body
     if (!title || !amount || !date) return res.status(400).json({ message: "Data tidak lengkap" })
+
     const item = await prisma.expense.create({
       data: {
         title,
@@ -13,7 +14,7 @@ export default async function handler(req, res) {
         note: note || null,
         date: new Date(date),
         receiptUrl: receiptUrl || null,
-      },
+      }
     })
     return res.status(200).json(item)
   } catch (e) {
