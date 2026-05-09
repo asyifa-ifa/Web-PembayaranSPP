@@ -207,7 +207,9 @@ export default function PengeluaranList() {
             {months.map((m, i) => <option key={i+1} value={i+1}>{m}</option>)}
           </select>
           <select className="filter-select" value={filterYear} onChange={e => setFilterYear(e.target.value)}>
-            {[2023,2024,2025,2026].map(y => <option key={y} value={y}>{y}</option>)}
+            {Array.from({ length: 7 }, (_, i) => new Date().getFullYear() - 2 + i).map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
           </select>
           <div className="filter-result">{months[filterMonth-1]} {filterYear}</div>
         </div>

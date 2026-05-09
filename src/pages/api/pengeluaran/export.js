@@ -1,13 +1,9 @@
 // pages/api/pengeluaran/export.js
-// Generates PDF or Excel report for pengeluaran.
-// Query params:
-//   format = "pdf" | "excel"
-//   month  = 1-12
-//   year   = e.g. 2025
+// Pure JS export — works on Vercel serverless
+// npm install pdfkit exceljs
 
 import prisma from "@/lib/prisma"
 
-// ── helpers ────────────────────────────────────────────────────────────────
 const MONTHS_ID = [
   "", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
   "Juli", "Agustus", "September", "Oktober", "November", "Desember",
@@ -23,262 +19,270 @@ function fmtDate(d) {
   })
 }
 
-// ── PDF generation (ReportLab via child_process) ────────────────────────────
+// ── PDF via pdfkit ──────────────────────────────────────────────────────────
 async function generatePDF(data, month, year) {
-  const { execSync } = require("child_process")
-  const fs = require("fs")
-  const path = require("path")
-  const os = require("os")
-
-  const tmpDir = os.tmpdir()
-  const pyFile = path.join(tmpDir, `exp_${Date.now()}.py`)
-  const outFile = path.join(tmpDir, `pengeluaran_${month}_${year}_${Date.now()}.pdf`)
-
-  const total = data.reduce((s, d) => s + d.amount, 0)
+  const PDFDocument = (await import("pdfkit")).default
   const monthName = MONTHS_ID[parseInt(month)]
+  const total = data.reduce((s, d) => s + d.amount, 0)
 
-  // Build row data as Python literal
-  const rows = data.map((item, i) =>
-    `(${i + 1}, "${fmtDate(item.date)}", "${item.title.replace(/"/g, "\\\"")}", "${(item.note || "-").replace(/"/g, "\\\"")}", "${rp(item.amount)}")`
-  ).join(",\n    ")
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 40, size: "A4" })
+    const chunks = []
+    doc.on("data", c => chunks.push(c))
+    doc.on("end", () => resolve(Buffer.concat(chunks)))
+    doc.on("error", reject)
 
-  const py = `
-from reportlab.lib.pagesizes import A4
-from reportlab.lib import colors
-from reportlab.lib.units import cm
-from reportlab.platypus import (
-    SimpleDocTemplate, Table, TableStyle, Paragraph,
-    Spacer, HRFlowable,
-)
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
+    const pageW = doc.page.width
+    const contentW = pageW - 80 // margin kiri kanan 40
 
-PAGE_W, PAGE_H = A4
-doc = SimpleDocTemplate(
-    "${outFile}",
-    pagesize=A4,
-    rightMargin=1.8*cm, leftMargin=1.8*cm,
-    topMargin=1.8*cm, bottomMargin=1.8*cm,
-)
+    // ── Header banner ──
+    doc.rect(0, 0, pageW, 80).fill("#6366f1")
+    doc.fillColor("white")
+       .fontSize(20).font("Helvetica-Bold")
+       .text("LAPORAN PENGELUARAN", 40, 18)
+    doc.fontSize(11).font("Helvetica")
+       .text(`Periode: ${monthName} ${year}`, 40, 44)
+    doc.fontSize(10)
+       .text(`Dicetak: ${new Date().toLocaleDateString("id-ID", { day:"2-digit", month:"long", year:"numeric" })}`, 40, 60)
 
-styles = getSampleStyleSheet()
-PURPLE = colors.HexColor("#6366f1")
-DARK   = colors.HexColor("#1e293b")
-GRAY   = colors.HexColor("#64748b")
-LIGHT  = colors.HexColor("#f8fafc")
-RED    = colors.HexColor("#dc2626")
+    let y = 100
 
-title_style   = ParagraphStyle("title",   fontSize=18, textColor=DARK,   alignment=TA_LEFT, fontName="Helvetica-Bold", spaceAfter=2)
-sub_style     = ParagraphStyle("sub",     fontSize=10, textColor=GRAY,   alignment=TA_LEFT, fontName="Helvetica",      spaceAfter=0)
-total_style   = ParagraphStyle("total",   fontSize=11, textColor=DARK,   alignment=TA_RIGHT, fontName="Helvetica-Bold")
-caption_style = ParagraphStyle("caption", fontSize=8,  textColor=GRAY,   alignment=TA_LEFT, fontName="Helvetica")
+    // ── Summary box ──
+    const summaryBoxH = 54
+    doc.roundedRect(40, y, contentW, summaryBoxH, 8).fill("#f5f3ff")
+    doc.fillColor("#6366f1").fontSize(11).font("Helvetica-Bold")
+       .text("Total Pengeluaran", 60, y + 10)
+    doc.fillColor("#1e293b").fontSize(18).font("Helvetica-Bold")
+       .text(rp(total), 60, y + 26)
+    doc.fillColor("#94a3b8").fontSize(9).font("Helvetica")
+       .text(`${data.length} transaksi`, pageW - 130, y + 28)
 
-rows_data = [
-    ("No", "Tanggal", "Keterangan", "Catatan", "Jumlah"),
-    ${rows || ''}
-]
+    y += summaryBoxH + 20
 
-# Empty state row
-if len(rows_data) == 1:
-    rows_data.append(("", "Tidak ada data", "", "", ""))
+    // ── Table header ──
+    const colX  = [40, 90, 185, 355, 460]
+    const colW  = [45, 90, 165, 100, 95]
+    const headers = ["No", "Tanggal", "Keterangan", "Catatan", "Jumlah"]
 
-col_widths = [1*cm, 3.5*cm, 5.5*cm, 4*cm, 3.2*cm]
+    doc.rect(40, y, contentW, 24).fill("#6366f1")
+    headers.forEach((h, i) => {
+      doc.fillColor("white").fontSize(9).font("Helvetica-Bold")
+         .text(h, colX[i] + 4, y + 7, { width: colW[i] - 8,
+           align: i === 4 ? "right" : i === 0 ? "center" : "left" })
+    })
+    y += 24
 
-tbl = Table(rows_data, colWidths=col_widths, repeatRows=1)
-tbl.setStyle(TableStyle([
-    # Header
-    ("BACKGROUND",   (0,0), (-1,0), PURPLE),
-    ("TEXTCOLOR",    (0,0), (-1,0), colors.white),
-    ("FONTNAME",     (0,0), (-1,0), "Helvetica-Bold"),
-    ("FONTSIZE",     (0,0), (-1,0), 9),
-    ("ALIGN",        (0,0), (-1,0), "CENTER"),
-    ("TOPPADDING",   (0,0), (-1,0), 8),
-    ("BOTTOMPADDING",(0,0), (-1,0), 8),
-    # Data rows
-    ("FONTNAME",  (0,1), (-1,-1), "Helvetica"),
-    ("FONTSIZE",  (0,1), (-1,-1), 8.5),
-    ("ALIGN",     (0,1), (0,-1),  "CENTER"),   # No
-    ("ALIGN",     (-1,1),(-1,-1), "RIGHT"),    # Jumlah
-    ("TEXTCOLOR", (-1,1),(-1,-1), RED),
-    ("TOPPADDING",    (0,1), (-1,-1), 6),
-    ("BOTTOMPADDING", (0,1), (-1,-1), 6),
-    # Alternating rows
-    ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.white, LIGHT]),
-    # Grid
-    ("LINEBELOW", (0,0), (-1,0), 0.5, PURPLE),
-    ("LINEBELOW", (0,1), (-1,-1), 0.3, colors.HexColor("#e2e8f0")),
-    ("LEFTPADDING",  (0,0), (-1,-1), 6),
-    ("RIGHTPADDING", (0,0), (-1,-1), 6),
-    # Rounded feel on outer box
-    ("BOX", (0,0), (-1,-1), 0.5, colors.HexColor("#e2e8f0")),
-]))
+    // ── Table rows ──
+    if (data.length === 0) {
+      doc.rect(40, y, contentW, 28).fill("#f8fafc")
+      doc.fillColor("#94a3b8").fontSize(9).font("Helvetica")
+         .text("Tidak ada data pengeluaran pada periode ini", 40, y + 9,
+           { width: contentW, align: "center" })
+      y += 28
+    } else {
+      data.forEach((item, i) => {
+        const rowH = 26
+        const bg = i % 2 === 0 ? "#ffffff" : "#f8fafc"
+        doc.rect(40, y, contentW, rowH).fill(bg)
 
-story = [
-    Paragraph("Laporan Pengeluaran", title_style),
-    Paragraph(f"Periode: ${monthName} ${year}  ·  Total: ${rp(total)}", sub_style),
-    Spacer(1, 0.4*cm),
-    HRFlowable(width="100%", thickness=1.5, color=PURPLE, spaceAfter=0.3*cm),
-    tbl,
-    Spacer(1, 0.4*cm),
-    Paragraph("Total Pengeluaran: ${rp(total)}", total_style),
-    Spacer(1, 0.3*cm),
-    Paragraph(f"Dicetak pada: {__import__('datetime').datetime.now().strftime('%d %B %Y, %H:%M')}", caption_style),
-]
+        // garis bawah tipis
+        doc.moveTo(40, y + rowH).lineTo(40 + contentW, y + rowH)
+           .strokeColor("#e2e8f0").lineWidth(0.5).stroke()
 
-doc.build(story)
-print("OK")
-`
+        const vals = [
+          String(i + 1),
+          fmtDate(item.date),
+          item.title,
+          item.note || "—",
+          rp(item.amount),
+        ]
+        vals.forEach((v, ci) => {
+          const isAmount = ci === 4
+          const isNo = ci === 0
+          doc.fillColor(isAmount ? "#dc2626" : "#334155")
+             .fontSize(8.5).font(isAmount ? "Helvetica-Bold" : "Helvetica")
+             .text(v, colX[ci] + 4, y + 8, {
+               width: colW[ci] - 8,
+               align: isAmount ? "right" : isNo ? "center" : "left",
+               ellipsis: true,
+             })
+        })
+        y += rowH
 
-  fs.writeFileSync(pyFile, py)
-  try {
-    execSync(`python3 "${pyFile}"`, { timeout: 15000 })
-  } finally {
-    fs.unlinkSync(pyFile)
-  }
+        // New page check
+        if (y > doc.page.height - 100 && i < data.length - 1) {
+          doc.addPage()
+          y = 40
+        }
+      })
+    }
 
-  const buf = fs.readFileSync(outFile)
-  fs.unlinkSync(outFile)
-  return buf
+    // ── Total row ──
+    doc.rect(40, y, contentW, 28).fill("#6366f1")
+    doc.fillColor("white").fontSize(10).font("Helvetica-Bold")
+       .text("TOTAL", 44, y + 8)
+       .text(rp(total), colX[4] + 4, y + 8,
+         { width: colW[4] - 8, align: "right" })
+    y += 28
+
+    // ── Footer ──
+    y += 20
+    doc.fillColor("#94a3b8").fontSize(8).font("Helvetica")
+       .text("Dokumen ini digenerate otomatis oleh Sistem SIBATAMU-SPP", 40, y,
+         { align: "center", width: contentW })
+
+    doc.end()
+  })
 }
 
-// ── Excel generation (openpyxl via child_process) ──────────────────────────
+// ── Excel via exceljs ───────────────────────────────────────────────────────
 async function generateExcel(data, month, year) {
-  const { execSync } = require("child_process")
-  const fs = require("fs")
-  const path = require("path")
-  const os = require("os")
+  const ExcelJS = (await import("exceljs")).default
+  const wb = new ExcelJS.Workbook()
+  wb.creator = "SIBATAMU-SPP"
+  wb.created = new Date()
 
-  const tmpDir = os.tmpdir()
-  const pyFile = path.join(tmpDir, `exp_xl_${Date.now()}.py`)
-  const outFile = path.join(tmpDir, `pengeluaran_${month}_${year}_${Date.now()}.xlsx`)
+  const ws = wb.addWorksheet("Pengeluaran", {
+    pageSetup: { paperSize: 9, orientation: "portrait" },
+  })
 
-  const total = data.reduce((s, d) => s + d.amount, 0)
   const monthName = MONTHS_ID[parseInt(month)]
+  const total = data.reduce((s, d) => s + d.amount, 0)
 
-  const rows = data.map((item, i) =>
-    `[${i + 1}, "${fmtDate(item.date)}", "${item.title.replace(/"/g, "\\\"")}", "${(item.note || "").replace(/"/g, "\\\"")}", ${item.amount}]`
-  ).join(",\n    ")
+  const PURPLE = "FF6366F1"
+  const LIGHT  = "FFF8FAFC"
+  const RED    = "FFDC2626"
+  const DARK   = "FF1E293B"
+  const GRAY   = "FF94A3B8"
+  const WHITE  = "FFFFFFFF"
 
-  const py = `
-import openpyxl
-from openpyxl.styles import (
-    Font, PatternFill, Alignment, Border, Side, numbers
-)
-from openpyxl.utils import get_column_letter
-
-wb = openpyxl.Workbook()
-ws = wb.active
-ws.title = "Pengeluaran"
-
-PURPLE = "6366F1"
-LIGHT  = "F8FAFC"
-RED    = "DC2626"
-DARK   = "1E293B"
-GRAY   = "64748B"
-BORDER_COLOR = "E2E8F0"
-
-thin = Side(style="thin", color=BORDER_COLOR)
-border = Border(left=thin, right=thin, top=thin, bottom=thin)
-
-def cell_style(ws, row, col, value, bold=False, color="000000", bg=None,
-               align="left", num_fmt=None, font_size=10):
-    c = ws.cell(row=row, column=col, value=value)
-    c.font = Font(name="Arial", bold=bold, color=color, size=font_size)
-    if bg:
-        c.fill = PatternFill("solid", fgColor=bg)
-    c.alignment = Alignment(horizontal=align, vertical="center", wrap_text=True)
-    c.border = border
-    if num_fmt:
-        c.number_format = num_fmt
-    return c
-
-# ── Title block ──────────────────────────────────────────────────────────────
-ws.merge_cells("A1:E1")
-t = ws["A1"]
-t.value = "LAPORAN PENGELUARAN MADRASAH"
-t.font = Font(name="Arial", bold=True, size=14, color="FFFFFF")
-t.fill = PatternFill("solid", fgColor=PURPLE)
-t.alignment = Alignment(horizontal="center", vertical="center")
-ws.row_dimensions[1].height = 28
-
-ws.merge_cells("A2:E2")
-s = ws["A2"]
-s.value = f"Periode: ${monthName} ${year}"
-s.font = Font(name="Arial", size=10, color=GRAY)
-s.alignment = Alignment(horizontal="center", vertical="center")
-ws.row_dimensions[2].height = 18
-
-ws.merge_cells("A3:E3")
-ws["A3"].value = ""
-ws.row_dimensions[3].height = 8
-
-# ── Header row ───────────────────────────────────────────────────────────────
-headers = ["No", "Tanggal", "Keterangan", "Catatan", "Jumlah (Rp)"]
-for col, h in enumerate(headers, 1):
-    cell_style(ws, 4, col, h, bold=True, color="FFFFFF", bg=PURPLE,
-               align="center", font_size=10)
-ws.row_dimensions[4].height = 22
-
-# ── Data rows ────────────────────────────────────────────────────────────────
-rows_data = [
-    ${rows || ''}
-]
-
-for r_idx, row in enumerate(rows_data):
-    excel_row = 5 + r_idx
-    bg = None if r_idx % 2 == 0 else LIGHT
-    for col_idx, val in enumerate(row, 1):
-        align = "center" if col_idx == 1 else ("right" if col_idx == 5 else "left")
-        color = RED if col_idx == 5 else DARK
-        num_fmt = '#,##0' if col_idx == 5 else None
-        cell_style(ws, excel_row, col_idx, val, color=color, bg=bg,
-                   align=align, num_fmt=num_fmt)
-    ws.row_dimensions[excel_row].height = 18
-
-last_data_row = 4 + len(rows_data)
-
-# ── Total row ────────────────────────────────────────────────────────────────
-total_row = last_data_row + 1
-ws.merge_cells(f"A{total_row}:D{total_row}")
-cell_style(ws, total_row, 1, "TOTAL", bold=True, color="FFFFFF", bg=PURPLE, align="right")
-cell_style(ws, total_row, 5, ${total}, bold=True, color="FFFFFF", bg=PURPLE,
-           align="right", num_fmt='#,##0')
-ws.row_dimensions[total_row].height = 22
-
-# ── Footer ───────────────────────────────────────────────────────────────────
-footer_row = total_row + 2
-ws.merge_cells(f"A{footer_row}:E{footer_row}")
-import datetime
-f = ws[f"A{footer_row}"]
-f.value = f"Dicetak: {datetime.datetime.now().strftime('%d %B %Y, %H:%M')}"
-f.font = Font(name="Arial", size=8, color=GRAY, italic=True)
-f.alignment = Alignment(horizontal="right")
-
-# ── Column widths ────────────────────────────────────────────────────────────
-widths = [5, 18, 32, 28, 16]
-for i, w in enumerate(widths, 1):
-    ws.column_dimensions[get_column_letter(i)].width = w
-
-# ── Freeze pane ──────────────────────────────────────────────────────────────
-ws.freeze_panes = "A5"
-
-wb.save("${outFile}")
-print("OK")
-`
-
-  fs.writeFileSync(pyFile, py)
-  try {
-    execSync(`python3 "${pyFile}"`, { timeout: 15000 })
-  } finally {
-    fs.unlinkSync(pyFile)
+  const borderThin = {
+    top: { style: "thin", color: { argb: "FFE2E8F0" } },
+    bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
+    left: { style: "thin", color: { argb: "FFE2E8F0" } },
+    right: { style: "thin", color: { argb: "FFE2E8F0" } },
   }
 
-  const buf = fs.readFileSync(outFile)
-  fs.unlinkSync(outFile)
+  // Col widths
+  ws.columns = [
+    { key: "no",     width: 6  },
+    { key: "date",   width: 20 },
+    { key: "title",  width: 34 },
+    { key: "note",   width: 28 },
+    { key: "amount", width: 18 },
+  ]
+
+  // ── Title row ──
+  ws.mergeCells("A1:E1")
+  const titleCell = ws.getCell("A1")
+  titleCell.value = "LAPORAN PENGELUARAN MADRASAH"
+  titleCell.font = { name: "Arial", bold: true, size: 14, color: { argb: WHITE } }
+  titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: PURPLE } }
+  titleCell.alignment = { horizontal: "center", vertical: "middle" }
+  ws.getRow(1).height = 30
+
+  // ── Subtitle row ──
+  ws.mergeCells("A2:E2")
+  const subCell = ws.getCell("A2")
+  subCell.value = `Periode: ${monthName} ${year}  |  Total: ${rp(total)}  |  ${data.length} Transaksi`
+  subCell.font = { name: "Arial", size: 10, color: { argb: GRAY } }
+  subCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF5F3FF" } }
+  subCell.alignment = { horizontal: "center", vertical: "middle" }
+  ws.getRow(2).height = 20
+
+  // ── Spacer ──
+  ws.mergeCells("A3:E3")
+  ws.getRow(3).height = 6
+
+  // ── Header row ──
+  const headers = ["No", "Tanggal", "Keterangan", "Catatan", "Jumlah (Rp)"]
+  const headerRow = ws.getRow(4)
+  headerRow.height = 24
+  headers.forEach((h, i) => {
+    const cell = headerRow.getCell(i + 1)
+    cell.value = h
+    cell.font = { name: "Arial", bold: true, size: 10, color: { argb: WHITE } }
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: PURPLE } }
+    cell.alignment = {
+      horizontal: i === 0 ? "center" : i === 4 ? "right" : "left",
+      vertical: "middle",
+    }
+    cell.border = borderThin
+  })
+
+  // ── Data rows ──
+  if (data.length === 0) {
+    ws.mergeCells("A5:E5")
+    const emptyCell = ws.getCell("A5")
+    emptyCell.value = "Tidak ada data pengeluaran pada periode ini"
+    emptyCell.font = { name: "Arial", size: 10, color: { argb: GRAY }, italic: true }
+    emptyCell.alignment = { horizontal: "center", vertical: "middle" }
+    ws.getRow(5).height = 24
+  } else {
+    data.forEach((item, i) => {
+      const rowNum = 5 + i
+      const row = ws.getRow(rowNum)
+      row.height = 20
+      const bg = i % 2 === 0 ? "FFFFFFFF" : "FFF8FAFC"
+
+      const vals = [i + 1, fmtDate(item.date), item.title, item.note || "", item.amount]
+      vals.forEach((v, ci) => {
+        const cell = row.getCell(ci + 1)
+        cell.value = v
+        cell.font = {
+          name: "Arial", size: 9.5,
+          color: { argb: ci === 4 ? RED : DARK },
+          bold: ci === 4,
+        }
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bg } }
+        cell.alignment = {
+          horizontal: ci === 0 ? "center" : ci === 4 ? "right" : "left",
+          vertical: "middle", wrapText: true,
+        }
+        cell.border = borderThin
+        if (ci === 4) cell.numFmt = '"Rp "#,##0'
+      })
+    })
+  }
+
+  // ── Total row ──
+  const totalRowNum = 5 + Math.max(data.length, 1)
+  ws.mergeCells(`A${totalRowNum}:D${totalRowNum}`)
+  const totalLabelCell = ws.getCell(`A${totalRowNum}`)
+  totalLabelCell.value = "TOTAL PENGELUARAN"
+  totalLabelCell.font = { name: "Arial", bold: true, size: 11, color: { argb: WHITE } }
+  totalLabelCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: PURPLE } }
+  totalLabelCell.alignment = { horizontal: "right", vertical: "middle" }
+  totalLabelCell.border = borderThin
+
+  const totalValCell = ws.getCell(`E${totalRowNum}`)
+  totalValCell.value = total
+  totalValCell.numFmt = '"Rp "#,##0'
+  totalValCell.font = { name: "Arial", bold: true, size: 11, color: { argb: WHITE } }
+  totalValCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: PURPLE } }
+  totalValCell.alignment = { horizontal: "right", vertical: "middle" }
+  totalValCell.border = borderThin
+  ws.getRow(totalRowNum).height = 24
+
+  // ── Footer ──
+  const footerRow = totalRowNum + 2
+  ws.mergeCells(`A${footerRow}:E${footerRow}`)
+  const footerCell = ws.getCell(`A${footerRow}`)
+  footerCell.value = `Dicetak: ${new Date().toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" })} — SIBATAMU-SPP`
+  footerCell.font = { name: "Arial", size: 8, color: { argb: GRAY }, italic: true }
+  footerCell.alignment = { horizontal: "right" }
+
+  // Freeze header
+  ws.views = [{ state: "frozen", ySplit: 4 }]
+
+  // Auto filter
+  ws.autoFilter = { from: "A4", to: "E4" }
+
+  const buf = await wb.xlsx.writeBuffer()
   return buf
 }
 
-// ── Handler ────────────────────────────────────────────────────────────────
+// ── Handler ─────────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).end()
 
@@ -287,7 +291,7 @@ export default async function handler(req, res) {
   const y = parseInt(year) || new Date().getFullYear()
 
   const start = new Date(y, m - 1, 1)
-  const end = new Date(y, m, 0, 23, 59, 59)
+  const end   = new Date(y, m, 0, 23, 59, 59)
 
   try {
     const data = await prisma.expense.findMany({
@@ -296,20 +300,22 @@ export default async function handler(req, res) {
     })
 
     const monthName = MONTHS_ID[m]
-    const filename = `Pengeluaran_${monthName}_${y}`
+    const filename  = `Pengeluaran_${monthName}_${y}`
 
     if (format === "excel") {
       const buf = await generateExcel(data, m, y)
-      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+      res.setHeader("Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
       res.setHeader("Content-Disposition", `attachment; filename="${filename}.xlsx"`)
       return res.send(buf)
     }
 
-    // default: PDF
+    // default → PDF
     const buf = await generatePDF(data, m, y)
     res.setHeader("Content-Type", "application/pdf")
     res.setHeader("Content-Disposition", `attachment; filename="${filename}.pdf"`)
     return res.send(buf)
+
   } catch (e) {
     console.error("Export error:", e)
     return res.status(500).json({ message: "Gagal membuat laporan: " + e.message })

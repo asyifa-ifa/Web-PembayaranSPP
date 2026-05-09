@@ -17,16 +17,13 @@ export default async function handler(req, res) {
 
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const nextMonth  = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
     // Total pemasukan bulan ini
     const totalPayments = await prisma.payment.aggregate({
       _sum: { amount: true },
       where: {
-        createdAt: {
-          gte: monthStart,
-          lt: nextMonth,
-        },
+        createdAt: { gte: monthStart, lt: nextMonth },
         status: "SUCCESS",
       },
     });
@@ -34,10 +31,10 @@ export default async function handler(req, res) {
     // Total santri
     const totalSantri = await prisma.student.count();
 
-    // 🔥 Ambil semua jenis pembayaran
+    // Semua jenis pembayaran
     const paymentTypes = await prisma.paymentType.findMany();
 
-    // 🔥 Hitung total per jenis pembayaran
+    // Total per jenis pembayaran
     const totalsByType = await Promise.all(
       paymentTypes.map(async (type) => {
         const total = await prisma.payment.aggregate({
@@ -45,31 +42,37 @@ export default async function handler(req, res) {
           where: {
             paymentTypeId: type.id,
             status: "SUCCESS",
-            createdAt: {
-              gte: monthStart,
-              lt: nextMonth,
-            },
+            createdAt: { gte: monthStart, lt: nextMonth },
           },
         });
-
         return {
-          id: type.id,
-          name: type.name,
+          id:    type.id,
+          name:  type.name,
           total: total._sum.amount ?? 0,
         };
       })
     );
 
+    // ✅ TAMBAHAN: Total pengeluaran bulan ini
+    const totalPengeluaran = await prisma.expense.aggregate({
+      _sum: { amount: true },
+      where: {
+        date: { gte: monthStart, lt: nextMonth },
+      },
+    });
+
     return res.status(200).json({
-      bulan: `${now.getMonth() + 1}-${now.getFullYear()}`,
-      totalPayments: totalPayments._sum.amount ?? 0,
+      bulan:            `${now.getMonth() + 1}-${now.getFullYear()}`,
+      totalPayments:    totalPayments._sum.amount    ?? 0,
       totalSantri,
       totalsByType,
+      totalPengeluaran: totalPengeluaran._sum.amount ?? 0, // ✅ baru
     });
+
   } catch (error) {
     console.error("Dashboard Summary Error:", error);
     return res.status(500).json({
-      error: "Internal Server Error",
+      error:  "Internal Server Error",
       detail: error.message,
     });
   }
