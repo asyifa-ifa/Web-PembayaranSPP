@@ -185,6 +185,7 @@ model Expense {
   amount    Int
   note      String?
   date      DateTime
+  receiptUrl String?
   createdAt DateTime @default(now())
 }
 //////////////////////////////
