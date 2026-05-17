@@ -9,7 +9,9 @@ export default function Dashboard() {
   const [loading, setLoading]             = useState(false);
   const [activeTab, setActiveTab]         = useState("beranda");
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showPayModal, setShowPayModal]   = useState(null);
+  const [showPayModal, setShowPayModal]   = useState(null);   // single bill (beranda)
+  const [showBulkModal, setShowBulkModal] = useState(false);  // multi-bill (tagihan)
+  const [selectedIds, setSelectedIds]     = useState([]);     // checked bill ids
   const [editForm, setEditForm]           = useState({});
   const [editLoading, setEditLoading]     = useState(false);
   const [toast, setToast]                 = useState(null);
@@ -30,6 +32,7 @@ export default function Dashboard() {
     setStudent(data.student);
     setBills(data.bills || []);
     setPayments(data.payments || []);
+    setSelectedIds([]);
     setEditForm({
       phone:   data.student?.phone   || "",
       email:   data.student?.email   || "",
@@ -37,6 +40,7 @@ export default function Dashboard() {
     });
   };
 
+  // ── single bill payment (from beranda) ──────────────────────────────────
   const handleBayar = async (bill) => {
     setLoading(true);
     setShowPayModal(null);
@@ -48,43 +52,8 @@ export default function Dashboard() {
       });
       const data = await res.json();
       if (data.paymentUrl) {
-        // Buka halaman pembayaran di tab baru
         window.open(data.paymentUrl, "_blank");
-
-        // Mulai polling status setiap 5 detik
-        setCheckingPayment(true);
-        showToast("Menunggu konfirmasi pembayaran... ⏳", "info");
-
-        const interval = setInterval(async () => {
-          try {
-            const checkRes = await fetch("/api/payments/check-status", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ orderId: data.orderId }),
-            });
-            const checkData = await checkRes.json();
-
-            if (checkData.updated) {
-              clearInterval(interval);
-              setCheckingPayment(false);
-              showToast("✅ Pembayaran berhasil dikonfirmasi!");
-              fetchData();
-            } else if (checkData.alreadySuccess) {
-              clearInterval(interval);
-              setCheckingPayment(false);
-              fetchData();
-            }
-          } catch (e) {
-            console.error("Polling error:", e);
-          }
-        }, 5000);
-
-        // Stop polling setelah 10 menit
-        setTimeout(() => {
-          clearInterval(interval);
-          setCheckingPayment(false);
-        }, 600000);
-
+        startPolling(data.orderId);
       } else {
         showToast("Gagal: " + data.message, "error");
       }
@@ -93,6 +62,57 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // ── multi bill payment (from tagihan tab) ────────────────────────────────
+  const handleBulkBayar = async () => {
+    if (selectedIds.length === 0) return;
+    setLoading(true);
+    setShowBulkModal(false);
+    try {
+      // Kirim semua billId yang dipilih sekaligus
+      const res = await fetch("/api/payments/midtrans-create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ billIds: selectedIds }),
+      });
+      const data = await res.json();
+      if (data.paymentUrl) {
+        window.open(data.paymentUrl, "_blank");
+        startPolling(data.orderId);
+      } else {
+        showToast("Gagal: " + data.message, "error");
+      }
+    } catch (err) {
+      showToast("Error: " + err.message, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── polling helper ───────────────────────────────────────────────────────
+  const startPolling = (orderId) => {
+    setCheckingPayment(true);
+    showToast("Menunggu konfirmasi pembayaran... ⏳", "info");
+    const interval = setInterval(async () => {
+      try {
+        const checkRes = await fetch("/api/payments/check-status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId }),
+        });
+        const checkData = await checkRes.json();
+        if (checkData.updated || checkData.alreadySuccess) {
+          clearInterval(interval);
+          setCheckingPayment(false);
+          if (checkData.updated) showToast("✅ Pembayaran berhasil dikonfirmasi!");
+          fetchData();
+        }
+      } catch (e) {
+        console.error("Polling error:", e);
+      }
+    }, 5000);
+    setTimeout(() => { clearInterval(interval); setCheckingPayment(false); }, 600000);
   };
 
   const handleEditSubmit = async (e) => {
@@ -115,6 +135,20 @@ export default function Dashboard() {
     }
   };
 
+  // ── checkbox helpers ─────────────────────────────────────────────────────
+  const toggleOne = (id) => {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+  const toggleAll = (unpaid) => {
+    if (selectedIds.length === unpaid.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(unpaid.map(b => b.id));
+    }
+  };
+
   const rp = (v) => "Rp " + new Intl.NumberFormat("id-ID").format(v || 0);
 
   if (!student) return (
@@ -132,6 +166,11 @@ export default function Dashboard() {
   const totalTerbayar  = paidBills.reduce((s, b) => s + (b.amount || 0), 0);
   const initials       = student.name?.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
   const recentPayments = payments.slice(0, 3);
+
+  // Total yang dipilih (untuk modal konfirmasi bulk)
+  const selectedBills  = unpaidBills.filter(b => selectedIds.includes(b.id));
+  const totalSelected  = selectedBills.reduce((s, b) => s + (b.amount || 0), 0);
+  const allChecked     = unpaidBills.length > 0 && selectedIds.length === unpaidBills.length;
 
   const tabs = [
     { key:"beranda", label:"Beranda", em:"🏠" },
@@ -160,15 +199,12 @@ export default function Dashboard() {
         .toast.info{background:#1565c0;color:#fff}
         @keyframes tin{from{opacity:0;top:4px}to{opacity:1;top:16px}}
 
-        /* CHECKING BANNER */
         .checking-banner{background:#e3f2fd;border:1px solid #90caf9;border-radius:12px;padding:11px 15px;margin-bottom:13px;display:flex;align-items:center;gap:9px;font-size:13px;color:#1565c0;font-weight:600}
         @keyframes spin{to{transform:rotate(360deg)}}
         .spinner{display:inline-block;width:16px;height:16px;border:2.5px solid #90caf9;border-top-color:#1565c0;border-radius:50%;animation:spin 1s linear infinite;flex-shrink:0}
 
-        /* APP */
         .app{min-height:100vh;display:flex;flex-direction:column;background:#eef5f0;width:100%}
 
-        /* TOPBAR */
         .topbar{background:#fff;border-bottom:1px solid #e4ede6;height:58px;padding:0 20px;width:100%;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 1px 6px rgba(0,0,0,.04)}
         .tb-brand{display:flex;align-items:center;gap:9px}
         .tb-logo{width:32px;height:32px;background:linear-gradient(135deg,#1a3d28,#3a8f50);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
@@ -179,10 +215,8 @@ export default function Dashboard() {
         .btn-out{background:#fff0f0;color:#c62828;border:1px solid #fecaca;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;display:flex;align-items:center;gap:5px}
         .btn-out:hover{background:#ffe4e4}
 
-        /* MAIN */
         .main{display:flex;flex:1;width:100%}
 
-        /* SIDEBAR (desktop) */
         .snav{display:none;width:196px;min-width:196px;flex-shrink:0;padding:20px 10px;position:sticky;top:58px;height:calc(100vh - 58px);overflow-y:auto;border-right:1px solid #e4ede6;background:#fff}
         .snav-lbl{font-size:10px;font-weight:700;color:#9ab5a3;text-transform:uppercase;letter-spacing:.8px;padding:0 8px;margin-bottom:8px}
         .snav-btn{display:flex;align-items:center;gap:9px;width:100%;padding:10px 12px;border-radius:10px;border:none;background:transparent;font-family:inherit;font-size:13px;font-weight:600;color:#5a7a66;cursor:pointer;transition:.15s;text-align:left;margin-bottom:2px}
@@ -190,10 +224,8 @@ export default function Dashboard() {
         .snav-btn.active{background:linear-gradient(135deg,#dcfce7,#f0fdf4);color:#14532d;font-weight:700;box-shadow:inset 3px 0 0 #22c55e}
         .snav-em{font-size:16px;width:20px;text-align:center;flex-shrink:0}
 
-        /* PAGE */
         .page{flex:1;min-width:0;width:0;padding-bottom:74px}
 
-        /* HERO */
         .hero{background:linear-gradient(135deg,#1a3d28 0%,#2e6b3e 55%,#3a8f50 100%);padding:26px 20px 68px;position:relative;overflow:hidden}
         .hdeco{position:absolute;border-radius:50%;background:rgba(255,255,255,.05);pointer-events:none}
         .hero-in{max-width:760px;display:flex;align-items:center;gap:14px;position:relative;z-index:1}
@@ -204,10 +236,8 @@ export default function Dashboard() {
         .chip{background:rgba(255,255,255,.13);color:rgba(255,255,255,.9);border:1px solid rgba(255,255,255,.2);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
         .chip.danger{background:rgba(198,40,40,.3);border-color:rgba(198,40,40,.4)}
 
-        /* CONTENT */
         .ct{margin:-46px 0 0;padding:0 14px;position:relative;z-index:2}
 
-        /* STAT */
         .sg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
         .sc{background:#fff;border-radius:14px;padding:15px 13px;box-shadow:0 2px 10px rgba(0,0,0,.06);border:1px solid #e8f0e8}
         .sc-em{font-size:19px;margin-bottom:5px;line-height:1}
@@ -217,7 +247,6 @@ export default function Dashboard() {
         .sc.red .sc-val{color:#c62828}
         .sc.grn .sc-val{color:#1a6b35}
 
-        /* CARD */
         .card{background:#fff;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.06);border:1px solid #e8f0e8;margin-bottom:13px;overflow:hidden}
         .ch{padding:14px 17px 11px;border-bottom:1px solid #f0f5f1;display:flex;align-items:center;justify-content:space-between}
         .ct2{font-size:13.5px;font-weight:700;color:#1a3d28}
@@ -228,12 +257,10 @@ export default function Dashboard() {
         .lnk{font-size:12px;font-weight:600;color:#3a8f50;background:none;border:none;cursor:pointer;font-family:inherit;padding:0}
         .lnk:hover{text-decoration:underline}
 
-        /* ALERT */
         .alert{display:flex;gap:9px;align-items:flex-start;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:12px 13px;margin-bottom:13px}
         .al-bod{font-size:12.5px;color:#78350f;line-height:1.5}
         .al-bod strong{display:block;font-size:13px;color:#451a03;margin-bottom:1px}
 
-        /* QUICK */
         .qg{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:13px 15px}
         .qi{display:flex;align-items:center;gap:9px;padding:12px 13px;background:#f7faf8;border:1px solid #e4ede6;border-radius:12px;cursor:pointer;font-family:inherit;text-align:left;transition:.15s;width:100%}
         .qi:hover{background:#edf7ef;transform:translateY(-1px)}
@@ -242,9 +269,10 @@ export default function Dashboard() {
         .qi-lbl{font-size:12px;font-weight:700;color:#1a3d28}
         .qi-sub{font-size:10.5px;color:#9ab5a3;margin-top:1px}
 
-        /* BILL ROW */
-        .br{display:flex;align-items:center;gap:11px;padding:13px 17px;border-bottom:1px solid #f5f8f5}
+        /* ── BILL ROWS ── */
+        .br{display:flex;align-items:center;gap:11px;padding:13px 17px;border-bottom:1px solid #f5f8f5;transition:background .15s}
         .br:last-child{border-bottom:none}
+        .br.selected{background:#f0fdf4}
         .bi{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
         .bi.u{background:#fffbeb}
         .bi.p{background:#f0fdf4}
@@ -259,7 +287,25 @@ export default function Dashboard() {
         .btn-b:disabled{opacity:.55;cursor:not-allowed}
         .btn-b.ol{background:transparent;color:#3a8f50;border:1.5px solid #c3dfc9;box-shadow:none}
 
-        /* PAY ROW */
+        /* ── CHECKBOX ── */
+        .cb-wrap{display:flex;align-items:center;flex-shrink:0}
+        .cb-inp{width:18px;height:18px;accent-color:#1a6b35;cursor:pointer;border-radius:4px}
+
+        /* ── SELECT-ALL BAR ── */
+        .select-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 17px;border-bottom:1px solid #f0f5f1;background:#f7faf8}
+        .select-bar-l{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:#1a3d28;cursor:pointer}
+        .select-bar-r{font-size:12px;color:#9ab5a3}
+
+        /* ── STICKY FOOTER (bayar button) ── */
+        .bulk-footer{position:sticky;bottom:0;background:#fff;border-top:1px solid #e4ede6;padding:12px 17px max(12px,env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:10}
+        .bulk-info{flex:1;min-width:0}
+        .bulk-count{font-size:12px;color:#9ab5a3;font-weight:600;margin-bottom:2px}
+        .bulk-total{font-size:16px;font-weight:800;color:#1a3d28}
+        .btn-bulk{background:linear-gradient(135deg,#1a6b35,#3a8f50);color:#fff;border:none;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;box-shadow:0 3px 10px rgba(26,107,53,.3);transition:.15s}
+        .btn-bulk:hover:not(:disabled){transform:translateY(-1px)}
+        .btn-bulk:disabled{opacity:.45;cursor:not-allowed;background:#aaa;box-shadow:none}
+
+        /* ── PAYMENT ROWS ── */
         .pr{display:flex;align-items:center;gap:11px;padding:12px 17px;border-bottom:1px solid #f5f8f5}
         .pr:last-child{border-bottom:none}
         .pi{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
@@ -276,13 +322,11 @@ export default function Dashboard() {
         .ps.failed{background:#fff0f0;color:#c62828}
         .ps.pending{background:#fffbeb;color:#92400e}
 
-        /* BIO */
         .brow{display:flex;gap:11px;padding:11px 17px;border-bottom:1px solid #f5f8f5;align-items:flex-start}
         .brow:last-child{border-bottom:none}
         .blbl{font-size:10.5px;font-weight:700;color:#9ab5a3;text-transform:uppercase;letter-spacing:.3px;width:106px;flex-shrink:0;padding-top:2px}
         .bval{font-size:13px;color:#1a3d28;font-weight:500;flex:1}
 
-        /* EMPTY */
         .empty{padding:34px 20px;text-align:center;color:#9ab5a3}
         .empty p{font-size:13px;font-weight:500;margin-top:6px}
 
@@ -308,6 +352,17 @@ export default function Dashboard() {
         .cbl{font-size:11px;color:#7a9a85;font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px}
         .cbv{font-size:22px;font-weight:800;color:#1a3d28}
         .cbd{font-size:11px;color:#9ab5a3;margin-top:3px}
+
+        /* bulk modal item list */
+        .bulk-list{margin-bottom:16px}
+        .bulk-li{display:flex;justify-content:space-between;align-items:center;padding:9px 13px;background:#f7faf8;border:1px solid #e4ede6;border-radius:10px;margin-bottom:7px}
+        .bulk-li-name{font-size:13px;font-weight:600;color:#1a3d28}
+        .bulk-li-amt{font-size:13px;font-weight:700;color:#c62828}
+        .bulk-divider{border:none;border-top:1px dashed #dde8e0;margin:12px 0}
+        .bulk-li.total{background:#edf7ef;border-color:#c3dfc9}
+        .bulk-li.total .bulk-li-name{color:#1a6b35;font-weight:700}
+        .bulk-li.total .bulk-li-amt{color:#1a6b35;font-size:15px}
+
         .field{margin-bottom:13px}
         .field label{display:block;font-size:11px;font-weight:700;color:#5a7a66;text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px}
         .field input,.field textarea{width:100%;border:1.5px solid #dde5e0;border-radius:10px;padding:11px 13px;font-size:14px;color:#1a3d28;background:#fafcfb;outline:none;font-family:inherit;transition:border-color .2s}
@@ -320,7 +375,6 @@ export default function Dashboard() {
         .btn-cn{background:#f5f8f5;color:#5a7a66;border:none;padding:13px 18px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
         .btn-cn:hover{background:#eaefeb}
 
-        /* RESPONSIVE */
         @media(max-width:380px){
           .sg{grid-template-columns:1fr 1fr}
           .sg .sc:last-child{grid-column:span 2}
@@ -403,7 +457,6 @@ export default function Dashboard() {
             {/* CONTENT */}
             <div className="ct">
 
-              {/* CHECKING PAYMENT BANNER */}
               {checkingPayment && (
                 <div className="checking-banner">
                   <div className="spinner"/>
@@ -411,7 +464,7 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* BERANDA */}
+              {/* ════════════ BERANDA ════════════ */}
               {activeTab==="beranda" && <>
                 {unpaidBills.length > 0 && (
                   <div className="alert">
@@ -433,7 +486,7 @@ export default function Dashboard() {
                   <div className="ch"><span className="ct2">Menu Cepat</span></div>
                   <div className="qg">
                     {[
-                      {em:"💳",lbl:"Bayar Tagihan",sub:"Lihat semua tagihan",fn:()=>setActiveTab("tagihan")},
+                      {em:"💳",lbl:"Bayar Tagihan",sub:"Pilih & bayar tagihan",fn:()=>setActiveTab("tagihan")},
                       {em:"📜",lbl:"Riwayat Bayar",sub:"Histori transaksi",fn:()=>setActiveTab("riwayat")},
                       {em:"✏️",lbl:"Edit Profil",sub:"Perbarui data diri",fn:()=>{setActiveTab("biodata");setShowEditModal(true)}},
                       {em:"👤",lbl:"Biodata",sub:"Lihat data lengkap",fn:()=>setActiveTab("biodata")},
@@ -491,34 +544,109 @@ export default function Dashboard() {
                 )}
               </>}
 
-              {/* TAGIHAN */}
+              {/* ════════════ TAGIHAN (dengan checkbox) ════════════ */}
               {activeTab==="tagihan" && <>
                 <div style={{height:14}}/>
+
                 <div className="card">
-                  <div className="ch"><span className="ct2">Belum Dibayar</span>{unpaidBills.length>0&&<span className="bdg red">{unpaidBills.length}</span>}</div>
-                  {unpaidBills.length===0
-                    ? <div className="empty"><p>🎉</p><p>Semua tagihan lunas!</p></div>
-                    : unpaidBills.map(bill=>(
-                      <div key={bill.id} className="br">
-                        <div className="bi u">🧾</div>
-                        <div className="bin">
-                          <div className="bn">{bill.paymentType?.name}</div>
-                          <div className="ba u">{rp(bill.amount)}</div>
-                          {bill.dueDate && <div className="bd">Jatuh tempo: {new Date(bill.dueDate).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})}</div>}
+                  <div className="ch">
+                    <span className="ct2">Belum Dibayar</span>
+                    {unpaidBills.length > 0 && <span className="bdg red">{unpaidBills.length}</span>}
+                  </div>
+
+                  {unpaidBills.length === 0 ? (
+                    <div className="empty"><p>🎉</p><p>Semua tagihan lunas!</p></div>
+                  ) : (<>
+                    {/* Bar: Pilih Semua */}
+                    <div className="select-bar">
+                      <label className="select-bar-l">
+                        <input
+                          type="checkbox"
+                          className="cb-inp"
+                          checked={allChecked}
+                          onChange={() => toggleAll(unpaidBills)}
+                        />
+                        Pilih semua tagihan
+                      </label>
+                      {selectedIds.length > 0 && (
+                        <span className="select-bar-r">{selectedIds.length} dipilih</span>
+                      )}
+                    </div>
+
+                    {/* Daftar tagihan dengan checkbox */}
+                    {unpaidBills.map(bill => {
+                      const checked = selectedIds.includes(bill.id);
+                      return (
+                        <div
+                          key={bill.id}
+                          className={`br${checked?" selected":""}`}
+                          style={{cursor:"pointer"}}
+                          onClick={() => toggleOne(bill.id)}
+                        >
+                          <div className="cb-wrap" onClick={e=>e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              className="cb-inp"
+                              checked={checked}
+                              onChange={() => toggleOne(bill.id)}
+                            />
+                          </div>
+                          <div className="bi u">🧾</div>
+                          <div className="bin">
+                            <div className="bn">{bill.paymentType?.name}</div>
+                            <div className="ba u">{rp(bill.amount)}</div>
+                            {bill.dueDate && (
+                              <div className="bd">
+                                Jatuh tempo: {new Date(bill.dueDate).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})}
+                              </div>
+                            )}
+                          </div>
+                          {/* badge INV jika ada */}
+                          {bill.invoiceNumber && (
+                            <span style={{fontSize:10,color:"#9ab5a3",flexShrink:0}}>
+                              {bill.invoiceNumber}
+                            </span>
+                          )}
                         </div>
-                        <button className="btn-b" onClick={()=>setShowPayModal(bill)} disabled={loading||checkingPayment}>{loading?"...":"Bayar"}</button>
+                      );
+                    })}
+
+                    {/* Sticky footer: total & tombol bayar */}
+                    <div className="bulk-footer">
+                      <div className="bulk-info">
+                        <div className="bulk-count">
+                          {selectedIds.length > 0
+                            ? `${selectedIds.length} tagihan dipilih`
+                            : "Pilih tagihan di atas"}
+                        </div>
+                        <div className="bulk-total">{rp(totalSelected)}</div>
                       </div>
-                    ))
-                  }
+                      <button
+                        className="btn-bulk"
+                        disabled={selectedIds.length === 0 || loading || checkingPayment}
+                        onClick={() => setShowBulkModal(true)}
+                      >
+                        {loading ? "Memproses..." : "Bayar Tagihan"}
+                      </button>
+                    </div>
+                  </>)}
                 </div>
+
+                {/* Sudah Dibayar */}
                 <div className="card">
-                  <div className="ch"><span className="ct2">Sudah Dibayar</span>{paidBills.length>0&&<span className="bdg grn">{paidBills.length}</span>}</div>
-                  {paidBills.length===0
+                  <div className="ch">
+                    <span className="ct2">Sudah Dibayar</span>
+                    {paidBills.length > 0 && <span className="bdg grn">{paidBills.length}</span>}
+                  </div>
+                  {paidBills.length === 0
                     ? <div className="empty"><p>💳</p><p>Belum ada tagihan lunas</p></div>
                     : paidBills.map(bill=>(
                       <div key={bill.id} className="br">
                         <div className="bi p">✅</div>
-                        <div className="bin"><div className="bn">{bill.paymentType?.name}</div><div className="ba p">{rp(bill.amount)}</div></div>
+                        <div className="bin">
+                          <div className="bn">{bill.paymentType?.name}</div>
+                          <div className="ba p">{rp(bill.amount)}</div>
+                        </div>
                         <span className="bdg grn">Lunas</span>
                       </div>
                     ))
@@ -526,7 +654,7 @@ export default function Dashboard() {
                 </div>
               </>}
 
-              {/* RIWAYAT */}
+              {/* ════════════ RIWAYAT ════════════ */}
               {activeTab==="riwayat" && <>
                 <div style={{height:14}}/>
                 <div className="card">
@@ -553,7 +681,7 @@ export default function Dashboard() {
                 </div>
               </>}
 
-              {/* BIODATA */}
+              {/* ════════════ BIODATA ════════════ */}
               {activeTab==="biodata" && <>
                 <div style={{height:14}}/>
                 <div className="card">
@@ -599,7 +727,7 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* MODAL BAYAR */}
+      {/* ════ MODAL BAYAR SINGLE (beranda) ════ */}
       {showPayModal && (
         <div className="ov" onClick={e=>{if(e.target===e.currentTarget)setShowPayModal(null)}}>
           <div className="mo">
@@ -622,7 +750,50 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* MODAL EDIT */}
+      {/* ════ MODAL BAYAR BULK (tagihan tab) ════ */}
+      {showBulkModal && (
+        <div className="ov" onClick={e=>{if(e.target===e.currentTarget)setShowBulkModal(false)}}>
+          <div className="mo">
+            <div className="mh"/>
+            <div className="cico">🧾</div>
+            <div className="ctit">Konfirmasi Pembayaran</div>
+            <div className="cdesc">
+              Kamu akan membayar {selectedBills.length} tagihan sekaligus. Pastikan daftarnya sudah benar.
+            </div>
+
+            {/* Rincian tagihan yang dipilih */}
+            <div className="bulk-list">
+              {selectedBills.map(b => (
+                <div key={b.id} className="bulk-li">
+                  <div>
+                    <div className="bulk-li-name">{b.paymentType?.name}</div>
+                    {b.dueDate && (
+                      <div style={{fontSize:11,color:"#9ab5a3",marginTop:2}}>
+                        Jatuh tempo: {new Date(b.dueDate).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})}
+                      </div>
+                    )}
+                  </div>
+                  <div className="bulk-li-amt">{rp(b.amount)}</div>
+                </div>
+              ))}
+              <hr className="bulk-divider"/>
+              <div className="bulk-li total">
+                <div className="bulk-li-name">Total Bayar</div>
+                <div className="bulk-li-amt">{rp(totalSelected)}</div>
+              </div>
+            </div>
+
+            <div className="mac">
+              <button className="btn-cn" onClick={()=>setShowBulkModal(false)}>Batal</button>
+              <button className="btn-sv" onClick={handleBulkBayar} disabled={loading}>
+                {loading?"Memproses...":"Bayar Sekarang"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════ MODAL EDIT PROFIL ════ */}
       {showEditModal && (
         <div className="ov" onClick={e=>{if(e.target===e.currentTarget)setShowEditModal(false)}}>
           <div className="mo">
