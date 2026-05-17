@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
 
-// Fungsi untuk membersihkan nominal (hapus titik, hanya angka)
 const cleanAmount = (amount) => {
   if (!amount) return "0"
   return String(amount).replace(/\./g, "").replace(/,/g, "").replace(/\D/g, "")
@@ -60,6 +59,36 @@ export default function PaymentPage() {
     }
   };
 
+  // Hapus tagihan (bill)
+  const hapusBill = async (billId) => {
+    if (!confirm("Hapus tagihan ini?")) return;
+    const res = await fetch(`/api/bills/${billId}/delete`, {
+      method: "DELETE",
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert("✅ Tagihan berhasil dihapus!");
+      openDetail(selectedStudent.id);
+    } else {
+      alert("Gagal: " + data.message);
+    }
+  };
+
+  // Hapus payment (riwayat)
+  const hapusPayment = async (paymentId) => {
+    if (!confirm("Hapus riwayat pembayaran ini?")) return;
+    const res = await fetch(`/api/payments/${paymentId}/delete`, {
+      method: "DELETE",
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert("✅ Riwayat pembayaran berhasil dihapus!");
+      openDetail(selectedStudent.id);
+    } else {
+      alert("Gagal: " + data.message);
+    }
+  };
+
   const toggleItem = (pt) => {
     setTambahItems(prev => {
       const exists = prev.find(i => i.paymentTypeId === pt.id);
@@ -80,7 +109,6 @@ export default function PaymentPage() {
 
     setLoadingTambah(true);
     try {
-      // Bersihkan nominal di setiap item
       const cleanItems = tambahItems.map(item => ({
         ...item,
         amount: cleanAmount(item.amount)
@@ -138,50 +166,22 @@ export default function PaymentPage() {
           <h2>MADRASAH TARBIYATUL MUBALIGHIN</h2>
           <p>Sumberjo - Kwitansi Pembayaran SPP</p>
         </div>
-
-        <div class="row">
-          <span class="label">No. Kwitansi</span>
-          <span class="value">#KW-${String(p.id).padStart(5, "0")}</span>
-        </div>
-        <div class="row">
-          <span class="label">Tanggal</span>
-          <span class="value">${tanggal}</span>
-        </div>
-        <div class="row">
-          <span class="label">Nama Santri</span>
-          <span class="value">${selectedStudent.name}</span>
-        </div>
-        <div class="row">
-          <span class="label">NISN</span>
-          <span class="value">${selectedStudent.nisn}</span>
-        </div>
-        <div class="row">
-          <span class="label">Kelas</span>
-          <span class="value">${selectedStudent.class?.name || "-"}</span>
-        </div>
-        <div class="row">
-          <span class="label">Jenis Pembayaran</span>
-          <span class="value">${p.paymentType.name}</span>
-        </div>
-        <div class="row">
-          <span class="label">Metode Pembayaran</span>
-          <span class="value">${p.method === "CASH" ? "💵 Tunai" : "🏦 Transfer"}</span>
-        </div>
-        <div class="row">
-          <span class="label">Status</span>
-          <span class="value status">✅ LUNAS</span>
-        </div>
-
+        <div class="row"><span class="label">No. Kwitansi</span><span class="value">#KW-${String(p.id).padStart(5, "0")}</span></div>
+        <div class="row"><span class="label">Tanggal</span><span class="value">${tanggal}</span></div>
+        <div class="row"><span class="label">Nama Santri</span><span class="value">${selectedStudent.name}</span></div>
+        <div class="row"><span class="label">NISN</span><span class="value">${selectedStudent.nisn}</span></div>
+        <div class="row"><span class="label">Kelas</span><span class="value">${selectedStudent.class?.name || "-"}</span></div>
+        <div class="row"><span class="label">Jenis Pembayaran</span><span class="value">${p.paymentType.name}</span></div>
+        <div class="row"><span class="label">Metode Pembayaran</span><span class="value">${p.method === "CASH" ? "💵 Tunai" : "🏦 Transfer"}</span></div>
+        <div class="row"><span class="label">Status</span><span class="value status">✅ LUNAS</span></div>
         <div class="total">
           <small>Total Pembayaran</small>
           <p>Rp ${formatRupiah(p.amount)}</p>
         </div>
-
         <div class="footer">
           <p>Terima kasih atas pembayaran Anda</p>
           <p><b>Madrasah Tarbiyatul Mubalighin Sumberjo</b></p>
         </div>
-
         <button class="btn-print" onclick="window.print()">🖨️ Cetak Kwitansi</button>
       </body>
       </html>
@@ -239,7 +239,6 @@ export default function PaymentPage() {
           <div className="modal">
             <div className="modal-content">
               <h3>📋 Buat Tagihan Santri</h3>
-
               <div className="field">
                 <label>Pilih Santri</label>
                 <select value={tambahStudentId} onChange={e => setTambahStudentId(e.target.value)}>
@@ -249,7 +248,6 @@ export default function PaymentPage() {
                   ))}
                 </select>
               </div>
-
               <div className="field">
                 <label>Pilih Jenis Tagihan</label>
                 {paymentTypes.map(pt => {
@@ -281,7 +279,6 @@ export default function PaymentPage() {
                   );
                 })}
               </div>
-
               <div className="modal-actions">
                 <button className="btn-batal" onClick={() => { setShowTambah(false); setTambahItems([]); setTambahStudentId(""); }}>
                   Batal
@@ -332,12 +329,15 @@ export default function PaymentPage() {
                         </td>
                         <td>
                           {b.status === "UNPAID" ? (
-                            <div style={{ display: "flex", gap: "5px" }}>
+                            <div style={{ display: "flex", gap: "5px", flexWrap: "wrap" }}>
                               <button className="btn-cash" onClick={() => konfirmasiCash(b.id)}>
                                 💵 CASH
                               </button>
                               <button className="btn-transfer" onClick={() => bayarTransfer(b.id)}>
                                 🏦 Transfer
+                              </button>
+                              <button className="btn-hapus" onClick={() => hapusBill(b.id)}>
+                                🗑️ Hapus
                               </button>
                             </div>
                           ) : (
@@ -382,15 +382,24 @@ export default function PaymentPage() {
                           </span>
                         </td>
                         <td>
-                          {p.status === "SUCCESS" ? (
-                            <button className="btn-cetak" onClick={() => cetakKwitansi(p)}>
-                              🖨️ Kwitansi
-                            </button>
-                          ) : p.status === "PENDING" ? (
-                            <span style={{ color: "orange", fontSize: 12 }}>⏳ Menunggu</span>
-                          ) : (
-                            <span style={{ color: "red", fontSize: 12 }}>❌ Gagal</span>
-                          )}
+                          <div style={{ display: "flex", gap: "5px", flexWrap: "wrap" }}>
+                            {p.status === "SUCCESS" && (
+                              <button className="btn-cetak" onClick={() => cetakKwitansi(p)}>
+                                🖨️ Kwitansi
+                              </button>
+                            )}
+                            {(p.status === "PENDING" || p.status === "FAILED") && (
+                              <button className="btn-hapus" onClick={() => hapusPayment(p.id)}>
+                                🗑️ Hapus
+                              </button>
+                            )}
+                            {p.status === "PENDING" && (
+                              <span style={{ color: "orange", fontSize: 12 }}>⏳ Menunggu</span>
+                            )}
+                            {p.status === "FAILED" && (
+                              <span style={{ color: "red", fontSize: 12 }}>❌ Gagal</span>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -424,13 +433,15 @@ export default function PaymentPage() {
         .pt-default { color: #888; font-size: 13px; min-width: 90px; }
         .pt-input { width: 130px; padding: 6px; border-radius: 6px; border: 1px solid #ddd; font-size: 13px; }
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 999; }
-        .modal-content { background: white; padding: 25px; width: 680px; max-height: 88vh; overflow-y: auto; border-radius: 12px; }
+        .modal-content { background: white; padding: 25px; width: 720px; max-height: 88vh; overflow-y: auto; border-radius: 12px; }
         .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
         .btn-tambah { background: #2e6b3e; color: white; padding: 10px 18px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; font-size: 14px; }
         .btn-detail { background: #f0ad4e; color: white; padding: 5px 12px; border-radius: 6px; border: none; cursor: pointer; }
-        .btn-cash { background: #2e6b3e; color: white; padding: 5px 10px; border-radius: 6px; border: none; cursor: pointer; }
-        .btn-transfer { background: #1a6db5; color: white; padding: 5px 10px; border-radius: 6px; border: none; cursor: pointer; }
+        .btn-cash { background: #2e6b3e; color: white; padding: 5px 10px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; }
+        .btn-transfer { background: #1a6db5; color: white; padding: 5px 10px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; }
         .btn-cetak { background: #6c757d; color: white; padding: 5px 10px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; }
+        .btn-hapus { background: #dc3545; color: white; padding: 5px 10px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; }
+        .btn-hapus:hover { background: #c82333; }
         .btn-simpan { background: #2e6b3e; color: white; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
         .btn-simpan:disabled { background: #aaa; }
         .btn-batal { background: white; border: 1px solid #ccc; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
