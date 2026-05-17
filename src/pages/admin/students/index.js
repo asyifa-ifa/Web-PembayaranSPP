@@ -155,7 +155,7 @@ export default function StudentList() {
         table {
           width: 100%;
           border-collapse: collapse;
-          min-width: 900px;
+          min-width: 1000px;
         }
 
         thead {
@@ -185,20 +185,32 @@ export default function StudentList() {
         tbody tr:last-child td { border-bottom: none; }
         tbody tr:hover { background: #f9fcfa; }
 
-        .nis-cell {
-          font-family: monospace;
+        .nis-badge {
+          font-family: 'Courier New', monospace;
+          font-size: 12px;
+          font-weight: 700;
+          background: #edf7ef;
+          color: #2e6b3e;
+          padding: 3px 8px;
+          border-radius: 5px;
+          border: 1px solid #c3dfc9;
+          display: inline-block;
+        }
+
+        .nisn-badge {
+          font-family: 'Courier New', monospace;
           font-size: 12px;
           background: #f1f5f9;
           color: #475569;
           padding: 3px 8px;
           border-radius: 5px;
+          border: 1px solid #e2e8f0;
           display: inline-block;
         }
 
-        .nisn-sub {
-          font-size: 11px;
-          color: #9ab5a3;
-          margin-top: 2px;
+        .empty-val {
+          color: #b0c4b8;
+          font-size: 13px;
         }
 
         .badge-gender {
@@ -311,7 +323,8 @@ export default function StudentList() {
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>NIS</th>        {/* ← diubah dari NISN */}
+                  <th>NIS</th>
+                  <th>NISN</th>
                   <th>Nama</th>
                   <th>Kelas</th>
                   <th>JK</th>
@@ -326,11 +339,11 @@ export default function StudentList() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="11" className="empty-state">Memuat data...</td>
+                    <td colSpan="12" className="empty-state">Memuat data...</td>
                   </tr>
                 ) : students.length === 0 ? (
                   <tr>
-                    <td colSpan="11" className="empty-state">
+                    <td colSpan="12" className="empty-state">
                       Tidak ada santri{selectedClass ? " di kelas ini" : ""}.
                     </td>
                   </tr>
@@ -338,9 +351,12 @@ export default function StudentList() {
                   <tr key={s.id}>
                     <td>{i + 1}</td>
                     <td>
-                      {/* Tampilkan NIS, NISN sebagai sub-info jika ada */}
-                      <span className="nis-cell">{s.nis || "-"}</span>
-                      {s.nisn && <div className="nisn-sub">NISN: {s.nisn}</div>}
+                      <span className="nis-badge">{s.nis || "-"}</span>
+                    </td>
+                    <td>
+                      {s.nisn
+                        ? <span className="nisn-badge">{s.nisn}</span>
+                        : <span className="empty-val">-</span>}
                     </td>
                     <td style={{ fontWeight: 600 }}>{s.name}</td>
                     <td>{s.class?.name ?? "-"}</td>
