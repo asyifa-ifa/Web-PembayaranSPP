@@ -2,14 +2,14 @@ import prisma from "@/lib/prisma";
 
 // Mapping nama kelas → prefix NIS
 const CLASS_PREFIX = {
-  "Persiapan": "p0",
-  "Wustho 1":  "w1",
-  "Wustho 2":  "w2",
-  "Wustho 3":  "w3",
-  "Ulya 4":    "u4",
-  "Ulya 5":    "u5",
-  "Ulya 6":    "u6",
-};
+  "Kelas Persiapan": "p0",
+  "Kelas 1 Wustho":  "w1",
+  "Kelas 2 Wustho":  "w2",
+  "Kelas 3 Wustho":  "w3",
+  "Kelas 4 Ulya":    "u4",
+  "Kelas 5 Ulya":    "u5",
+  "Kelas 6 Ulya":    "u6",
+}
 
 /**
  * Generate NIS otomatis

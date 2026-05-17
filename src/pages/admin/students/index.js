@@ -141,7 +141,6 @@ export default function StudentList() {
           border: 1px solid #dde5e0;
         }
 
-        /* TABLE CARD */
         .table-card {
           background: #fff;
           border: 1px solid #e4e9e6;
@@ -185,6 +184,22 @@ export default function StudentList() {
 
         tbody tr:last-child td { border-bottom: none; }
         tbody tr:hover { background: #f9fcfa; }
+
+        .nis-cell {
+          font-family: monospace;
+          font-size: 12px;
+          background: #f1f5f9;
+          color: #475569;
+          padding: 3px 8px;
+          border-radius: 5px;
+          display: inline-block;
+        }
+
+        .nisn-sub {
+          font-size: 11px;
+          color: #9ab5a3;
+          margin-top: 2px;
+        }
 
         .badge-gender {
           display: inline-block;
@@ -296,7 +311,7 @@ export default function StudentList() {
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>NISN</th>
+                  <th>NIS</th>        {/* ← diubah dari NISN */}
                   <th>Nama</th>
                   <th>Kelas</th>
                   <th>JK</th>
@@ -322,7 +337,11 @@ export default function StudentList() {
                 ) : students.map((s, i) => (
                   <tr key={s.id}>
                     <td>{i + 1}</td>
-                    <td>{s.nisn}</td>
+                    <td>
+                      {/* Tampilkan NIS, NISN sebagai sub-info jika ada */}
+                      <span className="nis-cell">{s.nis || "-"}</span>
+                      {s.nisn && <div className="nisn-sub">NISN: {s.nisn}</div>}
+                    </td>
                     <td style={{ fontWeight: 600 }}>{s.name}</td>
                     <td>{s.class?.name ?? "-"}</td>
                     <td>
