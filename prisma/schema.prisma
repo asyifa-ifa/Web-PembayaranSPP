@@ -17,7 +17,7 @@ model Login {
   username  String   @unique
   password  String
   role      Role
-   isActive  Boolean  @default(true)
+  isActive  Boolean  @default(true)
   student   Student? @relation(fields: [studentId], references: [id])
   studentId Int?     @unique
   createdAt DateTime @default(now())
@@ -62,7 +62,8 @@ model Semester {
 model Student {
   id         Int       @id @default(autoincrement())
   name       String
-  nisn       String   @unique
+  nis        String    @unique  
+  nisn       String?           
   gender     String
   phone      String
   email      String

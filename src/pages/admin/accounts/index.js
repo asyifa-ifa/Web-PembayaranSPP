@@ -41,10 +41,11 @@ export default function AccountsPage() {
 
   const filteredStudents = students.filter((s) => {
     const matchClass = filterClass === "ALL" || s.class?.name === filterClass;
-    const matchYear = filterYear === "ALL" || s.entryYear === Number(filterYear);
+    const matchYear = filterYear === "ALL" || s.entryYear === filterYear;
     const matchSearch =
       searchQuery === "" ||
       s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.nis?.toLowerCase().includes(searchQuery.toLowerCase()) ||       // cari by NIS
       s.login?.username?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchClass && matchYear && matchSearch;
   });
@@ -117,7 +118,7 @@ export default function AccountsPage() {
             </button>
             <div>
               <h1 className="page-title">Kelola Akun Santri</h1>
-              <p className="page-subtitle">Manajemen akses login santri</p>
+              <p className="page-subtitle">Manajemen akses login santri · Username = NIS</p>
             </div>
           </div>
         </div>
@@ -155,7 +156,7 @@ export default function AccountsPage() {
             </svg>
             <input
               className="search-input"
-              placeholder="Cari nama atau username..."
+              placeholder="Cari nama atau NIS..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -195,7 +196,7 @@ export default function AccountsPage() {
                     <th>Nama Santri</th>
                     <th>Kelas</th>
                     <th>Angkatan</th>
-                    <th>Username</th>
+                    <th>NIS / Username</th>   {/* ← diubah dari Username */}
                     <th>Status</th>
                     <th>Aksi</th>
                   </tr>
@@ -215,7 +216,15 @@ export default function AccountsPage() {
                       </td>
                       <td className="td-year">{s.entryYear || "-"}</td>
                       <td>
-                        <code className="username-code">{s.login?.username || "-"}</code>
+                        {/* Tampilkan NIS + NISN jika ada */}
+                        <div>
+                          <code className="username-code">{s.nis || "-"}</code>
+                          {s.nisn && (
+                            <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "3px" }}>
+                              NISN: {s.nisn}
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td>
                         {s.login ? (
@@ -277,10 +286,25 @@ export default function AccountsPage() {
                 <div className="modal-icon">{isEdit ? "🔑" : "👤"}</div>
                 <div>
                   <h3 className="modal-title">{isEdit ? "Reset Password" : "Buat Akun Baru"}</h3>
-                  <p className="modal-subtitle">{selectedStudent?.name}</p>
+                  <p className="modal-subtitle">
+                    {selectedStudent?.name}
+                    {selectedStudent?.nis && (
+                      <span style={{ marginLeft: "6px", color: "#6366f1", fontFamily: "monospace" }}>
+                        · {selectedStudent.nis}
+                      </span>
+                    )}
+                  </p>
                 </div>
                 <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
               </div>
+
+              {/* Info username saat buat akun baru */}
+              {!isEdit && selectedStudent?.nis && (
+                <div className="modal-info">
+                  <span>🎫</span>
+                  <span>Username otomatis: <code>{selectedStudent.nis}</code></span>
+                </div>
+              )}
 
               <div className="modal-body">
                 <label className="input-label">Password Baru</label>
@@ -314,7 +338,6 @@ export default function AccountsPage() {
       </div>
 
       <style jsx>{`
-        /* ===== LAYOUT ===== */
         .page-wrapper {
           padding: 24px;
           max-width: 1200px;
@@ -322,7 +345,6 @@ export default function AccountsPage() {
           font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
         }
 
-        /* ===== HEADER ===== */
         .page-header {
           display: flex;
           align-items: flex-start;
@@ -358,13 +380,8 @@ export default function AccountsPage() {
           color: #1e293b;
           letter-spacing: -0.5px;
         }
-        .page-subtitle {
-          margin: 2px 0 0;
-          font-size: 13px;
-          color: #94a3b8;
-        }
+        .page-subtitle { margin: 2px 0 0; font-size: 13px; color: #94a3b8; }
 
-        /* ===== STATS ===== */
         .stats-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
@@ -390,18 +407,13 @@ export default function AccountsPage() {
         .stat-active { border-top: 3px solid #22c55e; }
         .stat-none { border-top: 3px solid #f59e0b; }
 
-        /* ===== FILTER BAR ===== */
         .filter-bar {
           display: flex;
           gap: 10px;
           margin-bottom: 18px;
           flex-wrap: wrap;
         }
-        .search-wrap {
-          position: relative;
-          flex: 1;
-          min-width: 200px;
-        }
+        .search-wrap { position: relative; flex: 1; min-width: 200px; }
         .search-icon {
           position: absolute;
           left: 12px;
@@ -437,7 +449,6 @@ export default function AccountsPage() {
         }
         .filter-select:focus { border-color: #6366f1; }
 
-        /* ===== TABLE CARD ===== */
         .table-card {
           background: white;
           border-radius: 16px;
@@ -446,15 +457,8 @@ export default function AccountsPage() {
           overflow: hidden;
         }
         .table-responsive { overflow-x: auto; }
-        .table {
-          width: 100%;
-          border-collapse: collapse;
-          min-width: 700px;
-        }
-        thead tr {
-          background: #f8fafc;
-          border-bottom: 1.5px solid #f1f5f9;
-        }
+        .table { width: 100%; border-collapse: collapse; min-width: 700px; }
+        thead tr { background: #f8fafc; border-bottom: 1.5px solid #f1f5f9; }
         th {
           padding: 13px 16px;
           text-align: left;
@@ -472,7 +476,6 @@ export default function AccountsPage() {
         .td-no { color: #94a3b8; font-size: 13px; width: 48px; }
         .td-year { color: #64748b; font-size: 13px; }
 
-        /* ===== STUDENT INFO ===== */
         .student-info { display: flex; align-items: center; gap: 10px; }
         .avatar {
           width: 34px; height: 34px;
@@ -484,7 +487,6 @@ export default function AccountsPage() {
         }
         .student-name { font-weight: 500; color: #1e293b; }
 
-        /* ===== BADGES ===== */
         .badge-class {
           background: #ede9fe;
           color: #7c3aed;
@@ -503,7 +505,6 @@ export default function AccountsPage() {
           font-family: 'Courier New', monospace;
         }
 
-        /* ===== STATUS BADGE ===== */
         .status-badge {
           display: inline-flex;
           align-items: center;
@@ -522,14 +523,8 @@ export default function AccountsPage() {
         .status-badge.inactive { background: #fee2e2; color: #b91c1c; }
         .status-badge.inactive:hover { background: #fecaca; }
         .status-badge.none { background: #f1f5f9; color: #94a3b8; cursor: default; }
-        .status-dot {
-          width: 6px; height: 6px;
-          border-radius: 50%;
-          background: currentColor;
-          flex-shrink: 0;
-        }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 
-        /* ===== ACTION BUTTONS ===== */
         .action-group { display: flex; gap: 6px; flex-wrap: wrap; }
         .action-btn {
           display: inline-flex;
@@ -551,7 +546,6 @@ export default function AccountsPage() {
         .action-btn.danger { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
         .action-btn.danger:hover { background: #fecaca; }
 
-        /* ===== TABLE FOOTER ===== */
         .table-footer {
           padding: 12px 16px;
           font-size: 13px;
@@ -560,7 +554,6 @@ export default function AccountsPage() {
           border-top: 1.5px solid #f1f5f9;
         }
 
-        /* ===== STATES ===== */
         .loading-state, .empty-state {
           display: flex;
           flex-direction: column;
@@ -581,7 +574,6 @@ export default function AccountsPage() {
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ===== MODAL ===== */
         .modal-overlay {
           position: fixed;
           inset: 0;
@@ -630,6 +622,23 @@ export default function AccountsPage() {
           flex-shrink: 0;
         }
         .modal-close:hover { background: #e2e8f0; }
+
+        .modal-info {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 20px;
+          background: #edf7ef;
+          border-bottom: 1px solid #c3dfc9;
+          font-size: 13px;
+          color: #2e6b3e;
+        }
+        .modal-info code {
+          font-weight: 700;
+          font-family: monospace;
+          letter-spacing: 0.5px;
+        }
+
         .modal-body { padding: 20px; }
         .input-label { display: block; font-size: 13px; font-weight: 500; color: #475569; margin-bottom: 8px; }
         .input-wrap { position: relative; }
@@ -690,23 +699,18 @@ export default function AccountsPage() {
         .btn-modal-submit:hover { opacity: .9; transform: translateY(-1px); }
         .btn-modal-submit:disabled { opacity: .5; cursor: not-allowed; transform: none; }
 
-        /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
           .page-wrapper { padding: 16px; }
           .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
           .stat-card { padding: 14px; gap: 10px; }
           .stat-value { font-size: 18px; }
-          .stat-icon { font-size: 20px; }
           .filter-bar { flex-direction: column; }
           .filter-select { min-width: unset; width: 100%; }
-          .header-left { gap: 10px; }
         }
 
         @media (max-width: 480px) {
           .stats-grid { grid-template-columns: 1fr; }
-          .stat-card { flex-direction: row; }
           .page-title { font-size: 18px; }
-          .action-btn span { display: none; }
         }
       `}</style>
     </AdminLayout>

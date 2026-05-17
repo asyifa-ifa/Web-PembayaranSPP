@@ -1,3 +1,4 @@
+//api/admin/accounts/[id].js
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 

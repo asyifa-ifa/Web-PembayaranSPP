@@ -7,7 +7,7 @@ export default function NewStudent() {
 
   const [form, setForm] = useState({
     name: "",
-    nisn: "",
+    nisn: "",       // opsional
     gender: "",
     phone: "",
     email: "",
@@ -16,7 +16,7 @@ export default function NewStudent() {
     birthdate: "",
     guardian: "",
     classId: "",
-    entryYear: "",
+    entryYear: "",  // wajib sekarang
   })
 
   const [classes, setClasses] = useState([])
@@ -37,11 +37,36 @@ export default function NewStudent() {
     setForm(prev => ({ ...prev, [key]: value }))
   }
 
+  // Preview format NIS berdasarkan kelas & tahun yang dipilih
+  const getNisPreview = () => {
+    const prefixMap = {
+      "Persiapan": "p0",
+      "Wustho 1": "w1",
+      "Wustho 2": "w2",
+      "Wustho 3": "w3",
+      "Ulya 4": "u4",
+      "Ulya 5": "u5",
+      "Ulya 6": "u6",
+    }
+    const cls = classes.find(c => String(c.id) === String(form.classId))
+    if (!cls || !form.entryYear) return null
+    const pfx = prefixMap[cls.name]
+    if (!pfx) return null
+    const yr = String(form.entryYear).slice(2, 4)
+    if (!yr || yr.length < 2) return null
+    return `${pfx}${yr}xx`
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
 
     if (!form.classId || isNaN(parseInt(form.classId))) {
       alert("Pilih kelas terlebih dahulu")
+      return
+    }
+
+    if (!form.entryYear.trim()) {
+      alert("Tahun ajaran masuk wajib diisi (untuk generate NIS otomatis)")
       return
     }
 
@@ -52,14 +77,15 @@ export default function NewStudent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
-          entryYear: form.entryYear.trim() || null,
+          nisn: form.nisn.trim() || null,
+          entryYear: form.entryYear.trim(),
         }),
       })
 
       const data = await res.json()
       if (!res.ok) throw new Error(data.message || "Gagal menyimpan")
 
-      alert("Santri berhasil ditambahkan & akun dikirim ke email")
+      alert(`Santri berhasil ditambahkan!\nNIS: ${data.nis}\nInfo login dikirim ke email santri.`)
       router.push("/admin/students")
     } catch (e) {
       alert("Error: " + e.message)
@@ -67,6 +93,8 @@ export default function NewStudent() {
       setLoading(false)
     }
   }
+
+  const nisPreview = getNisPreview()
 
   return (
     <AdminLayout>
@@ -96,7 +124,6 @@ export default function NewStudent() {
           color: #7a9a85;
         }
 
-        /* SECTION CARD */
         .section {
           background: #ffffff;
           border: 1px solid #e4e9e6;
@@ -136,15 +163,6 @@ export default function NewStudent() {
           gap: 16px;
         }
 
-        .section-body.full {
-          grid-template-columns: 1fr;
-        }
-
-        .section-body.three {
-          grid-template-columns: 1fr 1fr 1fr;
-        }
-
-        /* FIELD */
         .field {
           display: flex;
           flex-direction: column;
@@ -165,6 +183,13 @@ export default function NewStudent() {
         .field label .req {
           color: #e05252;
           margin-left: 2px;
+        }
+
+        .field label .opt {
+          color: #9ab5a3;
+          font-weight: 400;
+          margin-left: 4px;
+          font-size: 11px;
         }
 
         .field input,
@@ -217,7 +242,21 @@ export default function NewStudent() {
           margin-top: 2px;
         }
 
-        /* FOOTER ACTIONS */
+        .nis-preview {
+          font-size: 11px;
+          color: #2e7340;
+          background: #edf7ef;
+          border: 1px solid #c3dfc9;
+          border-radius: 6px;
+          padding: 6px 10px;
+          margin-top: 2px;
+        }
+
+        .nis-preview code {
+          font-weight: 700;
+          letter-spacing: 0.5px;
+        }
+
         .actions {
           display: flex;
           gap: 10px;
@@ -238,18 +277,9 @@ export default function NewStudent() {
           font-family: inherit;
         }
 
-        .btn-save:hover:not(:disabled) {
-          background: #2e7340;
-        }
-
-        .btn-save:active:not(:disabled) {
-          transform: scale(0.98);
-        }
-
-        .btn-save:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
+        .btn-save:hover:not(:disabled) { background: #2e7340; }
+        .btn-save:active:not(:disabled) { transform: scale(0.98); }
+        .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
 
         .btn-cancel {
           background: #fff;
@@ -270,15 +300,8 @@ export default function NewStudent() {
         }
 
         @media (max-width: 600px) {
-          .section-body {
-            grid-template-columns: 1fr;
-          }
-          .field.span2 {
-            grid-column: span 1;
-          }
-          .section-body.three {
-            grid-template-columns: 1fr 1fr;
-          }
+          .section-body { grid-template-columns: 1fr; }
+          .field.span2 { grid-column: span 1; }
         }
       `}</style>
 
@@ -287,7 +310,7 @@ export default function NewStudent() {
         <div className="page-header">
           <div>
             <h2>Tambah Data Santri</h2>
-            <span>Isi form berikut untuk mendaftarkan santri baru</span>
+            <span>Isi form berikut untuk mendaftarkan santri baru. NIS & akun login dibuat otomatis.</span>
           </div>
         </div>
 
@@ -310,14 +333,15 @@ export default function NewStudent() {
                 />
               </div>
 
+              {/* NISN opsional */}
               <div className="field">
-                <label>NISN <span className="req">*</span></label>
+                <label>NISN <span className="opt">(opsional)</span></label>
                 <input
-                  placeholder="Nomor Induk Siswa"
+                  placeholder="Kosongkan jika tidak ada"
                   value={form.nisn}
                   onChange={e => handleChange("nisn", e.target.value.replace(/\D/g, ""))}
-                  required
                 />
+                <span className="hint">Nomor Induk Siswa Nasional, isi jika tersedia</span>
               </div>
 
               <div className="field">
@@ -429,13 +453,20 @@ export default function NewStudent() {
               </div>
 
               <div className="field">
-                <label>Tahun Ajaran Masuk</label>
+                <label>Tahun Masuk <span className="req">*</span></label>
                 <input
-                  placeholder="contoh: 2024/2025"
+                  placeholder="contoh: 2025"
                   value={form.entryYear}
                   onChange={e => handleChange("entryYear", e.target.value)}
+                  required
                 />
-                <span className="hint">Kosongkan jika tidak diketahui</span>
+                {nisPreview ? (
+                  <span className="nis-preview">
+                    🎫 NIS otomatis, format: <code>{nisPreview}</code>
+                  </span>
+                ) : (
+                  <span className="hint">Wajib diisi — dipakai untuk generate NIS</span>
+                )}
               </div>
             </div>
           </div>
