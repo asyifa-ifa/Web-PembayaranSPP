@@ -13,13 +13,14 @@ export default function Dashboard() {
   const [editForm, setEditForm]           = useState({});
   const [editLoading, setEditLoading]     = useState(false);
   const [toast, setToast]                 = useState(null);
+  const [checkingPayment, setCheckingPayment] = useState(false);
   const router = useRouter();
 
   useEffect(() => { fetchData(); }, []);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 4000);
   };
 
   const fetchData = async () => {
@@ -47,7 +48,43 @@ export default function Dashboard() {
       });
       const data = await res.json();
       if (data.paymentUrl) {
+        // Buka halaman pembayaran di tab baru
         window.open(data.paymentUrl, "_blank");
+
+        // Mulai polling status setiap 5 detik
+        setCheckingPayment(true);
+        showToast("Menunggu konfirmasi pembayaran... ⏳", "info");
+
+        const interval = setInterval(async () => {
+          try {
+            const checkRes = await fetch("/api/payments/check-status", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ orderId: data.orderId }),
+            });
+            const checkData = await checkRes.json();
+
+            if (checkData.updated) {
+              clearInterval(interval);
+              setCheckingPayment(false);
+              showToast("✅ Pembayaran berhasil dikonfirmasi!");
+              fetchData();
+            } else if (checkData.alreadySuccess) {
+              clearInterval(interval);
+              setCheckingPayment(false);
+              fetchData();
+            }
+          } catch (e) {
+            console.error("Polling error:", e);
+          }
+        }, 5000);
+
+        // Stop polling setelah 10 menit
+        setTimeout(() => {
+          clearInterval(interval);
+          setCheckingPayment(false);
+        }, 600000);
+
       } else {
         showToast("Gagal: " + data.message, "error");
       }
@@ -120,7 +157,13 @@ export default function Dashboard() {
         .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:9999;padding:11px 20px;border-radius:12px;font-size:13px;font-weight:600;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.15);animation:tin .3s ease;pointer-events:none}
         .toast.success{background:#1a3d28;color:#fff}
         .toast.error{background:#c62828;color:#fff}
+        .toast.info{background:#1565c0;color:#fff}
         @keyframes tin{from{opacity:0;top:4px}to{opacity:1;top:16px}}
+
+        /* CHECKING BANNER */
+        .checking-banner{background:#e3f2fd;border:1px solid #90caf9;border-radius:12px;padding:11px 15px;margin-bottom:13px;display:flex;align-items:center;gap:9px;font-size:13px;color:#1565c0;font-weight:600}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .spinner{display:inline-block;width:16px;height:16px;border:2.5px solid #90caf9;border-top-color:#1565c0;border-radius:50%;animation:spin 1s linear infinite;flex-shrink:0}
 
         /* APP */
         .app{min-height:100vh;display:flex;flex-direction:column;background:#eef5f0;width:100%}
@@ -360,6 +403,14 @@ export default function Dashboard() {
             {/* CONTENT */}
             <div className="ct">
 
+              {/* CHECKING PAYMENT BANNER */}
+              {checkingPayment && (
+                <div className="checking-banner">
+                  <div className="spinner"/>
+                  Menunggu konfirmasi pembayaran dari Midtrans...
+                </div>
+              )}
+
               {/* BERANDA */}
               {activeTab==="beranda" && <>
                 {unpaidBills.length > 0 && (
@@ -406,7 +457,7 @@ export default function Dashboard() {
                           <div className="ba u">{rp(bill.amount)}</div>
                           {bill.dueDate && <div className="bd">Jatuh tempo: {new Date(bill.dueDate).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})}</div>}
                         </div>
-                        <button className="btn-b" onClick={()=>setShowPayModal(bill)} disabled={loading}>Bayar</button>
+                        <button className="btn-b" onClick={()=>setShowPayModal(bill)} disabled={loading||checkingPayment}>Bayar</button>
                       </div>
                     ))}
                     {unpaidBills.length > 3 && (
@@ -455,7 +506,7 @@ export default function Dashboard() {
                           <div className="ba u">{rp(bill.amount)}</div>
                           {bill.dueDate && <div className="bd">Jatuh tempo: {new Date(bill.dueDate).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})}</div>}
                         </div>
-                        <button className="btn-b" onClick={()=>setShowPayModal(bill)} disabled={loading}>{loading?"...":"Bayar"}</button>
+                        <button className="btn-b" onClick={()=>setShowPayModal(bill)} disabled={loading||checkingPayment}>{loading?"...":"Bayar"}</button>
                       </div>
                     ))
                   }
@@ -555,7 +606,7 @@ export default function Dashboard() {
             <div className="mh"/>
             <div className="cico">💳</div>
             <div className="ctit">Konfirmasi Pembayaran</div>
-            <div className="cdesc">Kamu akan diarahkan ke halaman pembayaran untuk menyelesaikan transaksi.</div>
+            <div className="cdesc">Kamu akan diarahkan ke halaman pembayaran. Setelah bayar, sistem akan otomatis mengkonfirmasi pembayaranmu.</div>
             <div className="cbox">
               <div className="cbl">{showPayModal.paymentType?.name}</div>
               <div className="cbv">{rp(showPayModal.amount)}</div>
