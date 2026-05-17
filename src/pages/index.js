@@ -12,11 +12,6 @@ export default function Home() {
       html { scroll-behavior: smooth; }
       body { overflow-x: hidden; font-family: 'Segoe UI', sans-serif; }
 
-      @keyframes floatLogo {
-        0%   { transform: translateY(0px) rotate(-1deg) scale(1); }
-        50%  { transform: translateY(-16px) rotate(1.5deg) scale(1.03); }
-        100% { transform: translateY(0px) rotate(-1deg) scale(1); }
-      }
       @keyframes fadeSlideLeft {
         from { opacity: 0; transform: translateX(-40px); }
         to   { opacity: 1; transform: translateX(0); }
@@ -25,14 +20,15 @@ export default function Home() {
         from { opacity: 0; transform: translateX(40px); }
         to   { opacity: 1; transform: translateX(0); }
       }
-      @keyframes softGlow {
-        0%, 100% { filter: drop-shadow(0 12px 40px rgba(34,197,94,0.20)); }
-        50%       { filter: drop-shadow(0 20px 60px rgba(34,197,94,0.40)); }
+      @keyframes floatChar {
+        0%   { transform: translateY(0px); }
+        50%  { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
       }
 
       .hero-text-anim { animation: fadeSlideLeft 0.9s cubic-bezier(.22,.68,0,1.2) both; }
       .hero-logo-anim { animation: fadeSlideRight 0.9s cubic-bezier(.22,.68,0,1.2) 0.2s both; }
-      .float-logo { animation: floatLogo 5s ease-in-out infinite, softGlow 5s ease-in-out infinite; }
+      .float-char { animation: floatChar 5s ease-in-out infinite; }
 
       /* NAVBAR */
       .navbar {
@@ -94,19 +90,22 @@ export default function Home() {
 
       /* HERO */
       .hero {
-        position: relative; padding: 80px;
+        position: relative; padding: 80px 80px 0;
         background: linear-gradient(135deg, #fefce8 0%, #dcfce7 55%, #bbf7d0 100%);
         overflow: hidden; min-height: 88vh;
-        display: flex; align-items: center;
+        display: flex; align-items: flex-end;
       }
       .hero-grid {
         position: relative; z-index: 2;
         display: grid; grid-template-columns: 1fr 1fr;
-        gap: 60px; align-items: center;
+        gap: 60px; align-items: flex-end;
         max-width: 1100px; margin: 0 auto; width: 100%;
       }
-      .hero-left  { display: flex; flex-direction: column; align-items: flex-start; }
-      .hero-right { display: flex; justify-content: center; align-items: center; }
+      .hero-left {
+        display: flex; flex-direction: column; align-items: flex-start;
+        padding-bottom: 80px;
+      }
+      .hero-right { display: flex; justify-content: center; align-items: flex-end; }
 
       .hero-badge {
         display: inline-block;
@@ -144,13 +143,16 @@ export default function Home() {
       }
       .btn-secondary:hover { background: #f0fdf4; border-color: #22c55e; }
 
-      .logo-circle {
-        width: 360px; height: 360px; border-radius: 50%;
-        background: radial-gradient(circle, rgba(255,255,255,0.85) 40%, rgba(187,247,208,0.5) 100%);
-        display: flex; align-items: center; justify-content: center;
-        box-shadow: 0 8px 48px rgba(34,197,94,0.12);
+      /* HERO CHARACTER */
+      .hero-char-img {
+        width: 100%;
+        max-width: 500px;
+        height: auto;
+        object-fit: contain;
+        object-position: bottom;
+        filter: drop-shadow(0 -8px 32px rgba(20,83,45,0.15));
+        display: block;
       }
-      .logo-circle img { width: 260px; height: 260px; object-fit: contain; }
 
       .blob { position: absolute; border-radius: 50%; z-index: 1; pointer-events: none; }
       .blob1 { width:500px; height:500px; top:-120px; right:-100px; background: radial-gradient(circle, rgba(34,197,94,0.13) 0%, transparent 70%); }
@@ -159,6 +161,8 @@ export default function Home() {
 
       /* KONTAK */
       .contact-section { padding: 80px 60px; background: #f9fafb; text-align: center; }
+      .section-title { font-size: 28px; font-weight: 800; color: #111827; margin-bottom: 8px; }
+      .section-sub { color: #6b7280; font-size: 15px; margin-bottom: 40px; }
       .contact-grid {
         display: grid; grid-template-columns: 1fr 1.4fr;
         gap: 28px; max-width: 960px; margin: 0 auto; text-align: left;
@@ -181,44 +185,53 @@ export default function Home() {
       .contact-val   { font-size: 14px; color: #111827; font-weight: 500; line-height: 1.6; margin: 0; }
       .map-wrap { border-radius: 20px; overflow: hidden; height: 360px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
       .map-wrap iframe { width: 100%; height: 100%; border: 0; display: block; }
+
       .social-link {
-        display: flex; align-items: center; gap: 8px;
+        display: flex; align-items: center; gap: 10px;
         color: #14532d; font-weight: 600; font-size: 14px;
         text-decoration: none; transition: opacity 0.15s;
+        padding: 6px 0;
       }
       .social-link:hover { opacity: 0.7; }
+      .social-icon {
+        width: 32px; height: 32px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+      }
+      .social-icon-ig  { background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+      .social-icon-fb  { background: #1877f2; }
+      .social-icon-yt  { background: #ff0000; }
 
       /* FOOTER */
       .footer { background: #111827; color: #9ca3af; padding: 28px 60px; text-align: center; font-size: 13px; }
 
-      /* ── TABLET (max 1024px) ── */
+      /* TABLET */
       @media (max-width: 1024px) {
         .navbar { padding: 14px 32px; }
-        .hero { padding: 60px 40px; min-height: auto; }
+        .hero { padding: 60px 40px 0; min-height: auto; }
+        .hero-left { padding-bottom: 60px; }
         .hero-title { font-size: 36px; }
-        .logo-circle { width: 280px; height: 280px; }
-        .logo-circle img { width: 200px; height: 200px; }
+        .hero-char-img { max-width: 380px; }
         .contact-section { padding: 60px 32px; }
         .footer { padding: 24px 32px; }
       }
 
-      /* ── MOBILE (max 768px) ── */
+      /* MOBILE */
       @media (max-width: 768px) {
         .navbar { padding: 12px 20px; }
         .nav-menu { display: none; }
         .hamburger { display: flex; }
 
-        .hero { padding: 40px 20px 56px; min-height: auto; }
-        .hero-grid { grid-template-columns: 1fr; gap: 28px; text-align: center; }
-        .hero-left  { align-items: center; }
-        .hero-right { order: -1; }
+        .hero { padding: 32px 20px 0; min-height: auto; align-items: flex-start; }
+        .hero-grid { grid-template-columns: 1fr; gap: 16px; text-align: center; }
+        .hero-left  { align-items: center; padding-bottom: 0; order: 1; }
+        .hero-right { order: 0; }
         .hero-title { font-size: 28px; }
-        .hero-desc  { font-size: 14px; max-width: 100%; margin-bottom: 28px; }
-        .hero-btns  { justify-content: center; }
+        .hero-desc  { font-size: 14px; max-width: 100%; margin-bottom: 24px; }
+        .hero-btns  { justify-content: center; margin-bottom: 32px; }
         .btn-primary, .btn-secondary { padding: 12px 22px; font-size: 14px; }
+        .hero-char-img { max-width: 260px; }
 
-        .logo-circle { width: 200px; height: 200px; }
-        .logo-circle img { width: 140px; height: 140px; }
         .blob1 { width: 220px; height: 220px; top: -60px; right: -50px; }
         .blob2 { width: 160px; height: 160px; bottom: -40px; left: -40px; }
         .blob3 { display: none; }
@@ -231,12 +244,11 @@ export default function Home() {
         .footer { padding: 20px; font-size: 12px; }
       }
 
-      /* ── SMALL MOBILE (max 400px) ── */
+      /* SMALL MOBILE */
       @media (max-width: 400px) {
         .hero-title { font-size: 22px; }
         .hero-badge { font-size: 11px; padding: 6px 12px; }
-        .logo-circle { width: 160px; height: 160px; }
-        .logo-circle img { width: 110px; height: 110px; }
+        .hero-char-img { max-width: 200px; }
         .hero-btns { flex-direction: column; width: 100%; }
         .btn-primary, .btn-secondary { width: 100%; text-align: center; }
       }
@@ -252,6 +264,50 @@ export default function Home() {
       if (el) el.scrollIntoView({ behavior: "smooth" });
     }, 80);
   }
+
+  const IconInstagram = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+    </svg>
+  );
+
+  const IconFacebook = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+    </svg>
+  );
+
+  const IconYoutube = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+    </svg>
+  );
+
+  const socialMedias = [
+    {
+      icon: <IconInstagram />,
+      iconClass: "social-icon social-icon-ig",
+      label: "Instagram",
+      handle: "@tarmub_sumberjo",
+      href: "https://instagram.com/tarmub_sumberjo",
+    },
+    {
+      icon: <IconFacebook />,
+      iconClass: "social-icon social-icon-fb",
+      label: "Facebook",
+      handle: "tarmub_sumberjo",
+      href: "https://facebook.com/tarmub_sumberjo",
+    },
+    {
+      icon: <IconYoutube />,
+      iconClass: "social-icon social-icon-yt",
+      label: "YouTube",
+      handle: "Santri Tarbiyah",
+      href: "https://youtube.com/@SantriTarbiyah",
+    },
+  ];
 
   return (
     <div>
@@ -292,6 +348,8 @@ export default function Home() {
         <div className="blob blob2" />
         <div className="blob blob3" />
         <div className="hero-grid">
+
+          {/* TEKS KIRI */}
           <div className="hero-left hero-text-anim">
             <span className="hero-badge">🌿 SISTEM TERPERCAYA & MODERN</span>
             <h1 className="hero-title">
@@ -308,11 +366,16 @@ export default function Home() {
             </div>
           </div>
 
+          {/* GAMBAR KARAKTER SANTRI - KANAN */}
           <div className="hero-right hero-logo-anim">
-            <div className="logo-circle">
-              <img className="float-logo" src="/logo-sibatamu.png" alt="SIBATAMU Logo" />
-            </div>
+            <img
+              className="hero-char-img float-char"
+              src="/gambar-santri.png"
+              alt="Santri Madrasah Tarbiyatul Mubalighin Sumberjo"
+              onError={e => e.target.style.display = "none"}
+            />
           </div>
+
         </div>
       </section>
 
@@ -335,18 +398,22 @@ export default function Home() {
                 </div>
               </div>
             ))}
+
+            {/* SOSIAL MEDIA */}
             <div className="contact-item">
               <div className="contact-icon">📲</div>
-              <div>
+              <div style={{ width: "100%" }}>
                 <p className="contact-label">Media Sosial</p>
-                <div style={{ display:"flex", flexDirection:"column", gap:8, marginTop:6 }}>
-                  {[
-                    { icon:"📸", label:"Instagram", href:"https://instagram.com/" },
-                    { icon:"📘", label:"Facebook",  href:"https://facebook.com/" },
-                    { icon:"▶️", label:"YouTube",   href:"https://youtube.com/" },
-                  ].map((s, i) => (
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
+                  {socialMedias.map((s, i) => (
                     <a key={i} href={s.href} target="_blank" rel="noreferrer" className="social-link">
-                      {s.icon} {s.label}
+                      <span className={s.iconClass}>
+                        {s.icon}
+                      </span>
+                      <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.3 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>{s.label}</span>
+                        <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 400 }}>{s.handle}</span>
+                      </span>
                     </a>
                   ))}
                 </div>
