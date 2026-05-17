@@ -37,8 +37,9 @@ export async function createMidtransTransaction({
       email: email,
     },
     callbacks: {
-      finish: returnUrl,
+  finish: returnUrl,
     },
+    notification_url: `${process.env.NEXTAUTH_URL}/api/payments/midtrans-callback`,
   }
 
   console.log("MIDTRANS REQUEST:", JSON.stringify(body, null, 2))
