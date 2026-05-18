@@ -70,7 +70,7 @@ export default async function handler(req, res) {
       )
     )
 
-    return res.status(200).json({ message: `Berhasil memproses ${promotions.length} santri` })
+    return res.status(200).json({ message: `Berhasil memproses naik kelas santri` })
   } catch (e) {
     console.error("PROMOTE ERROR CODE:", e.code)
     console.error("PROMOTE ERROR META:", JSON.stringify(e.meta))
