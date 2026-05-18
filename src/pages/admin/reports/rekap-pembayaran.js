@@ -49,10 +49,19 @@ export default function RekapPembayaran() {
 
       const json = await res.json()
 
-      setData(json)
+      // ✅ Pastikan data adalah array
+      if (Array.isArray(json)) {
+        setData(json)
+      } else {
+        console.error("API error:", json)
+        alert("Error: " + (json.message || "Gagal mengambil data"))
+        setData([])
+      }
+
       setSearched(true)
     } catch (err) {
       alert("Gagal mengambil data")
+      setData([])
     } finally {
       setLoading(false)
     }
