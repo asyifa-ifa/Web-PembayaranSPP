@@ -10,6 +10,10 @@ export default function PaymentPage() {
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [paymentTypes, setPaymentTypes] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [academicYears, setAcademicYears] = useState([]);
+  const [filterClass, setFilterClass] = useState("");
+  const [filterYear, setFilterYear] = useState("");
 
   const [showTambah, setShowTambah] = useState(false);
   const [tambahStudentId, setTambahStudentId] = useState("");
@@ -17,15 +21,32 @@ export default function PaymentPage() {
   const [loadingTambah, setLoadingTambah] = useState(false);
 
   useEffect(() => {
-    loadStudents();
     fetch("/api/payment-types").then(r => r.json()).then(setPaymentTypes);
+    fetch("/api/classes/list").then(r => r.json()).then(setClasses);
+    fetch("/api/students/academic-years").then(r => r.json()).then(setAcademicYears);
+    loadStudents();
   }, []);
 
-  const loadStudents = () => {
-    fetch("/api/students/payment-list")
+  const loadStudents = (classId = "", academicYear = "") => {
+    const params = new URLSearchParams()
+    if (classId) params.append("classId", classId)
+    if (academicYear) params.append("academicYear", academicYear)
+    const query = params.toString() ? `?${params.toString()}` : ""
+
+    fetch(`/api/students/payment-list${query}`)
       .then((res) => res.json())
       .then((data) => setStudents(data.students || []));
   };
+
+  const handleFilterClass = (val) => {
+    setFilterClass(val)
+    loadStudents(val, filterYear)
+  }
+
+  const handleFilterYear = (val) => {
+    setFilterYear(val)
+    loadStudents(filterClass, val)
+  }
 
   const openDetail = async (id) => {
     const res = await fetch(`/api/students/${id}/detail`);
@@ -59,12 +80,9 @@ export default function PaymentPage() {
     }
   };
 
-  // Hapus tagihan (bill)
   const hapusBill = async (billId) => {
     if (!confirm("Hapus tagihan ini?")) return;
-    const res = await fetch(`/api/bills/${billId}/delete`, {
-      method: "DELETE",
-    });
+    const res = await fetch(`/api/bills/${billId}/delete`, { method: "DELETE" });
     const data = await res.json();
     if (res.ok) {
       alert("✅ Tagihan berhasil dihapus!");
@@ -74,12 +92,9 @@ export default function PaymentPage() {
     }
   };
 
-  // Hapus payment (riwayat)
   const hapusPayment = async (paymentId) => {
     if (!confirm("Hapus riwayat pembayaran ini?")) return;
-    const res = await fetch(`/api/payments/${paymentId}/delete`, {
-      method: "DELETE",
-    });
+    const res = await fetch(`/api/payments/${paymentId}/delete`, { method: "DELETE" });
     const data = await res.json();
     if (res.ok) {
       alert("✅ Riwayat pembayaran berhasil dihapus!");
@@ -125,7 +140,7 @@ export default function PaymentPage() {
       setShowTambah(false);
       setTambahStudentId("");
       setTambahItems([]);
-      loadStudents();
+      loadStudents(filterClass, filterYear);
     } catch (err) {
       alert("Error: " + err.message);
     } finally {
@@ -169,7 +184,8 @@ export default function PaymentPage() {
         <div class="row"><span class="label">No. Kwitansi</span><span class="value">#KW-${String(p.id).padStart(5, "0")}</span></div>
         <div class="row"><span class="label">Tanggal</span><span class="value">${tanggal}</span></div>
         <div class="row"><span class="label">Nama Santri</span><span class="value">${selectedStudent.name}</span></div>
-        <div class="row"><span class="label">NISN</span><span class="value">${selectedStudent.nisn}</span></div>
+        <div class="row"><span class="label">NIS</span><span class="value">${selectedStudent.nis || "-"}</span></div>
+        <div class="row"><span class="label">NISN</span><span class="value">${selectedStudent.nisn || "-"}</span></div>
         <div class="row"><span class="label">Kelas</span><span class="value">${selectedStudent.class?.name || "-"}</span></div>
         <div class="row"><span class="label">Jenis Pembayaran</span><span class="value">${p.paymentType.name}</span></div>
         <div class="row"><span class="label">Metode Pembayaran</span><span class="value">${p.method === "CASH" ? "💵 Tunai" : "🏦 Transfer"}</span></div>
@@ -203,25 +219,60 @@ export default function PaymentPage() {
           </button>
         </div>
 
+        {/* FILTER */}
+        <div className="filter-row">
+          <select
+            className="filter-select"
+            value={filterClass}
+            onChange={e => handleFilterClass(e.target.value)}
+          >
+            <option value="">-- Semua Kelas --</option>
+            {classes.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+
+          <select
+            className="filter-select"
+            value={filterYear}
+            onChange={e => handleFilterYear(e.target.value)}
+          >
+            <option value="">-- Semua Tahun Ajaran --</option>
+            {academicYears.map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+
+          <span className="count-badge">{students.length} santri</span>
+        </div>
+
         <div className="card">
           <table>
             <thead>
               <tr>
                 <th>No</th>
+                <th>NIS</th>
                 <th>NISN</th>
                 <th>Kelas</th>
-                <th>Angkatan</th>
+                <th>Tahun Ajaran</th>
                 <th>Nama</th>
                 <th>Aksi</th>
               </tr>
             </thead>
             <tbody>
-              {students.map((s, i) => (
+              {students.length === 0 ? (
+                <tr>
+                  <td colSpan="7" style={{ textAlign: "center", color: "#888", padding: "30px" }}>
+                    Tidak ada data santri
+                  </td>
+                </tr>
+              ) : students.map((s, i) => (
                 <tr key={s.id}>
                   <td>{i + 1}</td>
-                  <td>{s.nisn}</td>
-                  <td>{s.class?.name}</td>
-                  <td>{s.entryYear}</td>
+                  <td>{s.nis || "-"}</td>
+                  <td>{s.nisn || "-"}</td>
+                  <td>{s.class?.name || "-"}</td>
+                  <td>{s.classHistories?.[0]?.academicYear || s.entryYear || "-"}</td>
                   <td>{s.name}</td>
                   <td>
                     <button className="btn-detail" onClick={() => openDetail(s.id)}>
@@ -296,10 +347,11 @@ export default function PaymentPage() {
           <div className="modal">
             <div className="modal-content">
               <h3>👤 Detail Santri</h3>
-              <p><b>NISN:</b> {selectedStudent.nisn}</p>
+              <p><b>NIS:</b> {selectedStudent.nis || "-"}</p>
+              <p><b>NISN:</b> {selectedStudent.nisn || "-"}</p>
               <p><b>Nama:</b> {selectedStudent.name}</p>
               <p><b>Kelas:</b> {selectedStudent.class?.name}</p>
-              <p><b>Angkatan:</b> {selectedStudent.entryYear}</p>
+              <p><b>Tahun Ajaran:</b> {selectedStudent.classHistories?.[0]?.academicYear || selectedStudent.entryYear || "-"}</p>
 
               <hr />
               <h4>📋 Tagihan</h4>
@@ -330,15 +382,9 @@ export default function PaymentPage() {
                         <td>
                           {b.status === "UNPAID" ? (
                             <div style={{ display: "flex", gap: "5px", flexWrap: "wrap" }}>
-                              <button className="btn-cash" onClick={() => konfirmasiCash(b.id)}>
-                                💵 CASH
-                              </button>
-                              <button className="btn-transfer" onClick={() => bayarTransfer(b.id)}>
-                                🏦 Transfer
-                              </button>
-                              <button className="btn-hapus" onClick={() => hapusBill(b.id)}>
-                                🗑️ Hapus
-                              </button>
+                              <button className="btn-cash" onClick={() => konfirmasiCash(b.id)}>💵 CASH</button>
+                              <button className="btn-transfer" onClick={() => bayarTransfer(b.id)}>🏦 Transfer</button>
+                              <button className="btn-hapus" onClick={() => hapusBill(b.id)}>🗑️ Hapus</button>
                             </div>
                           ) : (
                             <span style={{ color: "green", fontSize: 13 }}>✅ Lunas</span>
@@ -384,14 +430,10 @@ export default function PaymentPage() {
                         <td>
                           <div style={{ display: "flex", gap: "5px", flexWrap: "wrap" }}>
                             {p.status === "SUCCESS" && (
-                              <button className="btn-cetak" onClick={() => cetakKwitansi(p)}>
-                                🖨️ Kwitansi
-                              </button>
+                              <button className="btn-cetak" onClick={() => cetakKwitansi(p)}>🖨️ Kwitansi</button>
                             )}
                             {(p.status === "PENDING" || p.status === "FAILED") && (
-                              <button className="btn-hapus" onClick={() => hapusPayment(p.id)}>
-                                🗑️ Hapus
-                              </button>
+                              <button className="btn-hapus" onClick={() => hapusPayment(p.id)}>🗑️ Hapus</button>
                             )}
                             {p.status === "PENDING" && (
                               <span style={{ color: "orange", fontSize: 12 }}>⏳ Menunggu</span>
@@ -408,9 +450,7 @@ export default function PaymentPage() {
               )}
 
               <div style={{ marginTop: "15px", textAlign: "right" }}>
-                <button className="btn-tutup" onClick={() => setSelectedStudent(null)}>
-                  Tutup
-                </button>
+                <button className="btn-tutup" onClick={() => setSelectedStudent(null)}>Tutup</button>
               </div>
             </div>
           </div>
@@ -421,6 +461,24 @@ export default function PaymentPage() {
         .container { padding: 20px; background: #f5f6fa; min-height: 100vh; }
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         h2 { margin: 0; }
+        .filter-row {
+          display: flex; gap: 10px; align-items: center;
+          margin-bottom: 14px; flex-wrap: wrap;
+        }
+        .filter-select {
+          padding: 8px 32px 8px 12px; border-radius: 8px;
+          border: 1.5px solid #dde5e0; background: #fafcfb;
+          font-size: 14px; color: #1a3d28; outline: none;
+          appearance: none;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a7a66' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+          background-repeat: no-repeat; background-position: right 10px center;
+          cursor: pointer; min-width: 160px;
+        }
+        .filter-select:focus { border-color: #3a8f50; }
+        .count-badge {
+          font-size: 12px; color: #7a9a85; background: #f0f5f1;
+          padding: 4px 10px; border-radius: 20px; border: 1px solid #dde5e0;
+        }
         .card { background: white; border-radius: 10px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         table { width: 100%; border-collapse: collapse; }
         th, td { border: 1px solid #ddd; padding: 10px; }
