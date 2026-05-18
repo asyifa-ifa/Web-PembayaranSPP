@@ -374,9 +374,11 @@ export default function StudentList() {
                         : "-"}
                     </td>
                     <td>
-                      {s.entryYear
-                        ? <span className="tahun-badge">{s.entryYear}</span>
-                        : <span style={{ color: "#b0c4b8" }}>-</span>}
+                      {s.classHistories?.[0]?.academicYear
+                        ? <span className="tahun-badge">{s.classHistories[0].academicYear}</span>
+                        : s.entryYear
+                          ? <span className="tahun-badge">{s.entryYear}</span>
+                          : <span style={{ color: "#b0c4b8" }}>-</span>}
                     </td>
                     <td>
                       <div className="action-group">

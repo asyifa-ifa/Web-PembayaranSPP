@@ -15,10 +15,14 @@ export default async function handler(req, res) {
 
       include: {
         class: true,
+        classHistories: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
       },
 
       orderBy: {
-        name: "asc", // 🔥 lebih bagus dari id
+        name: "asc",
       },
     });
 
