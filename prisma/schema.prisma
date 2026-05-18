@@ -103,6 +103,8 @@ model ClassHistory {
   class        Class    @relation(fields: [classId], references: [id])
   academicYear String   // "2024/2025"
   createdAt    DateTime @default(now())
+
+  @@unique([studentId, academicYear]) 
 }
 
 //////////////////////////////
