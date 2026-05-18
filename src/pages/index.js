@@ -396,7 +396,7 @@ export default function Home() {
           <div className="hero-right hero-logo-anim">
             <img
               className="hero-char-img float-char"
-              src="/gambar-santri.png"
+              src="/logo-sibatamu.png"
               alt="Santri Madrasah Tarbiyatul Mubalighin Sumberjo"
               onError={e => e.target.style.display = "none"}
             />
