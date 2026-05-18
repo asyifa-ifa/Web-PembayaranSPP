@@ -20,6 +20,7 @@ export default function ManualPayment() {
     amount: "",
     method: "CASH",
     note: "",
+    academicYear: "", // ✅ tambah ini
   });
   const [loading, setLoading] = useState(false);
 
@@ -62,6 +63,7 @@ export default function ManualPayment() {
     if (!selectedStudent) return alert("Pilih santri dulu");
     if (!form.paymentTypeId) return alert("Pilih jenis pembayaran");
     if (!form.amount) return alert("Isi nominal");
+    if (!form.academicYear) return alert("Isi tahun ajaran"); // ✅ tambah validasi
 
     setLoading(true);
     try {
@@ -74,6 +76,7 @@ export default function ManualPayment() {
           amount: cleanAmount(form.amount),
           method: "CASH",
           note: form.note,
+          academicYear: form.academicYear, // ✅ tambah ini
         }),
       });
       const data = await res.json();
@@ -138,7 +141,6 @@ export default function ManualPayment() {
                 </div>
               </div>
 
-              {/* Student Info Card */}
               {selectedStudentData && (
                 <div className="student-card">
                   <div className="student-avatar">{selectedStudentData.name?.charAt(0)?.toUpperCase()}</div>
@@ -244,7 +246,19 @@ export default function ManualPayment() {
                 </div>
               </div>
 
-              {/* Metode - hanya cash, tampilan info saja */}
+              {/* ✅ Tahun Ajaran */}
+              <div className="field">
+                <label className="field-label">Tahun Ajaran</label>
+                <input
+                  className="field-input"
+                  type="text"
+                  placeholder="contoh: 2024/2025"
+                  value={form.academicYear}
+                  onChange={(e) => setForm((prev) => ({ ...prev, academicYear: e.target.value }))}
+                />
+              </div>
+
+              {/* Metode */}
               <div className="field">
                 <label className="field-label">Metode Pembayaran</label>
                 <div className="cash-only-badge">
@@ -281,7 +295,7 @@ export default function ManualPayment() {
             <button
               className="btn-submit"
               onClick={handleSubmit}
-              disabled={loading || !selectedStudent || !form.paymentTypeId || !form.amount}
+              disabled={loading || !selectedStudent || !form.paymentTypeId || !form.amount || !form.academicYear}
             >
               {loading ? (
                 <>
@@ -312,6 +326,11 @@ export default function ManualPayment() {
                 <span className="summary-label">Kelas</span>
                 <span className="summary-value">{selectedStudentData?.class?.name || "—"}</span>
               </div>
+              {/* ✅ Tampilkan tahun ajaran di summary */}
+              <div className="summary-row">
+                <span className="summary-label">Tahun Ajaran</span>
+                <span className="summary-value">{form.academicYear || "—"}</span>
+              </div>
               <div className="summary-divider" />
               <div className="summary-row">
                 <span className="summary-label">Jenis</span>
@@ -332,7 +351,7 @@ export default function ManualPayment() {
               </div>
 
               <div className="summary-status">
-                {selectedStudent && form.paymentTypeId && form.amount ? (
+                {selectedStudent && form.paymentTypeId && form.amount && form.academicYear ? (
                   <div className="status-ready">✅ Siap dikonfirmasi</div>
                 ) : (
                   <div className="status-pending">⏳ Lengkapi form terlebih dahulu</div>
@@ -344,15 +363,12 @@ export default function ManualPayment() {
       </div>
 
       <style jsx>{`
-        /* ===== BASE ===== */
         .page-wrapper {
           padding: 24px;
           max-width: 1100px;
           margin: 0 auto;
           font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
         }
-
-        /* ===== HEADER ===== */
         .page-header {
           display: flex;
           align-items: center;
@@ -381,16 +397,12 @@ export default function ManualPayment() {
           letter-spacing: -0.4px;
         }
         .page-subtitle { margin: 2px 0 0; font-size: 13px; color: #6b7280; }
-
-        /* ===== GRID ===== */
         .content-grid {
           display: grid;
           grid-template-columns: 1fr 280px;
           gap: 20px;
           align-items: start;
         }
-
-        /* ===== FORM CARD ===== */
         .form-card {
           background: white;
           border-radius: 18px;
@@ -398,8 +410,6 @@ export default function ManualPayment() {
           border: 1.5px solid #d1fae5;
           overflow: hidden;
         }
-
-        /* ===== SECTION ===== */
         .section {
           padding: 24px;
           border-bottom: 1.5px solid #f0fdf4;
@@ -422,8 +432,6 @@ export default function ManualPayment() {
         }
         .section-title { font-size: 15px; font-weight: 600; color: #14532d; }
         .section-sub { font-size: 12px; color: #9ca3af; margin-top: 1px; }
-
-        /* ===== FIELDS ===== */
         .field { margin-bottom: 16px; }
         .field:last-child { margin-bottom: 0; }
         .fields-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -488,8 +496,6 @@ export default function ManualPayment() {
           pointer-events: none;
         }
         .field-select.padded { padding-left: 38px; }
-
-        /* ===== STUDENT CARD ===== */
         .student-card {
           display: flex;
           align-items: center;
@@ -522,8 +528,6 @@ export default function ManualPayment() {
         .student-bill-count { text-align: center; flex-shrink: 0; }
         .bill-count-num { font-size: 20px; font-weight: 700; color: #f59e0b; }
         .bill-count-label { font-size: 11px; color: #9ca3af; }
-
-        /* ===== BILLS LIST ===== */
         .bills-list { display: flex; flex-direction: column; gap: 8px; }
         .bill-item {
           display: flex;
@@ -568,8 +572,6 @@ export default function ManualPayment() {
           font-weight: 500;
         }
         .empty-bills-icon { font-size: 18px; }
-
-        /* ===== AMOUNT ===== */
         .amount-wrap { position: relative; display: flex; align-items: center; }
         .amount-prefix {
           position: absolute;
@@ -586,8 +588,6 @@ export default function ManualPayment() {
           color: #16a34a;
           font-weight: 500;
         }
-
-        /* ===== CASH ONLY BADGE ===== */
         .cash-only-badge {
           display: flex;
           align-items: center;
@@ -600,8 +600,6 @@ export default function ManualPayment() {
         .cash-icon { font-size: 24px; flex-shrink: 0; }
         .cash-title { font-size: 14px; font-weight: 600; color: #15803d; }
         .cash-sub { font-size: 12px; color: #6b7280; margin-top: 2px; }
-
-        /* ===== INFO BOX ===== */
         .info-box {
           display: flex;
           align-items: flex-start;
@@ -616,8 +614,6 @@ export default function ManualPayment() {
           line-height: 1.5;
         }
         .info-icon { font-size: 16px; flex-shrink: 0; }
-
-        /* ===== SUBMIT ===== */
         .btn-submit {
           display: flex;
           align-items: center;
@@ -647,8 +643,6 @@ export default function ManualPayment() {
           animation: spin .6s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* ===== SUMMARY PANEL ===== */
         .summary-panel { position: sticky; top: 20px; }
         .summary-card {
           background: white;
@@ -703,14 +697,11 @@ export default function ManualPayment() {
           font-size: 12px;
           text-align: center;
         }
-
-        /* ===== RESPONSIVE ===== */
         @media (max-width: 900px) {
           .content-grid { grid-template-columns: 1fr; }
           .summary-panel { position: static; }
           .fields-grid { grid-template-columns: 1fr; }
         }
-
         @media (max-width: 600px) {
           .page-wrapper { padding: 16px; }
           .section { padding: 18px 16px; }
