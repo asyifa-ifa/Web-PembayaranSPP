@@ -20,7 +20,7 @@ export default function RekapPembayaran() {
       .then(r => r.json())
       .then(setClasses)
 
-    fetch("/api/payment-types/list")
+    fetch("/api/payment-types")
       .then(r => r.json())
       .then(setPaymentTypes)
   }, [])
