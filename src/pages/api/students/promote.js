@@ -44,7 +44,6 @@ export default async function handler(req, res) {
     // Transaksi: hanya write operations
     await prisma.$transaction(
       promotions.map(p => {
-        const student = studentMap[parseInt(p.studentId)]
         return prisma.classHistory.upsert({
           where: {
             studentId_academicYear: {
@@ -52,10 +51,10 @@ export default async function handler(req, res) {
               academicYear,
             }
           },
-          update: { classId: student.classId },
+          update: { classId: parseInt(p.newClassId) },  // ← kelas BARU
           create: {
             studentId: parseInt(p.studentId),
-            classId: student.classId,
+            classId: parseInt(p.newClassId),             // ← kelas BARU
             academicYear,
           }
         })

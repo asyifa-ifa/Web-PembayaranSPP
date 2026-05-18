@@ -40,9 +40,8 @@ export default function RekapSantri() {
 
   const activeYear = customYear.trim() || selectedYear
 
-  // Ringkasan per kelas
   const perKelas = data.reduce((acc, row) => {
-    const nama = row.class?.name || "-"
+    const nama = row.student?.class?.name || "-"
     if (!acc[nama]) acc[nama] = { name: nama, total: 0, L: 0, P: 0 }
     acc[nama].total++
     if (row.student?.gender === "L") acc[nama].L++
@@ -53,9 +52,6 @@ export default function RekapSantri() {
   const totalL = data.filter(r => r.student?.gender === "L").length
   const totalP = data.filter(r => r.student?.gender === "P").length
 
-  // =====================
-  // EXPORT EXCEL
-  // =====================
   async function exportExcel() {
     const XLSX = await import("xlsx")
 
@@ -63,11 +59,13 @@ export default function RekapSantri() {
       "No": i + 1,
       "NISN": r.student?.nisn || "-",
       "Nama Santri": r.student?.name || "-",
-      "Kelas": r.class?.name || "-",
+      "Kelas Lama": r.class?.name || "-",
+      "Kelas Sekarang": r.student?.class?.name || "-",
       "Jenis Kelamin": r.student?.gender === "L" ? "Laki-laki" : "Perempuan",
       "Nama Wali": r.student?.guardian || "-",
       "Tahun Masuk": r.student?.entryYear || "-",
-      "Status": r.student?.status === "ACTIVE" ? "Aktif" : r.student?.status === "GRADUATED" ? "Lulus" : "Keluar",
+      "Status": r.student?.status === "ACTIVE" ? "Aktif"
+        : r.student?.status === "GRADUATED" ? "Lulus" : "Keluar",
     }))
 
     const ws = XLSX.utils.json_to_sheet(rows)
@@ -82,9 +80,6 @@ export default function RekapSantri() {
     XLSX.writeFile(wb, `Rekap_Santri_${activeYear.replace("/", "-")}.xlsx`)
   }
 
-  // =====================
-  // EXPORT PDF
-  // =====================
   async function exportPDF() {
     const jsPDFModule = await import("jspdf")
     const jsPDF = jsPDFModule.jsPDF
@@ -106,29 +101,32 @@ export default function RekapSantri() {
 
     doc.autoTable({
       startY: 35,
-      head: [["No", "NISN", "Nama Santri", "Kelas", "JK", "Wali", "Thn Masuk", "Status"]],
+      head: [["No", "NISN", "Nama Santri", "Kelas Lama", "Kelas Sekarang", "JK", "Wali", "Thn Masuk", "Status"]],
       body: data.map((r, i) => [
         i + 1,
         r.student?.nisn || "-",
         r.student?.name || "-",
         r.class?.name || "-",
+        r.student?.class?.name || "-",
         r.student?.gender === "L" ? "L" : "P",
         r.student?.guardian || "-",
         r.student?.entryYear || "-",
-        r.student?.status === "ACTIVE" ? "Aktif" : r.student?.status === "GRADUATED" ? "Lulus" : "Keluar",
+        r.student?.status === "ACTIVE" ? "Aktif"
+          : r.student?.status === "GRADUATED" ? "Lulus" : "Keluar",
       ]),
       styles: { fontSize: 9, cellPadding: 3 },
       headStyles: { fillColor: [58, 143, 80], textColor: 255, fontStyle: "bold" },
       alternateRowStyles: { fillColor: [245, 250, 246] },
       columnStyles: {
         0: { cellWidth: 10 },
-        1: { cellWidth: 28 },
-        2: { cellWidth: 55 },
-        3: { cellWidth: 35 },
-        4: { cellWidth: 12 },
-        5: { cellWidth: 40 },
-        6: { cellWidth: 22 },
-        7: { cellWidth: 18 },
+        1: { cellWidth: 25 },
+        2: { cellWidth: 50 },
+        3: { cellWidth: 30 },
+        4: { cellWidth: 30 },
+        5: { cellWidth: 10 },
+        6: { cellWidth: 35 },
+        7: { cellWidth: 20 },
+        8: { cellWidth: 18 },
       },
     })
 
@@ -144,35 +142,21 @@ export default function RekapSantri() {
     <AdminLayout>
       <style jsx>{`
         .page-wrapper { padding: 8px 0 40px; }
-
         .page-header { margin-bottom: 24px; }
-        .page-header h2 {
-          font-size: 20px; font-weight: 700; color: #1a3d28; margin: 0 0 4px;
-        }
+        .page-header h2 { font-size: 20px; font-weight: 700; color: #1a3d28; margin: 0 0 4px; }
         .page-header span { font-size: 13px; color: #7a9a85; }
 
-        /* FILTER CARD */
         .filter-card {
-          background: #fff;
-          border: 1px solid #e4e9e6;
-          border-radius: 14px;
-          padding: 20px;
-          margin-bottom: 16px;
+          background: #fff; border: 1px solid #e4e9e6;
+          border-radius: 14px; padding: 20px; margin-bottom: 16px;
         }
-
-        .filter-card-header {
-          display: flex; align-items: center; gap: 8px; margin-bottom: 16px;
-        }
+        .filter-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
         .dot { width: 8px; height: 8px; border-radius: 50%; background: #3a8f50; }
         .filter-card-header span {
           font-size: 12px; font-weight: 700; color: #3a8f50;
           text-transform: uppercase; letter-spacing: 0.6px;
         }
-
-        .filter-row {
-          display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;
-        }
-
+        .filter-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
         .filter-group { display: flex; flex-direction: column; gap: 6px; }
         .filter-group label { font-size: 12px; font-weight: 600; color: #5a7a66; }
 
@@ -192,70 +176,47 @@ export default function RekapSantri() {
           border-color: #3a8f50; box-shadow: 0 0 0 3px rgba(58,143,80,0.1);
         }
         .filter-input::placeholder { color: #b0c4b8; font-size: 13px; }
-
-        .divider-or {
-          font-size: 12px; color: #9ab5a3; font-weight: 600;
-          padding-bottom: 10px;
-        }
+        .divider-or { font-size: 12px; color: #9ab5a3; font-weight: 600; padding-bottom: 10px; }
 
         .btn-search {
           background: #3a8f50; color: #fff; border: none;
           padding: 10px 22px; border-radius: 8px; font-size: 14px;
-          font-weight: 600; cursor: pointer; font-family: inherit;
-          transition: background 0.2s;
+          font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.2s;
         }
         .btn-search:hover { background: #2e7340; }
         .btn-search:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        /* SUMMARY */
-        .summary-row {
-          display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
-        }
-
+        .summary-row { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
         .sum-card {
-          background: #fff; border: 1px solid #e4e9e6; border-radius: 12px;
-          padding: 14px 20px; min-width: 130px;
+          background: #fff; border: 1px solid #e4e9e6;
+          border-radius: 12px; padding: 14px 20px; min-width: 130px;
         }
         .sum-card .sum-label {
           font-size: 11px; font-weight: 600; color: #8aab96;
           text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;
         }
-        .sum-card .sum-val {
-          font-size: 22px; font-weight: 700; color: #1a3d28;
-        }
+        .sum-card .sum-val { font-size: 22px; font-weight: 700; color: #1a3d28; }
         .sum-card .sum-sub { font-size: 11px; color: #9ab5a3; margin-top: 2px; }
 
-        /* EXPORT BUTTONS */
-        .export-row {
-          display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;
-        }
-
+        .export-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
         .btn-export {
           padding: 8px 16px; border-radius: 8px; font-size: 13px;
           font-weight: 600; cursor: pointer; font-family: inherit;
           transition: 0.15s; border: 1.5px solid transparent;
         }
-        .btn-excel {
-          background: #e8f5e9; color: #2e7340; border-color: #a5d6a7;
-        }
+        .btn-excel { background: #e8f5e9; color: #2e7340; border-color: #a5d6a7; }
         .btn-excel:hover { background: #c8e6c9; }
-        .btn-pdf {
-          background: #ffeaea; color: #c62828; border-color: #ef9a9a;
-        }
+        .btn-pdf { background: #ffeaea; color: #c62828; border-color: #ef9a9a; }
         .btn-pdf:hover { background: #ffcdd2; }
 
-        /* PER KELAS */
-        .kelas-grid {
-          display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;
-        }
+        .kelas-grid { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
         .kelas-badge {
-          background: #f7faf8; border: 1px solid #e4e9e6; border-radius: 10px;
-          padding: 8px 14px; font-size: 12px;
+          background: #f7faf8; border: 1px solid #e4e9e6;
+          border-radius: 10px; padding: 8px 14px; font-size: 12px;
         }
         .kelas-badge strong { color: #1a3d28; display: block; margin-bottom: 2px; }
         .kelas-badge span { color: #7a9a85; }
 
-        /* TABLE */
         .table-card {
           background: #fff; border: 1px solid #e4e9e6;
           border-radius: 14px; overflow: hidden;
@@ -270,7 +231,7 @@ export default function RekapSantri() {
         }
 
         .table-scroll { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 750px; }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
 
         th {
           padding: 11px 14px; font-size: 11px; font-weight: 700;
@@ -294,6 +255,14 @@ export default function RekapSantri() {
         .badge-dropped { background: #fff0f0; color: #d32f2f; border: 1px solid #f5bebe; }
         .badge-graduated { background: #e8f0ff; color: #2551a8; border: 1px solid #b8c9f5; }
 
+        /* Highlight kelas berbeda */
+        .kelas-arrow {
+          display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+        }
+        .kelas-lama { color: #9ab5a3; font-size: 12px; text-decoration: line-through; }
+        .kelas-baru { color: #1a3d28; font-weight: 600; }
+        .arrow { color: #3a8f50; font-size: 12px; }
+
         .empty-state {
           text-align: center; padding: 60px 20px; color: #9ab5a3; font-size: 14px;
         }
@@ -306,7 +275,6 @@ export default function RekapSantri() {
           <span>Lihat dan export data santri berdasarkan tahun ajaran</span>
         </div>
 
-        {/* FILTER */}
         <div className="filter-card">
           <div className="filter-card-header">
             <div className="dot" />
@@ -351,10 +319,8 @@ export default function RekapSantri() {
           </div>
         </div>
 
-        {/* HASIL */}
         {searched && (
           <>
-            {/* SUMMARY */}
             <div className="summary-row">
               <div className="sum-card">
                 <div className="sum-label">Total Santri</div>
@@ -375,7 +341,6 @@ export default function RekapSantri() {
               </div>
             </div>
 
-            {/* PER KELAS */}
             {Object.keys(perKelas).length > 0 && (
               <div className="kelas-grid">
                 {Object.values(perKelas).map(k => (
@@ -387,7 +352,6 @@ export default function RekapSantri() {
               </div>
             )}
 
-            {/* EXPORT */}
             {data.length > 0 && (
               <div className="export-row">
                 <button className="btn-export btn-excel" onClick={exportExcel}>
@@ -399,7 +363,6 @@ export default function RekapSantri() {
               </div>
             )}
 
-            {/* TABLE */}
             <div className="table-card">
               <div className="table-card-header">
                 <div className="dot" />
@@ -418,7 +381,7 @@ export default function RekapSantri() {
                         <th>#</th>
                         <th>NISN</th>
                         <th>Nama Santri</th>
-                        <th>Kelas</th>
+                        <th>Kelas Lama → Kelas Sekarang</th>
                         <th>JK</th>
                         <th>Nama Wali</th>
                         <th>Thn Masuk</th>
@@ -431,7 +394,13 @@ export default function RekapSantri() {
                           <td>{i + 1}</td>
                           <td>{r.student?.nisn || "-"}</td>
                           <td style={{ fontWeight: 600 }}>{r.student?.name || "-"}</td>
-                          <td>{r.class?.name || "-"}</td>
+                          <td>
+                            <div className="kelas-arrow">
+                              <span className="kelas-lama">{r.class?.name || "-"}</span>
+                              <span className="arrow">→</span>
+                              <span className="kelas-baru">{r.student?.class?.name || "-"}</span>
+                            </div>
+                          </td>
                           <td>
                             <span className={`badge ${r.student?.gender === "L" ? "badge-l" : "badge-p"}`}>
                               {r.student?.gender === "L" ? "L" : "P"}

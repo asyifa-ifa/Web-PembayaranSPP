@@ -11,7 +11,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: "academicYear wajib diisi" })
     }
 
-    // Ambil semua ClassHistory di tahun ajaran ini
+    // Ambil ClassHistory tahun ini beserta kelas lama + data santri + kelas saat ini
     const histories = await prisma.classHistory.findMany({
       where: { academicYear },
       include: {
@@ -24,9 +24,12 @@ export default async function handler(req, res) {
             guardian: true,
             entryYear: true,
             status: true,
+            class: {  // ← kelas SAAT INI setelah naik
+              select: { id: true, name: true }
+            }
           }
         },
-        class: {
+        class: {  // ← kelas LAMA sebelum naik
           select: { id: true, name: true }
         }
       },
