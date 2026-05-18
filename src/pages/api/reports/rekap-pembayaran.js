@@ -1,4 +1,4 @@
-// pages/api/laporan/rekap-pembayaran.js
+// pages/api/reports/rekap-pembayaran.js
 import prisma from "@/lib/prisma"
 import { getToken } from "next-auth/jwt"
 
