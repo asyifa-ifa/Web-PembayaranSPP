@@ -161,6 +161,8 @@ model Payment {
   method PaymentMethod
   status PaymentStatus @default(PENDING)
 
+  academicYear String?
+
   gatewayRef String? // id transaksi midtrans
   note       String? // catatan admin (manual cash)
 

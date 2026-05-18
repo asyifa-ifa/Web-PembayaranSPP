@@ -13,10 +13,9 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const { studentId, paymentTypeId, amount, method, note, semesterId } = req.body;
+  const { studentId, paymentTypeId, amount, method, note, semesterId, academicYear } = req.body;
 
   try {
-    // 1️⃣ Simpan ke tabel Payment
     const payment = await prisma.payment.create({
       data: {
         studentId: Number(studentId),
@@ -26,10 +25,10 @@ export default async function handler(req, res) {
         status: "SUCCESS",
         note,
         semesterId: semesterId ? Number(semesterId) : null,
+        academicYear: academicYear || null,  // ✅ tambah ini
       },
     });
 
-    // 2️⃣ Update Bill jadi PAID
     const bill = await prisma.bill.findFirst({
       where: {
         studentId: Number(studentId),
@@ -45,7 +44,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // 3️⃣ Kirim email konfirmasi
     try {
       const student = await prisma.student.findUnique({
         where: { id: Number(studentId) },

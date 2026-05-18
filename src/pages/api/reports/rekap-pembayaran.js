@@ -1,4 +1,3 @@
-// pages/api/reports/rekap-pembayaran.js
 import prisma from "@/lib/prisma"
 import { getToken } from "next-auth/jwt"
 
@@ -24,14 +23,9 @@ export default async function handler(req, res) {
       where.student = { classId: parseInt(classId) }
     }
 
-    // ✅ Filter academicYear lewat ClassHistory
+    // ✅ Filter langsung dari field academicYear di tabel Payment
     if (academicYear) {
-      const histories = await prisma.classHistory.findMany({
-        where: { academicYear },
-        select: { studentId: true }
-      })
-      const studentIds = histories.map(h => h.studentId)
-      where.studentId = { in: studentIds }
+      where.academicYear = academicYear
     }
 
     const payments = await prisma.payment.findMany({
@@ -41,7 +35,7 @@ export default async function handler(req, res) {
           select: {
             id: true,
             name: true,
-            nis: true,   // ✅ pakai nis bukan nisn
+            nis: true,
             class: { select: { id: true, name: true } }
           }
         },
@@ -55,7 +49,6 @@ export default async function handler(req, res) {
       ]
     })
 
-    // ✅ Map status agar frontend terima PAID/UNPAID
     const result = payments.map(p => ({
       ...p,
       status: p.status === "SUCCESS" ? "PAID" : "UNPAID"
