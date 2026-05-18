@@ -16,7 +16,6 @@ const menuItems = [
 ];
 
 const laporanItems = [
-  { href: "/admin/reports",                    icon: "📈", label: "Laporan Pembayaran" },
   { href: "/admin/reports/rekap-pembayaran",   icon: "✅", label: "Rekap Pembayaran" },
   { href: "/admin/reports/rekap-santri",       icon: "🎓", label: "Rekap Santri" },
   { href: "/admin/reports/absensi",            icon: "📋", label: "Absensi Santri" },
