@@ -15,7 +15,6 @@ export default async function handler(req, res) {
 
     const where = {}
 
-    // Filter status — Payment pakai SUCCESS/FAILED, bukan PAID/UNPAID
     if (status === "PAID") where.status = "SUCCESS"
     if (status === "UNPAID") where.status = "FAILED"
 
@@ -25,12 +24,14 @@ export default async function handler(req, res) {
       where.student = { classId: parseInt(classId) }
     }
 
-    // Filter academicYear lewat semester (kalau ada), atau abaikan kalau null
+    // ✅ Filter academicYear lewat ClassHistory
     if (academicYear) {
-      where.OR = [
-        { semester: { academicYear } },
-        { semesterId: null } // ← tangkap data manual tanpa semester
-      ]
+      const histories = await prisma.classHistory.findMany({
+        where: { academicYear },
+        select: { studentId: true }
+      })
+      const studentIds = histories.map(h => h.studentId)
+      where.studentId = { in: studentIds }
     }
 
     const payments = await prisma.payment.findMany({
@@ -40,7 +41,7 @@ export default async function handler(req, res) {
           select: {
             id: true,
             name: true,
-            nisn: true,
+            nis: true,   // ✅ pakai nis bukan nisn
             class: { select: { id: true, name: true } }
           }
         },
@@ -54,7 +55,7 @@ export default async function handler(req, res) {
       ]
     })
 
-    // Map status agar frontend tetap terima PAID/UNPAID
+    // ✅ Map status agar frontend terima PAID/UNPAID
     const result = payments.map(p => ({
       ...p,
       status: p.status === "SUCCESS" ? "PAID" : "UNPAID"
