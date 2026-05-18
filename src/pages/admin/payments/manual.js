@@ -22,7 +22,6 @@ export default function ManualPayment() {
     note: "",
   });
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1); // 1: pilih santri, 2: isi form
 
   useEffect(() => {
     fetch("/api/students/list").then((r) => r.json()).then(setStudents);
@@ -73,7 +72,7 @@ export default function ManualPayment() {
           studentId: selectedStudent,
           paymentTypeId: form.paymentTypeId,
           amount: cleanAmount(form.amount),
-          method: form.method,
+          method: "CASH",
           note: form.note,
         }),
       });
@@ -88,25 +87,15 @@ export default function ManualPayment() {
     }
   };
 
-  const methodOptions = [
-    { value: "CASH", label: "Tunai (Cash)", icon: "💵" },
-    { value: "TRANSFER", label: "Transfer Bank", icon: "🏦" },
-  ];
-
   return (
     <AdminLayout>
       <div className="page-wrapper">
         {/* Header */}
         <div className="page-header">
-          <button className="btn-back" onClick={() => router.back()}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            Kembali
-          </button>
+          <div className="header-badge">💵 Tunai / Cash</div>
           <div>
             <h1 className="page-title">Input Pembayaran Manual</h1>
-            <p className="page-subtitle">Catat pembayaran santri secara langsung</p>
+            <p className="page-subtitle">Catat pembayaran tunai santri secara langsung</p>
           </div>
         </div>
 
@@ -255,21 +244,15 @@ export default function ManualPayment() {
                 </div>
               </div>
 
-              {/* Metode */}
+              {/* Metode - hanya cash, tampilan info saja */}
               <div className="field">
                 <label className="field-label">Metode Pembayaran</label>
-                <div className="method-group">
-                  {methodOptions.map((m) => (
-                    <button
-                      key={m.value}
-                      type="button"
-                      className={`method-btn ${form.method === m.value ? "selected" : ""}`}
-                      onClick={() => setForm((prev) => ({ ...prev, method: m.value }))}
-                    >
-                      <span className="method-icon">{m.icon}</span>
-                      <span>{m.label}</span>
-                    </button>
-                  ))}
+                <div className="cash-only-badge">
+                  <span className="cash-icon">💵</span>
+                  <div>
+                    <div className="cash-title">Tunai (Cash)</div>
+                    <div className="cash-sub">Pembayaran manual hanya menerima tunai</div>
+                  </div>
                 </div>
               </div>
 
@@ -338,10 +321,7 @@ export default function ManualPayment() {
               </div>
               <div className="summary-row">
                 <span className="summary-label">Metode</span>
-                <span className="summary-value">
-                  {methodOptions.find((m) => m.value === form.method)?.icon}{" "}
-                  {methodOptions.find((m) => m.value === form.method)?.label}
-                </span>
+                <span className="summary-value">💵 Tunai (Cash)</span>
               </div>
               <div className="summary-divider" />
               <div className="summary-total-row">
@@ -380,30 +360,27 @@ export default function ManualPayment() {
           margin-bottom: 28px;
           flex-wrap: wrap;
         }
-        .btn-back {
+        .header-badge {
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          background: white;
-          border: 1.5px solid #e2e8f0;
-          color: #475569;
+          background: #dcfce7;
+          border: 1.5px solid #86efac;
+          color: #15803d;
           padding: 8px 14px;
           border-radius: 10px;
           font-size: 13px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all .18s;
+          font-weight: 600;
           white-space: nowrap;
         }
-        .btn-back:hover { background: #f8fafc; border-color: #cbd5e1; color: #1e293b; }
         .page-title {
           margin: 0;
           font-size: clamp(18px, 3vw, 24px);
           font-weight: 700;
-          color: #1e293b;
+          color: #14532d;
           letter-spacing: -0.4px;
         }
-        .page-subtitle { margin: 2px 0 0; font-size: 13px; color: #94a3b8; }
+        .page-subtitle { margin: 2px 0 0; font-size: 13px; color: #6b7280; }
 
         /* ===== GRID ===== */
         .content-grid {
@@ -418,14 +395,14 @@ export default function ManualPayment() {
           background: white;
           border-radius: 18px;
           box-shadow: 0 1px 4px rgba(0,0,0,.06);
-          border: 1.5px solid #f1f5f9;
+          border: 1.5px solid #d1fae5;
           overflow: hidden;
         }
 
         /* ===== SECTION ===== */
         .section {
           padding: 24px;
-          border-bottom: 1.5px solid #f8fafc;
+          border-bottom: 1.5px solid #f0fdf4;
         }
         .section:last-of-type { border-bottom: none; }
         .section-header {
@@ -436,15 +413,15 @@ export default function ManualPayment() {
         }
         .section-num {
           width: 28px; height: 28px;
-          background: linear-gradient(135deg, #6366f1, #8b5cf6);
+          background: linear-gradient(135deg, #16a34a, #22c55e);
           color: white;
           border-radius: 8px;
           display: flex; align-items: center; justify-content: center;
           font-size: 13px; font-weight: 700;
           flex-shrink: 0;
         }
-        .section-title { font-size: 15px; font-weight: 600; color: #1e293b; }
-        .section-sub { font-size: 12px; color: #94a3b8; margin-top: 1px; }
+        .section-title { font-size: 15px; font-weight: 600; color: #14532d; }
+        .section-sub { font-size: 12px; color: #9ca3af; margin-top: 1px; }
 
         /* ===== FIELDS ===== */
         .field { margin-bottom: 16px; }
@@ -456,24 +433,25 @@ export default function ManualPayment() {
           gap: 6px;
           font-size: 13px;
           font-weight: 500;
-          color: #475569;
+          color: #374151;
           margin-bottom: 8px;
         }
         .optional-tag {
-          background: #f1f5f9;
-          color: #94a3b8;
+          background: #f0fdf4;
+          color: #6b7280;
           font-size: 11px;
           padding: 2px 7px;
           border-radius: 20px;
           font-weight: 400;
+          border: 1px solid #d1fae5;
         }
         .field-select, .field-input {
           width: 100%;
           padding: 11px 14px;
-          border: 1.5px solid #e2e8f0;
+          border: 1.5px solid #d1fae5;
           border-radius: 10px;
           font-size: 14px;
-          color: #1e293b;
+          color: #111827;
           background: white;
           outline: none;
           transition: border-color .15s, box-shadow .15s;
@@ -481,16 +459,16 @@ export default function ManualPayment() {
           appearance: none;
         }
         .field-select:focus, .field-input:focus {
-          border-color: #6366f1;
-          box-shadow: 0 0 0 3px rgba(99,102,241,.1);
+          border-color: #16a34a;
+          box-shadow: 0 0 0 3px rgba(22,163,74,.1);
         }
         .field-textarea {
           width: 100%;
           padding: 11px 14px;
-          border: 1.5px solid #e2e8f0;
+          border: 1.5px solid #d1fae5;
           border-radius: 10px;
           font-size: 14px;
-          color: #1e293b;
+          color: #111827;
           background: white;
           outline: none;
           transition: border-color .15s, box-shadow .15s;
@@ -499,14 +477,14 @@ export default function ManualPayment() {
           min-height: 80px;
           font-family: inherit;
         }
-        .field-textarea:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
+        .field-textarea:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,.1); }
         .select-wrap { position: relative; }
         .select-icon {
           position: absolute;
           left: 12px;
           top: 50%;
           transform: translateY(-50%);
-          color: #94a3b8;
+          color: #6b7280;
           pointer-events: none;
         }
         .field-select.padded { padding-left: 38px; }
@@ -516,34 +494,34 @@ export default function ManualPayment() {
           display: flex;
           align-items: center;
           gap: 14px;
-          background: linear-gradient(135deg, #f5f3ff, #ede9fe);
-          border: 1.5px solid #ddd6fe;
+          background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+          border: 1.5px solid #86efac;
           border-radius: 12px;
           padding: 14px 16px;
         }
         .student-avatar {
           width: 40px; height: 40px;
-          background: linear-gradient(135deg, #6366f1, #8b5cf6);
+          background: linear-gradient(135deg, #16a34a, #22c55e);
           border-radius: 10px;
           display: flex; align-items: center; justify-content: center;
           color: white; font-size: 16px; font-weight: 700;
           flex-shrink: 0;
         }
         .student-details { flex: 1; }
-        .student-name-large { font-size: 14px; font-weight: 600; color: #1e293b; }
+        .student-name-large { font-size: 14px; font-weight: 600; color: #111827; }
         .student-meta { display: flex; gap: 6px; margin-top: 4px; }
         .meta-badge {
           background: white;
-          color: #6366f1;
+          color: #16a34a;
           font-size: 11px;
           font-weight: 500;
           padding: 2px 8px;
           border-radius: 20px;
-          border: 1px solid #ddd6fe;
+          border: 1px solid #86efac;
         }
         .student-bill-count { text-align: center; flex-shrink: 0; }
         .bill-count-num { font-size: 20px; font-weight: 700; color: #f59e0b; }
-        .bill-count-label { font-size: 11px; color: #94a3b8; }
+        .bill-count-label { font-size: 11px; color: #9ca3af; }
 
         /* ===== BILLS LIST ===== */
         .bills-list { display: flex; flex-direction: column; gap: 8px; }
@@ -552,30 +530,30 @@ export default function ManualPayment() {
           align-items: center;
           justify-content: space-between;
           padding: 12px 14px;
-          border: 1.5px solid #e2e8f0;
+          border: 1.5px solid #e5e7eb;
           border-radius: 10px;
           cursor: pointer;
           transition: all .15s;
           background: white;
         }
-        .bill-item:hover { border-color: #c4b5fd; background: #faf5ff; }
-        .bill-item.selected { border-color: #6366f1; background: #f5f3ff; }
+        .bill-item:hover { border-color: #86efac; background: #f0fdf4; }
+        .bill-item.selected { border-color: #16a34a; background: #f0fdf4; }
         .bill-left { display: flex; align-items: center; gap: 10px; }
         .bill-check {
           width: 22px; height: 22px;
-          border: 2px solid #ddd6fe;
+          border: 2px solid #86efac;
           border-radius: 6px;
           display: flex; align-items: center; justify-content: center;
           font-size: 12px;
-          color: #6366f1;
+          color: #16a34a;
           font-weight: 700;
           flex-shrink: 0;
           transition: all .15s;
           background: white;
         }
-        .bill-item.selected .bill-check { background: #6366f1; color: white; border-color: #6366f1; }
-        .bill-name { font-size: 13px; font-weight: 500; color: #1e293b; }
-        .bill-due { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+        .bill-item.selected .bill-check { background: #16a34a; color: white; border-color: #16a34a; }
+        .bill-name { font-size: 13px; font-weight: 500; color: #111827; }
+        .bill-due { font-size: 11px; color: #9ca3af; margin-top: 2px; }
         .bill-amount { font-size: 14px; font-weight: 700; color: #dc2626; white-space: nowrap; }
         .empty-bills {
           display: flex;
@@ -583,7 +561,7 @@ export default function ManualPayment() {
           gap: 8px;
           padding: 14px 16px;
           background: #f0fdf4;
-          border: 1.5px solid #bbf7d0;
+          border: 1.5px solid #86efac;
           border-radius: 10px;
           font-size: 13px;
           color: #15803d;
@@ -597,7 +575,7 @@ export default function ManualPayment() {
           position: absolute;
           left: 14px;
           font-size: 14px;
-          color: #64748b;
+          color: #6b7280;
           font-weight: 500;
           pointer-events: none;
         }
@@ -605,31 +583,23 @@ export default function ManualPayment() {
         .amount-terbilang {
           margin-top: 5px;
           font-size: 12px;
-          color: #6366f1;
+          color: #16a34a;
           font-weight: 500;
         }
 
-        /* ===== METHOD ===== */
-        .method-group { display: flex; gap: 10px; }
-        .method-btn {
-          flex: 1;
+        /* ===== CASH ONLY BADGE ===== */
+        .cash-only-badge {
           display: flex;
           align-items: center;
-          justify-content: center;
-          gap: 8px;
-          padding: 12px;
-          border: 1.5px solid #e2e8f0;
+          gap: 12px;
+          padding: 14px 16px;
+          background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+          border: 1.5px solid #86efac;
           border-radius: 10px;
-          background: white;
-          font-size: 13px;
-          font-weight: 500;
-          color: #64748b;
-          cursor: pointer;
-          transition: all .15s;
         }
-        .method-btn:hover { border-color: #c4b5fd; color: #6366f1; }
-        .method-btn.selected { border-color: #6366f1; background: #f5f3ff; color: #6366f1; }
-        .method-icon { font-size: 18px; }
+        .cash-icon { font-size: 24px; flex-shrink: 0; }
+        .cash-title { font-size: 14px; font-weight: 600; color: #15803d; }
+        .cash-sub { font-size: 12px; color: #6b7280; margin-top: 2px; }
 
         /* ===== INFO BOX ===== */
         .info-box {
@@ -656,7 +626,7 @@ export default function ManualPayment() {
           width: calc(100% - 48px);
           margin: 20px 24px 24px;
           padding: 14px;
-          background: linear-gradient(135deg, #6366f1, #8b5cf6);
+          background: linear-gradient(135deg, #16a34a, #22c55e);
           color: white;
           border: none;
           border-radius: 12px;
@@ -664,11 +634,11 @@ export default function ManualPayment() {
           font-weight: 600;
           cursor: pointer;
           transition: all .15s;
-          box-shadow: 0 4px 14px rgba(99,102,241,.3);
+          box-shadow: 0 4px 14px rgba(22,163,74,.3);
           box-sizing: border-box;
         }
-        .btn-submit:hover:not(:disabled) { opacity: .9; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,.4); }
-        .btn-submit:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; box-shadow: none; transform: none; }
+        .btn-submit:hover:not(:disabled) { opacity: .9; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(22,163,74,.4); }
+        .btn-submit:disabled { background: #e5e7eb; color: #9ca3af; cursor: not-allowed; box-shadow: none; transform: none; }
         .btn-spinner {
           width: 16px; height: 16px;
           border: 2px solid rgba(255,255,255,.3);
@@ -685,15 +655,15 @@ export default function ManualPayment() {
           border-radius: 16px;
           padding: 20px;
           box-shadow: 0 1px 4px rgba(0,0,0,.06);
-          border: 1.5px solid #f1f5f9;
+          border: 1.5px solid #d1fae5;
         }
         .summary-title {
           font-size: 14px;
           font-weight: 700;
-          color: #1e293b;
+          color: #14532d;
           margin-bottom: 16px;
           padding-bottom: 12px;
-          border-bottom: 1.5px solid #f1f5f9;
+          border-bottom: 1.5px solid #d1fae5;
         }
         .summary-row {
           display: flex;
@@ -702,22 +672,22 @@ export default function ManualPayment() {
           gap: 8px;
           margin-bottom: 10px;
         }
-        .summary-label { font-size: 12px; color: #94a3b8; flex-shrink: 0; }
-        .summary-value { font-size: 13px; font-weight: 500; color: #334155; text-align: right; }
-        .summary-divider { height: 1.5px; background: #f1f5f9; margin: 10px 0; }
+        .summary-label { font-size: 12px; color: #9ca3af; flex-shrink: 0; }
+        .summary-value { font-size: 13px; font-weight: 500; color: #374151; text-align: right; }
+        .summary-divider { height: 1.5px; background: #d1fae5; margin: 10px 0; }
         .summary-total-row {
           display: flex;
           justify-content: space-between;
           align-items: center;
           margin-top: 4px;
         }
-        .summary-total-label { font-size: 14px; font-weight: 600; color: #1e293b; }
-        .summary-total-value { font-size: 16px; font-weight: 700; color: #6366f1; }
+        .summary-total-label { font-size: 14px; font-weight: 600; color: #14532d; }
+        .summary-total-value { font-size: 16px; font-weight: 700; color: #16a34a; }
         .summary-status { margin-top: 16px; }
         .status-ready {
           background: #f0fdf4;
           color: #15803d;
-          border: 1.5px solid #bbf7d0;
+          border: 1.5px solid #86efac;
           padding: 10px 12px;
           border-radius: 8px;
           font-size: 12px;
@@ -726,8 +696,8 @@ export default function ManualPayment() {
         }
         .status-pending {
           background: #fafafa;
-          color: #94a3b8;
-          border: 1.5px solid #f1f5f9;
+          color: #9ca3af;
+          border: 1.5px solid #f3f4f6;
           padding: 10px 12px;
           border-radius: 8px;
           font-size: 12px;
@@ -746,7 +716,6 @@ export default function ManualPayment() {
           .section { padding: 18px 16px; }
           .info-box { margin: 0 16px 0; }
           .btn-submit { width: calc(100% - 32px); margin: 16px 16px 20px; }
-          .method-group { flex-direction: column; }
           .student-bill-count { display: none; }
         }
       `}</style>
