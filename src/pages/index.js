@@ -4,504 +4,279 @@ import { useEffect, useState } from "react";
 export default function Home() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   useEffect(() => {
     const style = document.createElement("style");
     style.innerHTML = `
-      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Lora:ital,wght@0,600;0,700;1,600&display=swap');
-
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-      html { scroll-behavior: smooth; font-size: 16px; }
-      body {
-        overflow-x: hidden;
-        font-family: 'Plus Jakarta Sans', sans-serif;
-        background: #f7fdf9;
-        color: #1a2e1f;
-        -webkit-font-smoothing: antialiased;
+      html { scroll-behavior: smooth; }
+      body { overflow-x: hidden; font-family: 'Segoe UI', sans-serif; }
+
+      @keyframes fadeSlideLeft {
+        from { opacity: 0; transform: translateX(-40px); }
+        to   { opacity: 1; transform: translateX(0); }
+      }
+      @keyframes fadeSlideRight {
+        from { opacity: 0; transform: translateX(40px); }
+        to   { opacity: 1; transform: translateX(0); }
+      }
+      @keyframes floatChar {
+        0%   { transform: translateY(0px); }
+        50%  { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
       }
 
-      /* ── ANIMATIONS ── */
-      @keyframes fadeUp {
-        from { opacity: 0; transform: translateY(32px); }
-        to   { opacity: 1; transform: translateY(0); }
-      }
-      @keyframes fadeIn {
-        from { opacity: 0; }
-        to   { opacity: 1; }
-      }
-      @keyframes float {
-        0%, 100% { transform: translateY(0px) rotate(-1deg); }
-        50%       { transform: translateY(-14px) rotate(1deg); }
-      }
-      @keyframes shimmer {
-        0%   { background-position: -200% center; }
-        100% { background-position: 200% center; }
-      }
-      @keyframes spin-slow {
-        from { transform: rotate(0deg); }
-        to   { transform: rotate(360deg); }
-      }
-      @keyframes pulse-ring {
-        0%   { transform: scale(1); opacity: 0.6; }
-        100% { transform: scale(1.6); opacity: 0; }
-      }
-      @keyframes slideDown {
-        from { opacity: 0; transform: translateY(-12px); }
-        to   { opacity: 1; transform: translateY(0); }
-      }
+      .hero-text-anim { animation: fadeSlideLeft 0.9s cubic-bezier(.22,.68,0,1.2) both; }
+      .hero-logo-anim { animation: fadeSlideRight 0.9s cubic-bezier(.22,.68,0,1.2) 0.2s both; }
+      .float-char { animation: floatChar 5s ease-in-out infinite; }
 
-      .anim-1 { animation: fadeUp 0.7s cubic-bezier(.22,.68,0,1.2) 0.1s both; }
-      .anim-2 { animation: fadeUp 0.7s cubic-bezier(.22,.68,0,1.2) 0.25s both; }
-      .anim-3 { animation: fadeUp 0.7s cubic-bezier(.22,.68,0,1.2) 0.4s both; }
-      .anim-4 { animation: fadeUp 0.7s cubic-bezier(.22,.68,0,1.2) 0.55s both; }
-      .anim-img { animation: fadeIn 0.9s ease 0.3s both; }
-      .float-img { animation: float 6s ease-in-out infinite; }
-
-      /* ── NAVBAR ── */
+      /* NAVBAR */
       .navbar {
-        position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-        display: flex; justify-content: space-between; align-items: center;
-        padding: 0 clamp(16px, 5vw, 64px);
-        height: 64px;
-        transition: all 0.3s ease;
-      }
-      .navbar.scrolled {
+        display: flex; justify-content: space-between;
+        padding: 14px 60px; align-items: center;
         background: rgba(255,255,255,0.95);
-        backdrop-filter: blur(16px);
-        box-shadow: 0 2px 24px rgba(20,83,45,0.08);
+        backdrop-filter: blur(10px);
+        position: sticky; top: 0; z-index: 1000;
+        box-shadow: 0 2px 16px rgba(0,0,0,0.06);
       }
-      .navbar:not(.scrolled) {
-        background: transparent;
-      }
-
-      .nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-      .nav-logo-img { height: 36px; width: auto; object-fit: contain; }
-      .nav-brand-text { display: flex; flex-direction: column; line-height: 1.1; }
-      .nav-brand-name {
-        font-family: 'Lora', serif;
-        font-weight: 700; font-size: 15px; color: #14532d;
-      }
-      .nav-brand-sub { font-size: 10px; color: #6b7280; font-weight: 500; }
-
-      .nav-links { display: flex; align-items: center; gap: 8px; }
+      .nav-logo-wrap { display: flex; align-items: center; gap: 10px; }
+      .nav-logo-img  { height: 38px; object-fit: contain; }
+      .nav-brand-name { font-weight: 800; color: #14532d; font-size: 15px; }
+      .nav-brand-sub  { font-size: 11px; color: #6b7280; }
+      .nav-menu { display: flex; gap: 24px; align-items: center; }
       .nav-link {
-        padding: 8px 16px; border-radius: 8px;
-        border: none; background: none;
-        font-family: inherit; font-size: 14px; font-weight: 600;
-        color: #374151; cursor: pointer; transition: all 0.15s;
+        color: #374151; font-weight: 500; cursor: pointer;
+        font-size: 14px; text-decoration: none; transition: color 0.15s;
+        background: none; border: none; font-family: inherit;
       }
-      .nav-link:hover { background: #f0fdf4; color: #14532d; }
-      .nav-cta {
-        padding: 10px 22px; border-radius: 10px; border: none;
-        background: linear-gradient(135deg, #14532d 0%, #22c55e 100%);
-        color: white; font-family: inherit; font-size: 14px; font-weight: 700;
-        cursor: pointer; transition: all 0.2s;
-        box-shadow: 0 4px 16px rgba(34,197,94,0.3);
+      .nav-link:hover { color: #14532d; }
+      .nav-login-btn {
+        padding: 9px 22px; border-radius: 10px; border: none;
+        background: linear-gradient(135deg, #14532d, #22c55e);
+        color: white; font-weight: 600; cursor: pointer; font-size: 14px;
+        transition: all 0.2s ease;
       }
-      .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(34,197,94,0.4); }
+      .nav-login-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(34,197,94,0.45); }
 
       .hamburger {
-        display: none; flex-direction: column; justify-content: center;
-        gap: 5px; width: 40px; height: 40px;
-        background: none; border: none; cursor: pointer; padding: 8px;
-        border-radius: 8px; transition: background 0.15s;
+        display: none; flex-direction: column; gap: 5px;
+        cursor: pointer; background: none; border: none; padding: 4px;
       }
-      .hamburger:hover { background: #f0fdf4; }
       .hamburger span {
-        display: block; height: 2px; background: #14532d;
-        border-radius: 2px; transition: all 0.3s;
-        transform-origin: center;
+        display: block; width: 24px; height: 2.5px;
+        background: #14532d; border-radius: 2px; transition: 0.3s;
       }
-      .hamburger.open span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
-      .hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
-      .hamburger.open span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
 
-      /* ── MOBILE DRAWER ── */
-      .drawer-overlay {
-        display: none; position: fixed; inset: 0; z-index: 998;
-        background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+      .mobile-menu {
+        display: none; flex-direction: column;
+        background: #fff; padding: 16px 24px 24px;
+        gap: 4px; border-top: 1px solid #e8f0e8;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        position: sticky; top: 60px; z-index: 999;
       }
-      .drawer-overlay.open { display: block; animation: fadeIn 0.2s ease; }
-      .drawer {
-        position: fixed; top: 0; right: -100%; width: min(80vw, 300px);
-        height: 100%; z-index: 999; background: #fff;
-        padding: 80px 24px 32px;
-        display: flex; flex-direction: column; gap: 8px;
-        transition: right 0.35s cubic-bezier(.4,0,.2,1);
-        box-shadow: -8px 0 40px rgba(0,0,0,0.12);
+      .mobile-menu.open { display: flex; }
+      .mobile-link {
+        font-size: 15px; font-weight: 500; color: #374151;
+        padding: 12px 0; border-bottom: 1px solid #f3f4f6;
+        background: none; border-left: none; border-right: none; border-top: none;
+        text-align: left; cursor: pointer; font-family: inherit; width: 100%;
       }
-      .drawer.open { right: 0; }
-      .drawer-link {
-        width: 100%; padding: 14px 16px; border-radius: 10px;
-        border: none; background: none;
-        font-family: inherit; font-size: 15px; font-weight: 600;
-        color: #374151; cursor: pointer; text-align: left;
-        transition: all 0.15s;
-      }
-      .drawer-link:hover { background: #f0fdf4; color: #14532d; }
-      .drawer-cta {
-        margin-top: 8px; padding: 14px 16px; border-radius: 12px; border: none;
+      .mobile-login-btn {
+        margin-top: 12px; padding: 13px;
         background: linear-gradient(135deg, #14532d, #22c55e);
-        color: white; font-family: inherit; font-size: 15px; font-weight: 700;
-        cursor: pointer; text-align: center;
-        box-shadow: 0 4px 16px rgba(34,197,94,0.3);
+        color: white; font-weight: 700; border-radius: 10px;
+        border: none; cursor: pointer; font-size: 15px; font-family: inherit;
       }
-      .drawer-divider { height: 1px; background: #f3f4f6; margin: 4px 0; }
 
-      /* ── HERO ── */
+      /* HERO */
       .hero {
-        min-height: 100vh;
-        padding-top: 64px;
-        background: linear-gradient(160deg, #f0fdf4 0%, #dcfce7 40%, #bbf7d0 100%);
-        position: relative; overflow: hidden;
-        display: flex; align-items: center;
+        position: relative; padding: 80px 80px 0;
+        background: linear-gradient(135deg, #fefce8 0%, #dcfce7 55%, #bbf7d0 100%);
+        overflow: hidden; min-height: 88vh;
+        display: flex; align-items: flex-end;
       }
-
-      /* decorative blobs */
-      .blob {
-        position: absolute; border-radius: 50%;
-        pointer-events: none; z-index: 0;
+      .hero-grid {
+        position: relative; z-index: 2;
+        display: grid; grid-template-columns: 1fr 1fr;
+        gap: 60px; align-items: flex-end;
+        max-width: 1100px; margin: 0 auto; width: 100%;
       }
-      .blob-1 {
-        width: clamp(300px, 50vw, 700px);
-        height: clamp(300px, 50vw, 700px);
-        top: -15%; right: -10%;
-        background: radial-gradient(circle, rgba(34,197,94,0.18) 0%, transparent 70%);
+      .hero-left {
+        display: flex; flex-direction: column; align-items: flex-start;
+        padding-bottom: 80px;
       }
-      .blob-2 {
-        width: clamp(200px, 35vw, 500px);
-        height: clamp(200px, 35vw, 500px);
-        bottom: -10%; left: -8%;
-        background: radial-gradient(circle, rgba(20,83,45,0.1) 0%, transparent 70%);
-      }
-      .blob-3 {
-        width: clamp(100px, 20vw, 280px);
-        height: clamp(100px, 20vw, 280px);
-        top: 30%; left: 35%;
-        background: radial-gradient(circle, rgba(34,197,94,0.12) 0%, transparent 70%);
-      }
-
-      /* decorative ring */
-      .deco-ring {
-        position: absolute; border-radius: 50%; pointer-events: none; z-index: 0;
-        border: 1.5px solid rgba(34,197,94,0.2);
-      }
-      .ring-1 { width: 120px; height: 120px; top: 15%; right: 18%; animation: spin-slow 20s linear infinite; }
-      .ring-2 { width: 60px; height: 60px; bottom: 25%; left: 12%; animation: spin-slow 14s linear infinite reverse; }
-
-      .hero-inner {
-        position: relative; z-index: 1;
-        width: 100%; max-width: 1200px;
-        margin: 0 auto;
-        padding: clamp(32px, 6vw, 80px) clamp(16px, 5vw, 64px);
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: clamp(32px, 5vw, 80px);
-        align-items: center;
-      }
-
-      .hero-left { display: flex; flex-direction: column; gap: 20px; }
+      .hero-right { display: flex; justify-content: center; align-items: flex-end; }
 
       .hero-badge {
-        display: inline-flex; align-items: center; gap: 8px;
-        background: linear-gradient(135deg, #14532d, #166534);
-        padding: 8px 18px; border-radius: 50px;
-        color: white; font-size: 12px; font-weight: 700;
-        letter-spacing: 0.5px; width: fit-content;
-        box-shadow: 0 4px 16px rgba(20,83,45,0.25);
-        position: relative;
-      }
-      .hero-badge::before {
-        content: '';
-        position: absolute; inset: -2px; border-radius: 52px;
-        background: linear-gradient(135deg, rgba(34,197,94,0.4), transparent);
-        z-index: -1;
-      }
-      .badge-dot {
-        width: 7px; height: 7px; border-radius: 50%;
-        background: #4ade80; position: relative;
-      }
-      .badge-dot::after {
-        content: ''; position: absolute; inset: -3px; border-radius: 50%;
-        background: rgba(74,222,128,0.4);
-        animation: pulse-ring 1.5s ease-out infinite;
-      }
-
-      .hero-title {
-        font-family: 'Lora', serif;
-        font-size: clamp(28px, 4.5vw, 56px);
-        font-weight: 700; line-height: 1.15;
-        color: #0f2415;
-      }
-      .hero-accent {
+        display: inline-block;
         background: linear-gradient(135deg, #14532d, #22c55e);
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        background-clip: text;
+        padding: 7px 18px; border-radius: 50px;
+        color: white; font-size: 12px; font-weight: 600;
+        letter-spacing: 0.5px; margin-bottom: 20px;
       }
-
+      .hero-title {
+        font-size: 44px; font-weight: 800; color: #111827;
+        line-height: 1.2; margin-bottom: 16px;
+      }
+      .hero-accent { color: #14532d; }
       .hero-desc {
-        font-size: clamp(14px, 1.5vw, 16px);
-        color: #4b5563; line-height: 1.85;
-        max-width: 480px;
+        color: #4b5563; font-size: 15px; line-height: 1.8;
+        max-width: 460px; margin-bottom: 36px;
       }
+      .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
 
-      .hero-stats {
-        display: flex; gap: clamp(16px, 3vw, 32px);
-        flex-wrap: wrap;
-      }
-      .stat-item { display: flex; flex-direction: column; gap: 2px; }
-      .stat-num {
-        font-family: 'Lora', serif;
-        font-size: clamp(20px, 2.5vw, 28px);
-        font-weight: 700; color: #14532d;
-      }
-      .stat-label { font-size: 12px; color: #6b7280; font-weight: 500; }
-      .stat-divider { width: 1px; background: #d1fae5; align-self: stretch; }
-
-      .hero-btns { display: flex; gap: 12px; flex-wrap: wrap; }
       .btn-primary {
-        display: inline-flex; align-items: center; gap: 8px;
-        padding: clamp(12px, 1.5vw, 15px) clamp(20px, 2.5vw, 30px);
-        background: linear-gradient(135deg, #14532d 0%, #16a34a 100%);
+        padding: 14px 28px;
+        background: linear-gradient(135deg, #14532d, #22c55e);
         border: none; color: white; border-radius: 12px;
-        font-family: inherit; font-weight: 700;
-        font-size: clamp(13px, 1.2vw, 15px);
-        cursor: pointer; transition: all 0.2s;
-        box-shadow: 0 6px 20px rgba(20,83,45,0.3);
+        font-weight: 700; font-size: 15px; cursor: pointer;
+        box-shadow: 0 4px 16px rgba(34,197,94,0.35);
+        transition: all 0.2s; font-family: inherit;
       }
-      .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(20,83,45,0.4); }
-      .btn-primary:active { transform: translateY(0); }
+      .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(34,197,94,0.45); }
 
       .btn-secondary {
-        display: inline-flex; align-items: center; gap: 8px;
-        padding: clamp(12px, 1.5vw, 15px) clamp(20px, 2.5vw, 30px);
-        border: 2px solid #14532d; border-radius: 12px;
-        background: rgba(255,255,255,0.8); color: #14532d;
-        font-family: inherit; font-weight: 700;
-        font-size: clamp(13px, 1.2vw, 15px);
-        cursor: pointer; transition: all 0.2s;
-        backdrop-filter: blur(8px);
+        padding: 14px 28px; border-radius: 12px;
+        border: 2px solid #14532d; background: transparent;
+        color: #14532d; font-weight: 700; font-size: 15px;
+        cursor: pointer; transition: all 0.2s; font-family: inherit;
       }
-      .btn-secondary:hover { background: #f0fdf4; transform: translateY(-2px); }
+      .btn-secondary:hover { background: #f0fdf4; border-color: #22c55e; }
 
-      /* hero image */
-      .hero-right {
-        display: flex; justify-content: center; align-items: flex-end;
-        position: relative;
-      }
-      .hero-img-wrap {
-        position: relative; width: 100%; max-width: 520px;
-      }
-      .hero-img-bg {
-        position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
-        width: 90%; height: 85%;
-        background: radial-gradient(ellipse at bottom, rgba(34,197,94,0.15) 0%, transparent 70%);
-        border-radius: 50%;
-        filter: blur(24px);
-      }
-      .hero-img {
-        width: 100%; height: auto;
-        object-fit: contain; object-position: bottom;
-        display: block; position: relative; z-index: 1;
-        -webkit-mask-image: linear-gradient(to bottom, black 0%, black 65%, rgba(0,0,0,0.4) 85%, transparent 100%);
-        mask-image: linear-gradient(to bottom, black 0%, black 65%, rgba(0,0,0,0.4) 85%, transparent 100%);
-        filter: drop-shadow(0 -4px 24px rgba(20,83,45,0.12));
+      /* HERO CHARACTER — OPSI 3: glow hijau + fade bawah */
+      .hero-char-img {
+        width: 100%;
+        max-width: 500px;
+        height: auto;
+        object-fit: contain;
+        object-position: bottom;
+        display: block;
+        filter: drop-shadow(0 -8px 32px rgba(34,197,94,0.35));
+        -webkit-mask-image: linear-gradient(
+          to top,
+          transparent 0%,
+          rgba(0,0,0,0.6) 20%,
+          black 40%
+        );
+        mask-image: linear-gradient(
+          to top,
+          transparent 0%,
+          rgba(0,0,0,0.6) 20%,
+          black 40%
+        );
       }
 
-      /* floating cards */
-      .float-card {
-        position: absolute; z-index: 2;
-        background: rgba(255,255,255,0.9);
-        backdrop-filter: blur(12px);
-        border-radius: 14px; padding: 12px 16px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-        border: 1px solid rgba(255,255,255,0.8);
-        display: flex; align-items: center; gap: 10px;
-        animation: fadeUp 0.8s ease both;
-      }
-      .fc-left { left: -16px; top: 28%; animation-delay: 0.6s; }
-      .fc-right { right: -8px; bottom: 28%; animation-delay: 0.8s; }
-      .fc-icon { font-size: 24px; flex-shrink: 0; }
-      .fc-label { font-size: 10px; color: #6b7280; font-weight: 600; }
-      .fc-val { font-size: 15px; font-weight: 800; color: #14532d; }
+      .blob { position: absolute; border-radius: 50%; z-index: 1; pointer-events: none; }
+      .blob1 { width:500px; height:500px; top:-120px; right:-100px; background: radial-gradient(circle, rgba(34,197,94,0.13) 0%, transparent 70%); }
+      .blob2 { width:350px; height:350px; bottom:-80px; left:-80px; background: radial-gradient(circle, rgba(20,83,45,0.09) 0%, transparent 70%); }
+      .blob3 { width:200px; height:200px; bottom:60px; right:30%; background: radial-gradient(circle, rgba(34,197,94,0.10) 0%, transparent 70%); }
 
-      /* ── FEATURES STRIP ── */
-      .features {
-        background: #fff;
-        padding: clamp(40px, 6vw, 80px) clamp(16px, 5vw, 64px);
-      }
-      .features-inner {
-        max-width: 1100px; margin: 0 auto;
-      }
-      .section-tag {
-        display: inline-block;
-        background: #dcfce7; color: #14532d;
-        padding: 5px 14px; border-radius: 20px;
-        font-size: 12px; font-weight: 700; margin-bottom: 12px;
-      }
-      .section-title {
-        font-family: 'Lora', serif;
-        font-size: clamp(22px, 3vw, 36px);
-        font-weight: 700; color: #0f2415;
-        margin-bottom: 8px;
-      }
-      .section-sub {
-        font-size: clamp(13px, 1.3vw, 15px);
-        color: #6b7280; margin-bottom: clamp(28px, 4vw, 48px);
-        max-width: 520px;
-      }
-      .features-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
-        gap: clamp(14px, 2vw, 24px);
-      }
-      .feat-card {
-        padding: clamp(20px, 2.5vw, 28px);
-        border-radius: 16px; border: 1px solid #e9f5ec;
-        background: linear-gradient(135deg, #f9fefb, #f0fdf4);
-        transition: all 0.2s;
-      }
-      .feat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(20,83,45,0.1); border-color: #bbf7d0; }
-      .feat-icon {
-        width: 48px; height: 48px; border-radius: 14px;
-        background: linear-gradient(135deg, #dcfce7, #bbf7d0);
-        display: flex; align-items: center; justify-content: center;
-        font-size: 22px; margin-bottom: 14px;
-      }
-      .feat-title { font-size: 15px; font-weight: 700; color: #0f2415; margin-bottom: 6px; }
-      .feat-desc { font-size: 13px; color: #6b7280; line-height: 1.7; }
-
-      /* ── CONTACT ── */
-      .contact {
-        padding: clamp(40px, 6vw, 80px) clamp(16px, 5vw, 64px);
-        background: linear-gradient(160deg, #f7fdf9 0%, #f0fdf4 100%);
-      }
-      .contact-inner { max-width: 1100px; margin: 0 auto; }
+      /* KONTAK */
+      .contact-section { padding: 80px 60px; background: #f9fafb; text-align: center; }
+      .section-title { font-size: 28px; font-weight: 800; color: #111827; margin-bottom: 8px; }
+      .section-sub { color: #6b7280; font-size: 15px; margin-bottom: 40px; }
       .contact-grid {
-        display: grid;
-        grid-template-columns: 1fr 1.3fr;
-        gap: clamp(20px, 3vw, 40px);
-        margin-top: clamp(28px, 4vw, 48px);
+        display: grid; grid-template-columns: 1fr 1.4fr;
+        gap: 28px; max-width: 960px; margin: 0 auto; text-align: left;
       }
       .contact-card {
-        background: #fff; border-radius: 20px;
-        padding: clamp(20px, 3vw, 36px);
-        box-shadow: 0 4px 24px rgba(20,83,45,0.07);
-        border: 1px solid #e9f5ec;
-        display: flex; flex-direction: column; gap: 20px;
+        background: #fff; border-radius: 20px; padding: 32px 28px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+        display: flex; flex-direction: column; gap: 24px;
+        transition: all 0.2s;
       }
-      .contact-item { display: flex; gap: 14px; align-items: flex-start; }
+      .contact-card:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,0.1); }
+      .contact-item { display: flex; gap: 16px; align-items: flex-start; }
       .contact-icon {
-        width: 42px; height: 42px; min-width: 42px;
+        width: 44px; height: 44px; min-width: 44px;
         background: linear-gradient(135deg, #dcfce7, #bbf7d0);
-        border-radius: 12px; display: flex;
-        align-items: center; justify-content: center;
-        font-size: 18px; flex-shrink: 0;
+        border-radius: 12px; display: flex; align-items: center;
+        justify-content: center; font-size: 20px;
       }
-      .contact-label {
-        font-size: 10px; font-weight: 700; color: #9ca3af;
-        text-transform: uppercase; letter-spacing: 0.6px;
-        margin-bottom: 3px;
-      }
-      .contact-val { font-size: 13px; color: #1a2e1f; font-weight: 500; line-height: 1.6; }
-      .contact-divider { height: 1px; background: #f0f5f1; }
-
-      .social-links { display: flex; flex-direction: column; gap: 8px; }
-      .social-link {
-        display: flex; align-items: center; gap: 10px;
-        text-decoration: none; padding: 8px 10px; border-radius: 10px;
-        transition: background 0.15s;
-      }
-      .social-link:hover { background: #f0fdf4; }
-      .social-icon {
-        width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
-        display: flex; align-items: center; justify-content: center;
-      }
-      .si-ig  { background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
-      .si-fb  { background: #1877f2; }
-      .si-yt  { background: #ff0000; }
-      .social-name { font-size: 13px; font-weight: 700; color: #1a2e1f; }
-      .social-handle { font-size: 11px; color: #6b7280; }
-
-      .map-wrap {
-        border-radius: 20px; overflow: hidden;
-        height: clamp(260px, 40vw, 420px);
-        box-shadow: 0 4px 24px rgba(20,83,45,0.08);
-        border: 1px solid #e9f5ec;
-      }
+      .contact-label { font-size: 11px; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 4px 0; }
+      .contact-val   { font-size: 14px; color: #111827; font-weight: 500; line-height: 1.6; margin: 0; }
+      .map-wrap { border-radius: 20px; overflow: hidden; height: 360px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
       .map-wrap iframe { width: 100%; height: 100%; border: 0; display: block; }
 
-      /* ── FOOTER ── */
-      .footer {
-        background: #0a1f10;
-        color: #6b7280; padding: clamp(24px, 3vw, 40px) clamp(16px, 5vw, 64px);
-        text-align: center;
+      .social-link {
+        display: flex; align-items: center; gap: 10px;
+        color: #14532d; font-weight: 600; font-size: 14px;
+        text-decoration: none; transition: opacity 0.15s;
+        padding: 6px 0;
       }
-      .footer-inner { max-width: 1100px; margin: 0 auto; }
-      .footer-brand {
-        font-family: 'Lora', serif;
-        font-size: 18px; font-weight: 700; color: #4ade80; margin-bottom: 6px;
+      .social-link:hover { opacity: 0.7; }
+      .social-icon {
+        width: 32px; height: 32px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
       }
-      .footer-sub { font-size: 12px; color: #4b5563; margin-bottom: 16px; }
-      .footer-divider { height: 1px; background: #1f3527; margin-bottom: 16px; }
-      .footer-copy { font-size: 12px; color: #374151; }
+      .social-icon-ig  { background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+      .social-icon-fb  { background: #1877f2; }
+      .social-icon-yt  { background: #ff0000; }
 
-      /* ── RESPONSIVE ── */
+      /* FOOTER */
+      .footer { background: #111827; color: #9ca3af; padding: 28px 60px; text-align: center; font-size: 13px; }
+
+      /* TABLET */
       @media (max-width: 1024px) {
-        .hero-inner { gap: clamp(24px, 4vw, 48px); }
-        .fc-left { left: -8px; }
-        .fc-right { right: -4px; }
+        .navbar { padding: 14px 32px; }
+        .hero { padding: 60px 40px 0; min-height: auto; }
+        .hero-left { padding-bottom: 60px; }
+        .hero-title { font-size: 36px; }
+        .hero-char-img { max-width: 380px; }
+        .contact-section { padding: 60px 32px; }
+        .footer { padding: 24px 32px; }
       }
 
+      /* MOBILE */
       @media (max-width: 768px) {
-        .nav-links { display: none; }
+        .navbar { padding: 12px 20px; }
+        .nav-menu { display: none; }
         .hamburger { display: flex; }
 
-        .hero-inner {
-          grid-template-columns: 1fr;
-          text-align: center;
-          padding-top: clamp(20px, 5vw, 40px);
+        .hero { padding: 32px 20px 0; min-height: auto; align-items: flex-start; }
+        .hero-grid { grid-template-columns: 1fr; gap: 16px; text-align: center; }
+        .hero-left  { align-items: center; padding-bottom: 0; order: 1; }
+        .hero-right { order: 0; }
+        .hero-title { font-size: 28px; }
+        .hero-desc  { font-size: 14px; max-width: 100%; margin-bottom: 24px; }
+        .hero-btns  { justify-content: center; margin-bottom: 32px; }
+        .btn-primary, .btn-secondary { padding: 12px 22px; font-size: 14px; }
+        .hero-char-img {
+          max-width: 260px;
+          -webkit-mask-image: linear-gradient(
+            to top,
+            transparent 0%,
+            rgba(0,0,0,0.5) 15%,
+            black 35%
+          );
+          mask-image: linear-gradient(
+            to top,
+            transparent 0%,
+            rgba(0,0,0,0.5) 15%,
+            black 35%
+          );
         }
-        .hero-left { align-items: center; order: 2; }
-        .hero-right { order: 1; }
-        .hero-desc { max-width: 100%; }
-        .hero-badge { margin: 0 auto; }
-        .hero-btns { justify-content: center; }
-        .hero-stats { justify-content: center; }
-        .hero-img-wrap { max-width: 340px; }
 
-        .fc-left { left: 0; top: auto; bottom: 60%; }
-        .fc-right { right: 0; }
+        .blob1 { width: 220px; height: 220px; top: -60px; right: -50px; }
+        .blob2 { width: 160px; height: 160px; bottom: -40px; left: -40px; }
+        .blob3 { display: none; }
 
-        .contact-grid { grid-template-columns: 1fr; }
+        .contact-section { padding: 48px 20px; }
+        .contact-grid { grid-template-columns: 1fr; gap: 20px; }
+        .contact-card { padding: 24px 20px; }
+        .map-wrap { height: 240px; }
 
-        .deco-ring { display: none; }
+        .footer { padding: 20px; font-size: 12px; }
       }
 
-      @media (max-width: 480px) {
-        .hero-img-wrap { max-width: 260px; }
-        .float-card { display: none; }
-        .hero-stats { gap: 16px; }
-        .stat-divider { display: none; }
-      }
-
-      @media (max-width: 360px) {
-        .hero-title { font-size: 24px; }
-        .hero-img-wrap { max-width: 220px; }
-        .btn-primary, .btn-secondary { padding: 11px 18px; font-size: 13px; }
-      }
-
-      /* Prevent layout shift on very large screens */
-      @media (min-width: 1400px) {
-        .hero-inner { max-width: 1280px; }
-        .hero-title { font-size: 60px; }
+      /* SMALL MOBILE */
+      @media (max-width: 400px) {
+        .hero-title { font-size: 22px; }
+        .hero-badge { font-size: 11px; padding: 6px 12px; }
+        .hero-char-img { max-width: 200px; }
+        .hero-btns { flex-direction: column; width: 100%; }
+        .btn-primary, .btn-secondary { width: 100%; text-align: center; }
       }
     `;
     document.head.appendChild(style);
@@ -512,249 +287,180 @@ export default function Home() {
     setMenuOpen(false);
     setTimeout(() => {
       const el = document.getElementById(id);
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    }, 80);
   }
 
-  const features = [
-    { icon: "💳", title: "Pembayaran Digital", desc: "Bayar SPP kapan saja dan di mana saja melalui berbagai metode pembayaran yang aman dan terpercaya." },
-    { icon: "📊", title: "Laporan Realtime", desc: "Admin dapat memantau seluruh transaksi dan riwayat pembayaran secara langsung dan akurat." },
-    { icon: "🔔", title: "Notifikasi Otomatis", desc: "Santri mendapat pengingat tagihan dan konfirmasi pembayaran melalui email secara otomatis." },
-    { icon: "🔒", title: "Aman & Terpercaya", desc: "Sistem keamanan berlapis dengan enkripsi data dan verifikasi pembayaran melalui Midtrans." },
-    { icon: "📱", title: "Ramah Mobile", desc: "Tampilan responsif yang nyaman digunakan dari smartphone, tablet, maupun komputer." },
-    { icon: "🧾", title: "Cetak Kwitansi", desc: "Kwitansi pembayaran dapat dicetak langsung dari sistem sebagai bukti pembayaran resmi." },
-  ];
+  const IconInstagram = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+    </svg>
+  );
 
-  const contacts = [
-    { icon: "📍", label: "Alamat", val: "Ds. Sumberjo, Kec. Sanankulon,\nKab. Blitar, Jawa Timur" },
-    { icon: "📧", label: "Email", val: "madrasahtaribiyatulsumberjo@gmail.com" },
-    { icon: "📱", label: "Telepon / WhatsApp", val: "08xxxxxxxxxx" },
-  ];
+  const IconFacebook = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+    </svg>
+  );
 
-  const socials = [
-    { cls: "si-ig", label: "Instagram", handle: "@tarmub_sumberjo", href: "https://instagram.com/tarmub_sumberjo", icon: <IgIcon /> },
-    { cls: "si-fb", label: "Facebook", handle: "tarmub_sumberjo", href: "https://facebook.com/tarmub_sumberjo", icon: <FbIcon /> },
-    { cls: "si-yt", label: "YouTube", handle: "Santri Tarbiyah", href: "https://youtube.com/@SantriTarbiyah", icon: <YtIcon /> },
+  const IconYoutube = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+    </svg>
+  );
+
+  const socialMedias = [
+    {
+      icon: <IconInstagram />,
+      iconClass: "social-icon social-icon-ig",
+      label: "Instagram",
+      handle: "@tarmub_sumberjo",
+      href: "https://instagram.com/tarmub_sumberjo",
+    },
+    {
+      icon: <IconFacebook />,
+      iconClass: "social-icon social-icon-fb",
+      label: "Facebook",
+      handle: "tarmub_sumberjo",
+      href: "https://facebook.com/tarmub_sumberjo",
+    },
+    {
+      icon: <IconYoutube />,
+      iconClass: "social-icon social-icon-yt",
+      label: "YouTube",
+      handle: "Santri Tarbiyah",
+      href: "https://youtube.com/@SantriTarbiyah",
+    },
   ];
 
   return (
     <div>
       {/* NAVBAR */}
-      <nav className={`navbar ${scrolled ? "scrolled" : ""}`}>
-        <div className="nav-brand">
+      <nav className="navbar">
+        <div className="nav-logo-wrap">
           <img src="/logo-sibatamu.png" alt="logo" className="nav-logo-img"
             onError={e => e.target.style.display = "none"} />
-          <div className="nav-brand-text">
-            <span className="nav-brand-name">SIBATAMU-SPP</span>
-            <span className="nav-brand-sub">Madrasah Tarbiyatul Mubalighin</span>
+          <div>
+            <div className="nav-brand-name">SIBATAMU-SPP</div>
+            <div className="nav-brand-sub">Madrasah Tarbiyatul Mubalighin</div>
           </div>
         </div>
 
-        <div className="nav-links">
-          <button className="nav-link" onClick={() => scrollTo("beranda")}>Beranda</button>
-          <button className="nav-link" onClick={() => scrollTo("fitur")}>Fitur</button>
-          <button className="nav-link" onClick={() => scrollTo("kontak")}>Kontak</button>
-          <button className="nav-cta" onClick={() => router.push("/login")}>🚀 Login</button>
+        <div className="nav-menu">
+          <button className="nav-link" onClick={() => scrollTo("beranda")}>🏠 Beranda</button>
+          <button className="nav-link" onClick={() => scrollTo("kontak")}>📞 Kontak</button>
+          <button className="nav-login-btn" onClick={() => router.push("/login")}>Login</button>
         </div>
 
-        <button className={`hamburger ${menuOpen ? "open" : ""}`}
-          onClick={() => setMenuOpen(o => !o)} aria-label="menu">
-          <span /><span /><span />
+        <button className="hamburger" onClick={() => setMenuOpen(o => !o)} aria-label="menu">
+          <span style={{ transform: menuOpen ? "rotate(45deg) translate(5px,5px)" : "none" }} />
+          <span style={{ opacity: menuOpen ? 0 : 1 }} />
+          <span style={{ transform: menuOpen ? "rotate(-45deg) translate(5px,-5px)" : "none" }} />
         </button>
       </nav>
 
-      {/* MOBILE DRAWER */}
-      <div className={`drawer-overlay ${menuOpen ? "open" : ""}`} onClick={() => setMenuOpen(false)} />
-      <div className={`drawer ${menuOpen ? "open" : ""}`}>
-        <button className="drawer-link" onClick={() => scrollTo("beranda")}>🏠 Beranda</button>
-        <button className="drawer-link" onClick={() => scrollTo("fitur")}>✨ Fitur</button>
-        <button className="drawer-link" onClick={() => scrollTo("kontak")}>📞 Kontak</button>
-        <div className="drawer-divider" />
-        <button className="drawer-cta" onClick={() => { setMenuOpen(false); router.push("/login"); }}>
-          🚀 Login Sekarang
-        </button>
+      {/* MOBILE MENU */}
+      <div className={`mobile-menu ${menuOpen ? "open" : ""}`}>
+        <button className="mobile-link" onClick={() => scrollTo("beranda")}>🏠 Beranda</button>
+        <button className="mobile-link" onClick={() => scrollTo("kontak")}>📞 Kontak</button>
+        <button className="mobile-login-btn" onClick={() => router.push("/login")}>🚀 Login Sekarang</button>
       </div>
 
       {/* HERO */}
       <section id="beranda" className="hero">
-        <div className="blob blob-1" />
-        <div className="blob blob-2" />
-        <div className="blob blob-3" />
-        <div className="deco-ring ring-1" />
-        <div className="deco-ring ring-2" />
+        <div className="blob blob1" />
+        <div className="blob blob2" />
+        <div className="blob blob3" />
+        <div className="hero-grid">
 
-        <div className="hero-inner">
-          <div className="hero-left">
-            <div className="hero-badge anim-1">
-              <span className="badge-dot" />
-              SISTEM TERPERCAYA & MODERN
-            </div>
-
-            <h1 className="hero-title anim-2">
+          {/* TEKS KIRI */}
+          <div className="hero-left hero-text-anim">
+            <span className="hero-badge">🌿 SISTEM TERPERCAYA & MODERN</span>
+            <h1 className="hero-title">
               Kelola Pembayaran<br />
               <span className="hero-accent">SPP Lebih Mudah</span>
             </h1>
-
-            <p className="hero-desc anim-3">
+            <p className="hero-desc">
               Platform pembayaran SPP digital yang transparan, efisien, dan mudah
               digunakan untuk seluruh civitas Madrasah Tarbiyatul Mubalighin Sumberjo.
             </p>
-
-            <div className="hero-stats anim-3">
-              <div className="stat-item">
-                <span className="stat-num">100%</span>
-                <span className="stat-label">Digital</span>
-              </div>
-              <div className="stat-divider" />
-              <div className="stat-item">
-                <span className="stat-num">Realtime</span>
-                <span className="stat-label">Konfirmasi</span>
-              </div>
-              <div className="stat-divider" />
-              <div className="stat-item">
-                <span className="stat-num">Aman</span>
-                <span className="stat-label">Terenkripsi</span>
-              </div>
-            </div>
-
-            <div className="hero-btns anim-4">
-              <button className="btn-primary" onClick={() => router.push("/login")}>
-                🚀 Login Sekarang
-              </button>
-              <button className="btn-secondary" onClick={() => scrollTo("kontak")}>
-                📞 Hubungi Kami
-              </button>
+            <div className="hero-btns">
+              <button className="btn-primary" onClick={() => router.push("/login")}>🚀 Login Sekarang</button>
+              <button className="btn-secondary" onClick={() => scrollTo("kontak")}>📞 Hubungi Kami</button>
             </div>
           </div>
 
-          <div className="hero-right anim-img">
-            <div className="hero-img-wrap">
-              <div className="hero-img-bg" />
-              <img
-                className="hero-img float-img"
-                src="/gambar-santri.png"
-                alt="Santri Madrasah"
-                onError={e => e.target.style.display = "none"}
-              />
-              {/* Floating info cards */}
-              <div className="float-card fc-left">
-                <span className="fc-icon">✅</span>
-                <div>
-                  <div className="fc-label">Status</div>
-                  <div className="fc-val">Pembayaran Sukses</div>
-                </div>
-              </div>
-              <div className="float-card fc-right">
-                <span className="fc-icon">💳</span>
-                <div>
-                  <div className="fc-label">Metode</div>
-                  <div className="fc-val">Transfer / QRIS</div>
-                </div>
-              </div>
-            </div>
+          {/* GAMBAR KARAKTER SANTRI - KANAN (Opsi 3: glow hijau + fade bawah) */}
+          <div className="hero-right hero-logo-anim">
+            <img
+              className="hero-char-img float-char"
+              src="/gambar-santri.png"
+              alt="Santri Madrasah Tarbiyatul Mubalighin Sumberjo"
+              onError={e => e.target.style.display = "none"}
+            />
           </div>
+
         </div>
       </section>
 
-      {/* FEATURES */}
-      <section id="fitur" className="features">
-        <div className="features-inner">
-          <div className="section-tag">✨ Keunggulan</div>
-          <h2 className="section-title">Fitur Lengkap untuk Semua</h2>
-          <p className="section-sub">Dirancang khusus untuk kemudahan pengelolaan SPP di lingkungan madrasah.</p>
-          <div className="features-grid">
-            {features.map((f, i) => (
-              <div key={i} className="feat-card">
-                <div className="feat-icon">{f.icon}</div>
-                <div className="feat-title">{f.title}</div>
-                <div className="feat-desc">{f.desc}</div>
+      {/* KONTAK */}
+      <section id="kontak" className="contact-section">
+        <h2 className="section-title">📞 Kontak Kami</h2>
+        <p className="section-sub">Hubungi kami untuk informasi lebih lanjut tentang sistem SPP Digital.</p>
+        <div className="contact-grid">
+          <div className="contact-card">
+            {[
+              { icon: "📍", label: "Alamat", val: "Ds. Sumberjo, Kec. Sanankulon,\nKab. Blitar, Jawa Timur" },
+              { icon: "📧", label: "Email", val: "madrasahtaribiyatulsumberjo@gmail.com" },
+              { icon: "📱", label: "Telepon / WhatsApp", val: "08xxxxxxxxxx" },
+            ].map((item, i) => (
+              <div key={i} className="contact-item">
+                <div className="contact-icon">{item.icon}</div>
+                <div>
+                  <p className="contact-label">{item.label}</p>
+                  <p className="contact-val" style={{ whiteSpace: "pre-line" }}>{item.val}</p>
+                </div>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
 
-      {/* CONTACT */}
-      <section id="kontak" className="contact">
-        <div className="contact-inner">
-          <div className="section-tag">📞 Kontak</div>
-          <h2 className="section-title">Hubungi Kami</h2>
-          <p className="section-sub">Kami siap membantu Anda. Jangan ragu untuk menghubungi kami.</p>
-          <div className="contact-grid">
-            <div className="contact-card">
-              {contacts.map((c, i) => (
-                <div key={i} className="contact-item">
-                  <div className="contact-icon">{c.icon}</div>
-                  <div>
-                    <div className="contact-label">{c.label}</div>
-                    <div className="contact-val" style={{ whiteSpace: "pre-line" }}>{c.val}</div>
-                  </div>
-                </div>
-              ))}
-              <div className="contact-divider" />
-              <div className="contact-item">
-                <div className="contact-icon">📲</div>
-                <div style={{ width: "100%" }}>
-                  <div className="contact-label">Media Sosial</div>
-                  <div className="social-links">
-                    {socials.map((s, i) => (
-                      <a key={i} href={s.href} target="_blank" rel="noreferrer" className="social-link">
-                        <span className={`social-icon ${s.cls}`}>{s.icon}</span>
-                        <div>
-                          <div className="social-name">{s.label}</div>
-                          <div className="social-handle">{s.handle}</div>
-                        </div>
-                      </a>
-                    ))}
-                  </div>
+            {/* SOSIAL MEDIA */}
+            <div className="contact-item">
+              <div className="contact-icon">📲</div>
+              <div style={{ width: "100%" }}>
+                <p className="contact-label">Media Sosial</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
+                  {socialMedias.map((s, i) => (
+                    <a key={i} href={s.href} target="_blank" rel="noreferrer" className="social-link">
+                      <span className={s.iconClass}>
+                        {s.icon}
+                      </span>
+                      <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.3 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>{s.label}</span>
+                        <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 400 }}>{s.handle}</span>
+                      </span>
+                    </a>
+                  ))}
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="map-wrap">
-              <iframe
-                title="Lokasi Madrasah"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3951.8!2d112.1623!3d-8.0512!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e78f2e1c3b8b1e5%3A0xabcdef1234567890!2sSumberjo%2C%20Sanankulon%2C%20Blitar%2C%20Jawa%20Timur!5e0!3m2!1sid!2sid!4v1746000000000!5m2!1sid!2sid"
-                allowFullScreen="" loading="lazy" referrerPolicy="no-referrer-when-downgrade"
-              />
-            </div>
+          <div className="map-wrap">
+            <iframe
+              title="Lokasi Madrasah"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3951.8!2d112.1623!3d-8.0512!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e78f2e1c3b8b1e5%3A0xabcdef1234567890!2sSumberjo%2C%20Sanankulon%2C%20Blitar%2C%20Jawa%20Timur!5e0!3m2!1sid!2sid!4v1746000000000!5m2!1sid!2sid"
+              allowFullScreen="" loading="lazy" referrerPolicy="no-referrer-when-downgrade"
+            />
           </div>
         </div>
       </section>
 
       {/* FOOTER */}
       <footer className="footer">
-        <div className="footer-inner">
-          <div className="footer-brand">SIBATAMU-SPP</div>
-          <div className="footer-sub">Madrasah Tarbiyatul Mubalighin Sumberjo</div>
-          <div className="footer-divider" />
-          <div className="footer-copy">🌿 © 2026 Madrasah Tarbiyatul Mubalighin Sumberjo. All rights reserved.</div>
-        </div>
+        🌿 © 2026 Madrasah Tarbiyatul Mubalighin Sumberjo. All rights reserved.
       </footer>
     </div>
-  );
-}
-
-function IgIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
-    </svg>
-  );
-}
-function FbIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-    </svg>
-  );
-}
-function YtIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-    </svg>
   );
 }
