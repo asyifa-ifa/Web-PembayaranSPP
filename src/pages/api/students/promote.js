@@ -18,52 +18,57 @@ export default async function handler(req, res) {
       }
     }
 
-    await prisma.$transaction(async (tx) => {
-      for (const p of promotions) {
-        const { studentId, newClassId, status } = p
+    // Ambil semua data santri SEBELUM transaksi (hindari timeout)
+    const studentIds = promotions.map(p => parseInt(p.studentId))
+    const students = await prisma.student.findMany({
+      where: { id: { in: studentIds } },
+      select: { id: true, classId: true }
+    })
 
-        // Ambil kelas LAMA santri sebelum diubah
-        const student = await tx.student.findUnique({
-          where: { id: parseInt(studentId) },
-          select: { classId: true }
-        })
+    const studentMap = {}
+    for (const s of students) {
+      studentMap[s.id] = s
+    }
 
-        // Guard: santri tidak ditemukan atau classId null
-        if (!student) {
-          throw new Error(`Santri ID ${studentId} tidak ditemukan`)
-        }
-        if (!student.classId) {
-          throw new Error(`Santri ID ${studentId} belum memiliki kelas, harap assign kelas terlebih dahulu`)
-        }
+    // Validasi classId sebelum transaksi
+    for (const p of promotions) {
+      const student = studentMap[parseInt(p.studentId)]
+      if (!student) {
+        return res.status(400).json({ message: `Santri ID ${p.studentId} tidak ditemukan` })
+      }
+      if (!student.classId) {
+        return res.status(400).json({ message: `Santri ID ${p.studentId} belum memiliki kelas` })
+      }
+    }
 
-        // 1. Simpan kelas LAMA ke ClassHistory (upsert agar tidak duplikat)
-        await tx.classHistory.upsert({
+    // Transaksi: hanya write operations
+    await prisma.$transaction(
+      promotions.map(p => {
+        const student = studentMap[parseInt(p.studentId)]
+        return prisma.classHistory.upsert({
           where: {
             studentId_academicYear: {
-              studentId: parseInt(studentId),
+              studentId: parseInt(p.studentId),
               academicYear,
             }
           },
-          update: {
-            classId: student.classId,
-          },
+          update: { classId: student.classId },
           create: {
-            studentId: parseInt(studentId),
+            studentId: parseInt(p.studentId),
             classId: student.classId,
             academicYear,
           }
         })
-
-        // 2. Update Student ke kelas BARU
-        await tx.student.update({
-          where: { id: parseInt(studentId) },
+      }).concat(
+        promotions.map(p => prisma.student.update({
+          where: { id: parseInt(p.studentId) },
           data: {
-            classId: parseInt(newClassId),
-            status: status || "ACTIVE",
+            classId: parseInt(p.newClassId),
+            status: p.status || "ACTIVE",
           }
-        })
-      }
-    })
+        }))
+      )
+    )
 
     return res.status(200).json({ message: `Berhasil memproses ${promotions.length} santri` })
   } catch (e) {
@@ -71,7 +76,7 @@ export default async function handler(req, res) {
     console.error("PROMOTE ERROR META:", JSON.stringify(e.meta))
     console.error("PROMOTE ERROR MSG:", e.message)
     return res.status(500).json({ 
-      message: e.message.startsWith("Santri") ? e.message : "Gagal memproses naik kelas",
+      message: "Gagal memproses naik kelas",
       detail: e.message,
       code: e.code,
       meta: e.meta
