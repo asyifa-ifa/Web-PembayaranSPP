@@ -1,71 +1,51 @@
-import prisma from "@/lib/prisma";
+import prisma from "@/lib/prisma"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/pages/api/auth/[...nextauth]"
 
 export default async function handler(req, res) {
+  const session = await getServerSession(req, res, authOptions)
+
+  if (!session || session.user.role !== "KEPALA") {
+    return res.status(401).json({ message: "Unauthorized" })
+  }
+
   try {
-    const tahun = parseInt(req.query.tahun) || new Date().getFullYear();
+    const now = new Date()
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
 
-    // =========================
-    // PEMASUKAN (Pembayaran)
-    // =========================
-    const pemasukan = await prisma.pembayaran.findMany({
-      where: {
-        status: "LUNAS",
-        tanggal: {
-          gte: new Date(`${tahun}-01-01`),
-          lte: new Date(`${tahun}-12-31`),
+    const [pemasukan, pengeluaran] = await Promise.all([
+      prisma.payment.aggregate({
+        where: {
+          status: "SUCCESS",
+          createdAt: {
+            gte: startOfMonth,
+            lte: endOfMonth
+          }
         },
-      },
-      select: {
-        jumlah: true,
-        tanggal: true,
-      },
-    });
+        _sum: { amount: true }
+      }),
 
-    // =========================
-    // PENGELUARAN
-    // =========================
-    const pengeluaran = await prisma.pengeluaran.findMany({
-      where: {
-        tanggal: {
-          gte: new Date(`${tahun}-01-01`),
-          lte: new Date(`${tahun}-12-31`),
+      prisma.pengeluaran.aggregate({
+        where: {
+          createdAt: {
+            gte: startOfMonth,
+            lte: endOfMonth
+          }
         },
-      },
-      select: {
-        jumlah: true,
-        tanggal: true,
-      },
-    });
+        _sum: { jumlah: true }
+      })
+    ])
 
-    // =========================
-    // FORMAT BULANAN
-    // =========================
-    const bulanLabels = [
-      "Jan","Feb","Mar","Apr","Mei","Jun",
-      "Jul","Agu","Sep","Okt","Nov","Des"
-    ];
-
-    const pemasukanPerBulan = Array(12).fill(0);
-    const pengeluaranPerBulan = Array(12).fill(0);
-
-    pemasukan.forEach(item => {
-      const bulan = new Date(item.tanggal).getMonth();
-      pemasukanPerBulan[bulan] += item.jumlah;
-    });
-
-    pengeluaran.forEach(item => {
-      const bulan = new Date(item.tanggal).getMonth();
-      pengeluaranPerBulan[bulan] += item.jumlah;
-    });
-
-    res.status(200).json({
-      labels: bulanLabels,
-      pemasukan: pemasukanPerBulan,
-      pengeluaran: pengeluaranPerBulan,
-    });
+    return res.status(200).json({
+      totalPemasukan: pemasukan._sum.amount || 0,
+      totalPengeluaran: pengeluaran._sum.jumlah || 0
+    })
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Terjadi kesalahan" });
+    return res.status(500).json({
+      message: "Gagal ambil data",
+      error: error.message
+    })
   }
 }
