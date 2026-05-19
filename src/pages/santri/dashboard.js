@@ -418,7 +418,7 @@ export default function Dashboard() {
           </div>
           <div className="tb-right">
             <span className="tb-user">Halo, {student.name?.split(" ")[0]} 👋</span>
-            <button className="btn-out" onClick={() => router.push("/api/auth/signout")}>
+            <button className="btn-out" onClick={() => signOut({ callbackUrl: "/login" })}>
               <span>🚪</span> Keluar
             </button>
           </div>
