@@ -16,13 +16,21 @@ export default async function handler(req, res) {
 
     const authHeader = "Basic " + Buffer.from(SERVER_KEY + ":").toString("base64")
 
-    // Cek status ke Midtrans
     const response = await fetch(`${BASE_URL}/${orderId}/status`, {
       headers: { Authorization: authHeader },
     })
 
     const data = await response.json()
     console.log("CHECK STATUS MIDTRANS:", data)
+
+    // Transaksi tidak ditemukan → stop polling
+    if (data.status_code === "404") {
+      return res.status(200).json({ 
+        status: "not_found", 
+        updated: false, 
+        stopPolling: true,
+      })
+    }
 
     const { transaction_status, fraud_status } = data
 
@@ -34,38 +42,42 @@ export default async function handler(req, res) {
       return res.status(200).json({ status: transaction_status, updated: false })
     }
 
-    // Cari payment
-    const payment = await prisma.payment.findFirst({
+    // Cari semua payment dengan orderId ini (support bulk)
+    const payments = await prisma.payment.findMany({
       where: { gatewayRef: orderId },
       include: { student: true, paymentType: true },
     })
 
-    if (!payment) return res.status(404).json({ message: "Payment tidak ditemukan" })
+    if (payments.length === 0) {
+      return res.status(404).json({ message: "Payment tidak ditemukan" })
+    }
 
-    if (payment.status === "SUCCESS") {
+    const allSuccess = payments.every(p => p.status === "SUCCESS")
+    if (allSuccess) {
       return res.status(200).json({ status: "settlement", updated: false, alreadySuccess: true })
     }
 
-    // Update payment → SUCCESS
-    await prisma.payment.update({
-      where: { id: payment.id },
+    // Update semua payment → SUCCESS
+    await prisma.payment.updateMany({
+      where: { gatewayRef: orderId },
       data: { status: "SUCCESS" },
     })
 
-    // Update bill → PAID
-    const bill = await prisma.bill.findFirst({
-      where: {
-        studentId: payment.studentId,
-        paymentTypeId: payment.paymentTypeId,
-        status: "UNPAID",
-      },
-    })
-
-    if (bill) {
-      await prisma.bill.update({
-        where: { id: bill.id },
-        data: { status: "PAID" },
+    // Update semua bill terkait → PAID
+    for (const payment of payments) {
+      const bill = await prisma.bill.findFirst({
+        where: {
+          studentId: payment.studentId,
+          paymentTypeId: payment.paymentTypeId,
+          status: "UNPAID",
+        },
       })
+      if (bill) {
+        await prisma.bill.update({
+          where: { id: bill.id },
+          data: { status: "PAID" },
+        })
+      }
     }
 
     return res.status(200).json({ status: "settlement", updated: true })
