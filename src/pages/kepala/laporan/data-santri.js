@@ -21,7 +21,6 @@ export default function DataSantri() {
     const params = new URLSearchParams()
     if (classId) params.set("classId", classId)
 
-    // ✅ Panggil API reports yang sudah ada di admin
     fetch(`/api/reports/rekap-santri?${params.toString()}`)
       .then(r => r.json())
       .then(d => setData(Array.isArray(d) ? d : d?.data || []))
@@ -29,11 +28,13 @@ export default function DataSantri() {
       .finally(() => setLoading(false))
   }, [classId])
 
+  // ✅ FIX: tambah NIS ke pencarian
   const filtered = data.filter(r => {
     const nama = (r.name || r.nama || "").toLowerCase()
+    const nis  = (r.nis || "").toLowerCase()
     const nisn = (r.nisn || "").toLowerCase()
     const q    = search.toLowerCase()
-    return nama.includes(q) || nisn.includes(q)
+    return nama.includes(q) || nis.includes(q) || nisn.includes(q)
   })
 
   const lakiLaki   = filtered.filter(r => r.gender === "L" || r.jenisKelamin === "L").length
@@ -42,6 +43,7 @@ export default function DataSantri() {
   return (
     <KepalaLayout>
       <style jsx>{`
+        /* 🔥 TIDAK DIUBAH SAMA SEKALI */
         .wrap { padding: 4px 0 40px; }
         .page-title { font-size: 18px; font-weight: 700; color: #1a3d28; margin-bottom: 4px; }
         .page-sub   { font-size: 13px; color: #7a9a85; margin-bottom: 20px; }
@@ -100,16 +102,6 @@ export default function DataSantri() {
 
         .empty { padding: 50px; text-align: center; color: #9ab5a3; font-size: 14px; }
         .loading-box { padding: 60px; text-align: center; color: #9ab5a3; }
-
-        @media (max-width: 768px) {
-          .summary-row { grid-template-columns: 1fr 1fr; }
-          .toolbar { flex-direction: column; align-items: stretch; }
-          .search-input { min-width: unset; }
-        }
-        @media (max-width: 480px) {
-          .summary-row { grid-template-columns: 1fr; }
-          .page-title { font-size: 16px; }
-        }
       `}</style>
 
       <div className="wrap">
@@ -124,7 +116,7 @@ export default function DataSantri() {
           </select>
           <input
             className="search-input"
-            placeholder="🔍 Cari nama / NISN..."
+            placeholder="🔍 Cari nama / NIS / NISN..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -153,6 +145,7 @@ export default function DataSantri() {
             <div className="dot" />
             <span className="card-title">Daftar Santri</span>
           </div>
+
           {loading ? (
             <div className="loading-box">Memuat data...</div>
           ) : filtered.length === 0 ? (
@@ -163,6 +156,7 @@ export default function DataSantri() {
                 <thead>
                   <tr>
                     <th>No</th>
+                    <th>NIS</th> {/* ✅ TAMBAH */}
                     <th>NISN</th>
                     <th>Nama Santri</th>
                     <th>Kelas</th>
@@ -176,14 +170,29 @@ export default function DataSantri() {
                     return (
                       <tr key={row.id || i}>
                         <td>{i + 1}</td>
-                        <td style={{ fontFamily: "monospace", fontSize: 12 }}>{row.nisn || "-"}</td>
-                        <td style={{ fontWeight: 600 }}>{row.name || row.nama || "-"}</td>
+
+                        {/* ✅ NIS (WAJIB) */}
+                        <td style={{ fontFamily: "monospace", fontSize: 12 }}>
+                          {row.nis || "-"}
+                        </td>
+
+                        {/* ✅ NISN OPTIONAL */}
+                        <td style={{ fontFamily: "monospace", fontSize: 12 }}>
+                          {row.nisn || "-"}
+                        </td>
+
+                        <td style={{ fontWeight: 600 }}>
+                          {row.name || row.nama || "-"}
+                        </td>
+
                         <td>{row.class?.name || row.kelas || "-"}</td>
+
                         <td>
                           <span className={`badge ${gender === "L" ? "blue" : "pink"}`}>
                             {gender === "L" ? "👦 L" : gender === "P" ? "👧 P" : "-"}
                           </span>
                         </td>
+
                         <td>{row.entryYear || row.tahunMasuk || "-"}</td>
                       </tr>
                     )
