@@ -36,12 +36,10 @@ export default function KepalaDashboard() {
           border-radius: 16px 16px 0 0;
         }
         .stat-card.red::before { background: linear-gradient(90deg, #d32f2f, #ef5350); }
-        .stat-card.blue::before { background: linear-gradient(90deg, #1565c0, #1976d2); }
-        .stat-card.amber::before { background: linear-gradient(90deg, #b07800, #f59e0b); }
 
         .stat-icon { font-size: 28px; margin-bottom: 10px; }
         .stat-label { font-size: 11px; font-weight: 700; color: #8aab96; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-        .stat-val { font-size: 24px; font-weight: 800; color: #1a3d28; }
+        .stat-val { font-size: 20px; font-weight: 800; color: #1a3d28; }
         .stat-sub { font-size: 12px; color: #9ab5a3; margin-top: 4px; }
 
         .section-card {
@@ -77,7 +75,7 @@ export default function KepalaDashboard() {
       <div className="page-wrapper">
         <div className="page-header">
           <h2>Dashboard Kepala Madrasah</h2>
-          <span>Ringkasan data dan laporan madrasah</span>
+          <span>Ringkasan keuangan madrasah</span>
         </div>
 
         {loading ? (
@@ -85,30 +83,23 @@ export default function KepalaDashboard() {
         ) : (
           <>
             <div className="stat-grid">
-              <div className="stat-card">
-                <div className="stat-icon">👩‍🎓</div>
-                <div className="stat-label">Total Santri</div>
-                <div className="stat-val">{stats?.totalSantri || 0}</div>
-                <div className="stat-sub">Santri aktif</div>
-              </div>
-              <div className="stat-card blue">
-                <div className="stat-icon">🧑‍🏫</div>
-                <div className="stat-label">Total Ustadz</div>
-                <div className="stat-val">{stats?.totalUstadz || 0}</div>
-                <div className="stat-sub">Pengajar aktif</div>
-              </div>
+              
+              {/* PEMASUKAN */}
               <div className="stat-card">
                 <div className="stat-icon">💰</div>
-                <div className="stat-label">Pemasukan Bulan Ini</div>
-                <div className="stat-val" style={{ fontSize: 16 }}>{rp(stats?.pemasukanBulanIni || 0)}</div>
-                <div className="stat-sub">Pembayaran sukses</div>
+                <div className="stat-label">Total Pemasukan</div>
+                <div className="stat-val">{rp(stats?.totalPemasukan)}</div>
+                <div className="stat-sub">Seluruh pembayaran santri</div>
               </div>
+
+              {/* PENGELUARAN */}
               <div className="stat-card red">
-                <div className="stat-icon">📋</div>
-                <div className="stat-label">Tagihan Belum Bayar</div>
-                <div className="stat-val">{stats?.tagihanUnpaid || 0}</div>
-                <div className="stat-sub">{rp(stats?.totalUnpaid || 0)}</div>
+                <div className="stat-icon">💸</div>
+                <div className="stat-label">Total Pengeluaran</div>
+                <div className="stat-val">{rp(stats?.totalPengeluaran)}</div>
+                <div className="stat-sub">Pengeluaran operasional</div>
               </div>
+
             </div>
 
             <div className="section-card">
@@ -118,10 +109,9 @@ export default function KepalaDashboard() {
               </div>
               <div className="quick-links">
                 {[
-                  { href: "/admin/reports/pembayaran", icon: "📈", label: "Laporan Pembayaran", sub: "Ringkasan pemasukan" },
-                  { href: "/admin/reports/rekap-pembayaran", icon: "✅", label: "Rekap Pembayaran", sub: "Status sudah/belum bayar" },
-                  { href: "/admin/reports/rekap-santri", icon: "🎓", label: "Rekap Santri", sub: "Data santri per tahun ajaran" },
-                  { href: "/admin/reports/absensi", icon: "📋", label: "Absensi Santri", sub: "Cetak lembar absensi" },
+                  { href: "/kepala/laporan/rekap-pembayaran", icon: "✅", label: "Rekap Pembayaran", sub: "Status bayar santri" },
+                  { href: "/kepala/laporan/data-santri", icon: "🎓", label: "Data Santri", sub: "Seluruh data santri" },
+                  { href: "/kepala/laporan/pengeluaran", icon: "💸", label: "Laporan Pengeluaran", sub: "Data pengeluaran" },
                 ].map(item => (
                   <a key={item.href} href={item.href} className="quick-link">
                     <div className="quick-link-icon">{item.icon}</div>
