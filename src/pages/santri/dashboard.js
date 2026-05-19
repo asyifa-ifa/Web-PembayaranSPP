@@ -18,7 +18,10 @@ export default function Dashboard() {
   const [checkingPayment, setCheckingPayment] = useState(false);
   const router = useRouter();
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { 
+  setCheckingPayment(false);
+  fetchData(); 
+}, []);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
