@@ -1,4 +1,4 @@
-// pages/admin/laporan/rekap-santri.js
+// pages/admin/reports/rekap-santri.js
 import { useEffect, useState } from "react"
 import AdminLayout from "@/components/AdminLayout"
 
@@ -57,10 +57,10 @@ export default function RekapSantri() {
 
     const rows = data.map((r, i) => ({
       "No": i + 1,
+      "NIS": r.student?.nis || "-",
       "NISN": r.student?.nisn || "-",
       "Nama Santri": r.student?.name || "-",
-      "Kelas Lama": r.class?.name || "-",
-      "Kelas Sekarang": r.student?.class?.name || "-",
+      "Kelas": r.student?.class?.name || "-",
       "Jenis Kelamin": r.student?.gender === "L" ? "Laki-laki" : "Perempuan",
       "Nama Wali": r.student?.guardian || "-",
       "Tahun Masuk": r.student?.entryYear || "-",
@@ -70,7 +70,10 @@ export default function RekapSantri() {
 
     const ws = XLSX.utils.json_to_sheet(rows)
     const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, `Rekap ${activeYear}`)
+
+    // ✅ Ganti / dengan - agar nama sheet valid
+    const sheetName = `Rekap ${activeYear.replace("/", "-")}`
+    XLSX.utils.book_append_sheet(wb, ws, sheetName)
 
     const colWidths = Object.keys(rows[0] || {}).map(key => ({
       wch: Math.max(key.length, ...rows.map(r => String(r[key] || "").length)) + 2
@@ -81,9 +84,8 @@ export default function RekapSantri() {
   }
 
   async function exportPDF() {
-    const jsPDFModule = await import("jspdf")
-    const jsPDF = jsPDFModule.jsPDF
-    await import("jspdf-autotable")
+    const { default: jsPDF } = await import("jspdf")
+    const { default: autoTable } = await import("jspdf-autotable")
 
     const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" })
 
@@ -99,14 +101,15 @@ export default function RekapSantri() {
     doc.setLineWidth(0.5)
     doc.line(14, 31, 283, 31)
 
-    doc.autoTable({
+    // ✅ Pakai autoTable langsung
+    autoTable(doc, {
       startY: 35,
-      head: [["No", "NISN", "Nama Santri", "Kelas Lama", "Kelas Sekarang", "JK", "Wali", "Thn Masuk", "Status"]],
+      head: [["No", "NIS", "NISN", "Nama Santri", "Kelas", "JK", "Wali", "Thn Masuk", "Status"]],
       body: data.map((r, i) => [
         i + 1,
+        r.student?.nis || "-",
         r.student?.nisn || "-",
         r.student?.name || "-",
-        r.class?.name || "-",
         r.student?.class?.name || "-",
         r.student?.gender === "L" ? "L" : "P",
         r.student?.guardian || "-",
@@ -119,9 +122,9 @@ export default function RekapSantri() {
       alternateRowStyles: { fillColor: [245, 250, 246] },
       columnStyles: {
         0: { cellWidth: 10 },
-        1: { cellWidth: 25 },
-        2: { cellWidth: 50 },
-        3: { cellWidth: 30 },
+        1: { cellWidth: 20 },
+        2: { cellWidth: 25 },
+        3: { cellWidth: 50 },
         4: { cellWidth: 30 },
         5: { cellWidth: 10 },
         6: { cellWidth: 35 },
@@ -255,13 +258,10 @@ export default function RekapSantri() {
         .badge-dropped { background: #fff0f0; color: #d32f2f; border: 1px solid #f5bebe; }
         .badge-graduated { background: #e8f0ff; color: #2551a8; border: 1px solid #b8c9f5; }
 
-        /* Highlight kelas berbeda */
         .kelas-arrow {
           display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
         }
-        .kelas-lama { color: #9ab5a3; font-size: 12px; text-decoration: line-through; }
-        .kelas-baru { color: #1a3d28; font-weight: 600; }
-        .arrow { color: #3a8f50; font-size: 12px; }
+        .kelas-sama { color: #1a3d28; font-weight: 600; }
 
         .empty-state {
           text-align: center; padding: 60px 20px; color: #9ab5a3; font-size: 14px;
@@ -372,16 +372,17 @@ export default function RekapSantri() {
                 {data.length === 0 ? (
                   <div className="empty-state">
                     Tidak ada data santri untuk tahun ajaran <strong>{activeYear}</strong>
-                    <p>Pastikan proses naik kelas sudah dilakukan untuk tahun ajaran ini</p>
+                    <p>Pastikan tahun masuk santri sudah diisi dengan benar</p>
                   </div>
                 ) : (
                   <table>
                     <thead>
                       <tr>
                         <th>#</th>
+                        <th>NIS</th>
                         <th>NISN</th>
                         <th>Nama Santri</th>
-                        <th>Kelas Lama → Kelas Sekarang</th>
+                        <th>Kelas</th>
                         <th>JK</th>
                         <th>Nama Wali</th>
                         <th>Thn Masuk</th>
@@ -392,14 +393,13 @@ export default function RekapSantri() {
                       {data.map((r, i) => (
                         <tr key={r.id}>
                           <td>{i + 1}</td>
+                          <td>{r.student?.nis || "-"}</td>
                           <td>{r.student?.nisn || "-"}</td>
                           <td style={{ fontWeight: 600 }}>{r.student?.name || "-"}</td>
                           <td>
-                            <div className="kelas-arrow">
-                              <span className="kelas-lama">{r.class?.name || "-"}</span>
-                              <span className="arrow">→</span>
-                              <span className="kelas-baru">{r.student?.class?.name || "-"}</span>
-                            </div>
+                            <span className="kelas-sama">
+                              {r.student?.class?.name || "-"}
+                            </span>
                           </td>
                           <td>
                             <span className={`badge ${r.student?.gender === "L" ? "badge-l" : "badge-p"}`}>
