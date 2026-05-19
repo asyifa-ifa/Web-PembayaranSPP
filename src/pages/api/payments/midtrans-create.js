@@ -5,9 +5,74 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end()
 
   try {
-    const { billId } = req.body
+    const { billId, billIds } = req.body
 
-    // Ambil data tagihan
+    // ── BULK PAYMENT (billIds array) ──────────────────────────────────────
+    if (billIds && Array.isArray(billIds) && billIds.length > 0) {
+      const bills = await prisma.bill.findMany({
+        where: {
+          id: { in: billIds.map(Number) },
+          status: "UNPAID",
+        },
+        include: {
+          student: true,
+          paymentType: true,
+        },
+      })
+
+      if (bills.length === 0) {
+        return res.status(404).json({ message: "Tagihan tidak ditemukan" })
+      }
+
+      const student = bills[0].student
+      const totalAmount = bills.reduce((sum, b) => sum + b.amount, 0)
+      const orderId = `SPP-BULK-${Date.now()}`
+
+      const itemDetails = bills.map(b => ({
+        id: String(b.id),
+        price: Number(b.amount),
+        quantity: 1,
+        name: `${b.paymentType.name} - ${b.student.name}`.slice(0, 50),
+      }))
+
+      const snap = await createMidtransTransaction({
+        orderId,
+        amount: totalAmount,
+        productDetails: `Pembayaran ${bills.length} Tagihan - ${student.name}`,
+        email: student.email,
+        name: student.name,
+        returnUrl: `${process.env.NEXTAUTH_URL}/santri/dashboard`,
+        itemDetails,
+      })
+
+      if (!snap.redirect_url) {
+        return res.status(500).json({ message: "Gagal membuat transaksi Midtrans", detail: snap })
+      }
+
+      // Simpan semua payment sebagai PENDING
+      await prisma.payment.createMany({
+        data: bills.map(b => ({
+          studentId: b.studentId,
+          paymentTypeId: b.paymentTypeId,
+          amount: b.amount,
+          method: "TRANSFER",
+          status: "PENDING",
+          gatewayRef: orderId,
+        })),
+      })
+
+      return res.status(200).json({
+        paymentUrl: snap.redirect_url,
+        token: snap.token,
+        orderId,
+      })
+    }
+
+    // ── SINGLE PAYMENT (billId) ───────────────────────────────────────────
+    if (!billId) {
+      return res.status(400).json({ message: "billId atau billIds wajib diisi" })
+    }
+
     const bill = await prisma.bill.findUnique({
       where: { id: Number(billId) },
       include: {
@@ -21,7 +86,6 @@ export default async function handler(req, res) {
 
     const orderId = `SPP-${bill.id}-${Date.now()}`
 
-    // Buat transaksi Snap Midtrans
     const snap = await createMidtransTransaction({
       orderId,
       amount: bill.amount,
@@ -35,7 +99,6 @@ export default async function handler(req, res) {
       return res.status(500).json({ message: "Gagal membuat transaksi Midtrans", detail: snap })
     }
 
-    // Simpan ke tabel Payment sebagai PENDING
     await prisma.payment.create({
       data: {
         studentId: bill.studentId,
@@ -48,10 +111,11 @@ export default async function handler(req, res) {
     })
 
     return res.status(200).json({
-      paymentUrl: snap.redirect_url,   // sama seperti duitku: paymentUrl
-      token: snap.token,               // bisa dipakai untuk Snap popup
+      paymentUrl: snap.redirect_url,
+      token: snap.token,
       orderId,
     })
+
   } catch (error) {
     console.error("MIDTRANS CREATE ERROR:", error)
     return res.status(500).json({ message: "Gagal membuat pembayaran" })
