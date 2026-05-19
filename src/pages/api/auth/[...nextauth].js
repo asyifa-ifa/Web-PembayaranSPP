@@ -1,4 +1,3 @@
-// pages/api/auth/[...nextauth].js
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
@@ -7,13 +6,11 @@ import bcrypt from "bcryptjs";
 
 export const authOptions = {
   providers: [
-    // ── GOOGLE PROVIDER ──
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     }),
 
-    // ── CREDENTIALS PROVIDER ──
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -25,7 +22,7 @@ export const authOptions = {
           throw new Error("Username dan password wajib diisi");
         }
 
-        // LOGIN ADMIN (.env)
+        // LOGIN ADMIN
         if (
           credentials.username === process.env.ADMIN_USERNAME &&
           credentials.password === process.env.ADMIN_PASSWORD
@@ -33,7 +30,7 @@ export const authOptions = {
           return { id: "admin-1", name: "Administrator", role: "ADMIN" };
         }
 
-        // LOGIN KEPALA (.env)
+        // LOGIN KEPALA
         if (
           credentials.username === process.env.KEPALA_USERNAME &&
           credentials.password === process.env.KEPALA_PASSWORD
@@ -73,22 +70,18 @@ export const authOptions = {
 
   callbacks: {
     async signIn({ user, account }) {
-      // Kalau login Google, cek apakah email terdaftar di sistem
       if (account?.provider === "google") {
         const email = user.email;
 
-        // Cari student berdasarkan email
         const student = await prisma.student.findFirst({
           where: { email: email },
           include: { login: true },
         });
 
         if (!student) {
-          // Email tidak terdaftar di sistem → tolak login
           return "/login?error=EmailNotRegistered";
         }
 
-        // Simpan data untuk dipakai di jwt callback
         user.role = "SANTRI";
         user.studentId = student.id;
         user.studentName = student.name;
@@ -97,7 +90,7 @@ export const authOptions = {
       return true;
     },
 
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.name = user.studentName || user.name;
@@ -115,8 +108,19 @@ export const authOptions = {
       return session;
     },
 
-    async redirect({ url, baseUrl, token }) {
-      return baseUrl;
+    // ✅ FIX: redirect selalu ke /auth-redirect agar role-based routing bekerja
+    async redirect({ url, baseUrl }) {
+      if (
+        url === baseUrl ||
+        url === `${baseUrl}/` ||
+        url.includes("/login")
+      ) {
+        return `${baseUrl}/auth-redirect`;
+      }
+
+      if (url.startsWith(baseUrl)) return url;
+
+      return `${baseUrl}/auth-redirect`;
     },
   },
 

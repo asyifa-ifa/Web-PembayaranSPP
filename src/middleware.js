@@ -16,8 +16,6 @@ export default withAuth(
   }
 );
 
-export const runtime = "nodejs"; // ← tambahkan ini
-
 export const config = {
   matcher: ["/admin/:path*", "/santri/:path*", "/kepala/:path*"],
 };
