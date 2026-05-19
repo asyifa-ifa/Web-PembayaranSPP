@@ -4,8 +4,10 @@ import AdminLayout from "@/components/AdminLayout"
 
 export default function RekapSantri() {
   const [academicYears, setAcademicYears] = useState([])
+  const [classes, setClasses] = useState([])           // ✅ tambah
   const [selectedYear, setSelectedYear] = useState("")
   const [customYear, setCustomYear] = useState("")
+  const [selectedClassId, setSelectedClassId] = useState("") // ✅ tambah
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
@@ -18,6 +20,12 @@ export default function RekapSantri() {
         if (years.length > 0) setSelectedYear(years[0])
       })
       .catch(() => {})
+
+    // ✅ Ambil daftar kelas
+    fetch("/api/classes/list")
+      .then(r => r.json())
+      .then(setClasses)
+      .catch(() => {})
   }, [])
 
   async function handleSearch() {
@@ -27,7 +35,11 @@ export default function RekapSantri() {
     setLoading(true)
     setSearched(false)
     try {
-      const res = await fetch(`/api/students/rekap?academicYear=${encodeURIComponent(year)}`)
+      const params = new URLSearchParams()
+      params.append("academicYear", year)
+      if (selectedClassId) params.append("classId", selectedClassId)
+
+      const res = await fetch(`/api/students/rekap?${params.toString()}`)
       const json = await res.json()
       setData(json)
       setSearched(true)
@@ -39,6 +51,7 @@ export default function RekapSantri() {
   }
 
   const activeYear = customYear.trim() || selectedYear
+  const activeClass = classes.find(c => String(c.id) === selectedClassId)
 
   const perKelas = data.reduce((acc, row) => {
     const nama = row.student?.class?.name || "-"
@@ -70,8 +83,6 @@ export default function RekapSantri() {
 
     const ws = XLSX.utils.json_to_sheet(rows)
     const wb = XLSX.utils.book_new()
-
-    // ✅ Ganti / dengan - agar nama sheet valid
     const sheetName = `Rekap ${activeYear.replace("/", "-")}`
     XLSX.utils.book_append_sheet(wb, ws, sheetName)
 
@@ -94,14 +105,13 @@ export default function RekapSantri() {
     doc.text("REKAP DATA SANTRI", 148, 15, { align: "center" })
     doc.setFontSize(11)
     doc.setFont("helvetica", "normal")
-    doc.text(`Tahun Ajaran: ${activeYear}`, 148, 22, { align: "center" })
+    doc.text(`Tahun Ajaran: ${activeYear}${activeClass ? ` — ${activeClass.name}` : ""}`, 148, 22, { align: "center" })
     doc.text(`Madrasah Tarbiyatul Mubalighin`, 148, 28, { align: "center" })
 
     doc.setDrawColor(58, 143, 80)
     doc.setLineWidth(0.5)
     doc.line(14, 31, 283, 31)
 
-    // ✅ Pakai autoTable langsung
     autoTable(doc, {
       startY: 35,
       head: [["No", "NIS", "NISN", "Nama Santri", "Kelas", "JK", "Wali", "Thn Masuk", "Status"]],
@@ -258,9 +268,6 @@ export default function RekapSantri() {
         .badge-dropped { background: #fff0f0; color: #d32f2f; border: 1px solid #f5bebe; }
         .badge-graduated { background: #e8f0ff; color: #2551a8; border: 1px solid #b8c9f5; }
 
-        .kelas-arrow {
-          display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-        }
         .kelas-sama { color: #1a3d28; font-weight: 600; }
 
         .empty-state {
@@ -307,6 +314,22 @@ export default function RekapSantri() {
                 onChange={e => { setCustomYear(e.target.value); setSelectedYear("") }}
                 style={{ width: 150 }}
               />
+            </div>
+
+            {/* ✅ Filter Kelas */}
+            <div className="filter-group">
+              <label>Filter Kelas</label>
+              <select
+                className="filter-select"
+                value={selectedClassId}
+                onChange={e => setSelectedClassId(e.target.value)}
+                style={{ minWidth: 160 }}
+              >
+                <option value="">-- Semua Kelas --</option>
+                {classes.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
             </div>
 
             <button
@@ -366,7 +389,11 @@ export default function RekapSantri() {
             <div className="table-card">
               <div className="table-card-header">
                 <div className="dot" />
-                <span>Data Santri — {activeYear} ({data.length} santri)</span>
+                <span>
+                  Data Santri — {activeYear}
+                  {activeClass ? ` — ${activeClass.name}` : ""}
+                  {" "}({data.length} santri)
+                </span>
               </div>
               <div className="table-scroll">
                 {data.length === 0 ? (

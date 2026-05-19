@@ -5,15 +5,21 @@ export default async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ message: "Method tidak diizinkan" })
 
   try {
-    const { academicYear } = req.query
+    const { academicYear, classId } = req.query
 
     if (!academicYear) {
       return res.status(400).json({ message: "academicYear wajib diisi" })
     }
 
-    // ✅ Query langsung dari Student pakai entryYear
+    const where = { entryYear: academicYear }
+
+    // ✅ Filter kelas kalau ada
+    if (classId) {
+      where.classId = parseInt(classId)
+    }
+
     const students = await prisma.student.findMany({
-      where: { entryYear: academicYear },
+      where,
       select: {
         id: true,
         name: true,
@@ -33,11 +39,10 @@ export default async function handler(req, res) {
       ]
     })
 
-    // ✅ Map agar struktur sama dengan yang diharapkan frontend
     const result = students.map(s => ({
       id: s.id,
       student: s,
-      class: s.class, // kelas sekarang (tidak ada kelas lama)
+      class: s.class,
     }))
 
     return res.status(200).json(result)
