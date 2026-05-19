@@ -8,21 +8,19 @@ export default function DataSantri() {
   const [classId, setClassId] = useState("")
   const [search, setSearch]   = useState("")
 
-  // ambil daftar kelas
+  // ✅ ambil daftar kelas (FIX)
   useEffect(() => {
-    fetch("/api/classes")
+    fetch("/api/classes/list")
       .then(r => r.json())
       .then(d => setClasses(Array.isArray(d) ? d : []))
       .catch(() => {})
   }, [])
 
-  // ambil data santri
+  // ✅ ambil data santri (FIX: tanpa academicYear)
   useEffect(() => {
     setLoading(true)
 
     const params = new URLSearchParams()
-    params.set("academicYear", new Date().getFullYear()) // ✅ wajib
-
     if (classId) params.set("classId", classId)
 
     fetch(`/api/students/rekap?${params.toString()}`)
@@ -30,7 +28,6 @@ export default function DataSantri() {
       .then(d => {
         const raw = Array.isArray(d) ? d : []
 
-        // ✅ mapping dari API ke format UI
         const mapped = raw.map(item => ({
           id: item.id,
           name: item.student?.name,
@@ -109,8 +106,11 @@ export default function DataSantri() {
           <span className="filter-label">Filter:</span>
           <select value={classId} onChange={e => setClassId(e.target.value)}>
             <option value="">Semua Kelas</option>
-            {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            {classes.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
           </select>
+
           <input
             className="search-input"
             placeholder="🔍 Cari nama / NIS / NISN..."
