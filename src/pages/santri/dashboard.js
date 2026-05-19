@@ -1,6 +1,7 @@
 // pages/santri/dashboard.js
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import { signOut } from "next-auth/react";
 
 export default function Dashboard() {
   const [student, setStudent]             = useState(null);
