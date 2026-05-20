@@ -2,9 +2,9 @@ import { useEffect, useState, useRef } from "react";
 import AdminLayout from "@/components/AdminLayout";
 
 const cleanAmount = (amount) => {
-  if (!amount) return "0"
-  return String(amount).replace(/\./g, "").replace(/,/g, "").replace(/\D/g, "")
-}
+  if (!amount) return "0";
+  return String(amount).replace(/\./g, "").replace(/,/g, "").replace(/\D/g, "");
+};
 
 export default function PaymentPage() {
   const [students, setStudents] = useState([]);
@@ -25,6 +25,10 @@ export default function PaymentPage() {
   const [openDropdown, setOpenDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
+  // --- STATE BARU: PAGINATION ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   useEffect(() => {
     fetch("/api/payment-types").then(r => r.json()).then(setPaymentTypes);
     fetch("/api/classes/list").then(r => r.json()).then(setClasses);
@@ -44,25 +48,28 @@ export default function PaymentPage() {
   }, []);
 
   const loadStudents = (classId = "", academicYear = "") => {
-    const params = new URLSearchParams()
-    if (classId) params.append("classId", classId)
-    if (academicYear) params.append("academicYear", academicYear)
-    const query = params.toString() ? `?${params.toString()}` : ""
+    const params = new URLSearchParams();
+    if (classId) params.append("classId", classId);
+    if (academicYear) params.append("academicYear", academicYear);
+    const query = params.toString() ? `?${params.toString()}` : "";
 
     fetch(`/api/students/payment-list${query}`)
       .then((res) => res.json())
-      .then((data) => setStudents(data.students || []));
+      .then((data) => {
+        setStudents(data.students || []);
+        setCurrentPage(1); // Reset ke halaman 1 setiap kali filter berubah
+      });
   };
 
   const handleFilterClass = (val) => {
-    setFilterClass(val)
-    loadStudents(val, filterYear)
-  }
+    setFilterClass(val);
+    loadStudents(val, filterYear);
+  };
 
   const handleFilterYear = (val) => {
-    setFilterYear(val)
-    loadStudents(filterClass, val)
-  }
+    setFilterYear(val);
+    loadStudents(filterClass, val);
+  };
 
   const openDetail = async (id) => {
     const res = await fetch(`/api/students/${id}/detail`);
@@ -234,6 +241,12 @@ export default function PaymentPage() {
     ? students.find(s => s.id == tambahStudentId)?.name
     : null;
 
+  // --- LOGIC PEMOTONGAN DATA PAGINATION ---
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentStudents = students.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(students.length / itemsPerPage);
+
   return (
     <AdminLayout>
       <div className="container">
@@ -293,15 +306,17 @@ export default function PaymentPage() {
                 </tr>
               </thead>
               <tbody>
-                {students.length === 0 ? (
+                {currentStudents.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="empty-state">
                       👋 Tidak ada data santri ditemukan.
                     </td>
                   </tr>
-                ) : students.map((s, i) => (
+                ) : currentStudents.map((s, i) => (
                   <tr key={s.id}>
-                    <td style={{ textAlign: "center", color: "#888" }}>{i + 1}</td>
+                    <td style={{ textAlign: "center", color: "#888" }}>
+                      {indexOfFirstItem + i + 1}
+                    </td>
                     <td className="font-mono">{s.nis || "-"}</td>
                     <td className="font-mono">{s.nisn || "-"}</td>
                     <td><span className="badge-class">{s.class?.name || "-"}</span></td>
@@ -317,6 +332,34 @@ export default function PaymentPage() {
               </tbody>
             </table>
           </div>
+
+          {/* --- ELEMENT BARU: NAVIGASI PAGINATION DI BAWAH TABEL --- */}
+          {students.length > 0 && (
+            <div className="pagination-wrapper">
+              <div className="pagination-info">
+                Menampilkan <b>{indexOfFirstItem + 1}</b> - <b>{Math.min(indexOfLastItem, students.length)}</b> dari <b>{students.length}</b> santri
+              </div>
+              <div className="pagination-buttons">
+                <button 
+                  className="btn-page" 
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  ⬅ Sebelumnya
+                </button>
+                <span className="page-indicator">
+                  Halaman <b>{currentPage}</b> dari {totalPages}
+                </span>
+                <button 
+                  className="btn-page" 
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
+                  Berikutnya ➡
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* MODAL TAMBAH TAGIHAN */}
@@ -643,6 +686,50 @@ export default function PaymentPage() {
           font-weight: 500;
         }
 
+        /* --- CSS PAGINATION BARU --- */
+        .pagination-wrapper {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px 24px;
+          border-top: 1px solid #e2e8f0;
+          background: #f8fafc;
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+        .pagination-info {
+          font-size: 13px;
+          color: #64748b;
+        }
+        .pagination-buttons {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .btn-page {
+          background: white;
+          border: 1px solid #cbd5e1;
+          color: #334155;
+          padding: 6px 14px;
+          border-radius: 6px;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .btn-page:hover:not(:disabled) {
+          background: #f1f5f9;
+          border-color: #94a3b8;
+        }
+        .btn-page:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+        .page-indicator {
+          font-size: 13px;
+          color: #334155;
+        }
+
         /* Buttons Styling */
         .btn-tambah { 
           background: #2e6b3e; 
@@ -710,7 +797,7 @@ export default function PaymentPage() {
         .dropdown-list {
           position: absolute; top: calc(100% + 4px); left: 0; right: 0;
           background: white; border: 1px solid #e2e8f0; border-radius: 8px;
-          max-height: 200px; overflow-y: auto; zIndex: 1000; margin: 0; padding: 4px;
+          max-height: 200px; overflow-y: auto; z-index: 1000; margin: 0; padding: 4px;
           list-style: none; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
         }
         .dropdown-item {
@@ -745,31 +832,6 @@ export default function PaymentPage() {
         .sub-table table th { background: #f1f5f9; padding: 10px 12px; }
         .sub-table table td { padding: 10px 12px; font-size: 13px; }
         .empty-subtext { color: #94a3b8; font-size: 13px; font-style: italic; margin: 5px 0; }
-
-        /* Badges status */
-        .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-block; }
-        .status-badge.paid { background: #dcfce7; color: #15803d; }
-        .status-badge.unpaid { background: #fee2e2; color: #b91c1c; }
-        
-        .payment-status { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 4px; }
-        .payment-status.success { background: #dcfce7; color: #15803d; }
-        .payment-status.pending { background: #fef3c7; color: #b45309; }
-        .payment-status.failed { background: #fee2e2; color: #b91c1c; }
-
-        /* Internal Action buttons */
-        .action-flex-gap { display: flex; gap: 6px; flex-wrap: wrap; }
-        .justify-center { justify-content: center; }
-        .btn-cash { background: #2e6b3e; color: white; padding: 4px 10px; border-radius: 4px; border: none; cursor: pointer; font-size: 12px; font-weight: 500;}
-        .btn-transfer { background: #0284c7; color: white; padding: 4px 10px; border-radius: 4px; border: none; cursor: pointer; font-size: 12px; font-weight: 500;}
-        .btn-cetak { background: #475569; color: white; padding: 4px 10px; border-radius: 4px; border: none; cursor: pointer; font-size: 12px; }
-        .btn-hapus-small { background: #ef4444; color: white; padding: 4px 10px; border-radius: 4px; border: none; cursor: pointer; font-size: 11px; }
-        .btn-hapus-icon { background: #fee2e2; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 13px; }
-        .btn-hapus-icon:hover { background: #fca5a5; }
-        .text-success { color: #16a34a; font-weight: 500; font-size: 13px; }
-
-        .modal-footer-action { margin-top: 20px; text-align: right; border-top: 1px solid #e2e8f0; padding-top: 14px; }
-        .btn-tutup { background: #64748b; color: white; padding: 8px 18px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; }
-        .btn-tutup:hover { background: #475569; }
       `}</style>
     </AdminLayout>
   );
