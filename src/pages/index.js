@@ -1,9 +1,11 @@
+// src/pages/index.js
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
 export default function Home() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false); // State pemicu animasi transisi keluar
 
   useEffect(() => {
     const style = document.createElement("style");
@@ -24,6 +26,29 @@ export default function Home() {
         0%   { transform: translateY(0px); }
         50%  { transform: translateY(-10px); }
         100% { transform: translateY(0px); }
+      }
+
+      /* ANIMASI SAPUAN TRANSISI SAAT PINDAH KE LOGIN */
+      @keyframes slideOutOverlay {
+        0%   { transform: translateY(100%); }
+        100% { transform: translateY(0); }
+      }
+
+      .page-transition-overlay {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #14532d, #16a34a);
+        z-index: 9999;
+        transform: translateY(100%);
+        pointer-events: none;
+      }
+
+      .page-transition-overlay.active {
+        pointer-events: auto;
+        animation: slideOutOverlay 0.5s cubic-bezier(0.76, 0, 0.24, 1) forwards;
       }
 
       .hero-text-anim { animation: fadeSlideLeft 0.9s cubic-bezier(.22,.68,0,1.2) both; }
@@ -283,6 +308,15 @@ export default function Home() {
     return () => document.head.removeChild(style);
   }, []);
 
+  // Fungsi kustom untuk memicu animasi transisi halus ke halaman login
+  const handleNavigateToLogin = () => {
+    setMenuOpen(false);
+    setIsTransitioning(true);
+    setTimeout(() => {
+      router.push("/login");
+    }, 450); // Menunggu animasi slide naik selesai, lalu berpindah halaman
+  };
+
   function scrollTo(id) {
     setMenuOpen(false);
     setTimeout(() => {
@@ -337,6 +371,9 @@ export default function Home() {
 
   return (
     <div>
+      {/* OVERLAY HIT BOX ANIMASI TRANSISI */}
+      <div className={`page-transition-overlay ${isTransitioning ? "active" : ""}`} />
+
       {/* NAVBAR */}
       <nav className="navbar">
         <div className="nav-logo-wrap">
@@ -351,7 +388,7 @@ export default function Home() {
         <div className="nav-menu">
           <button className="nav-link" onClick={() => scrollTo("beranda")}>🏠 Beranda</button>
           <button className="nav-link" onClick={() => scrollTo("kontak")}>📞 Kontak</button>
-          <button className="nav-login-btn" onClick={() => router.push("/login")}>Login</button>
+          <button className="nav-login-btn" onClick={handleNavigateToLogin}>Login</button>
         </div>
 
         <button className="hamburger" onClick={() => setMenuOpen(o => !o)} aria-label="menu">
@@ -365,7 +402,7 @@ export default function Home() {
       <div className={`mobile-menu ${menuOpen ? "open" : ""}`}>
         <button className="mobile-link" onClick={() => scrollTo("beranda")}>🏠 Beranda</button>
         <button className="mobile-link" onClick={() => scrollTo("kontak")}>📞 Kontak</button>
-        <button className="mobile-login-btn" onClick={() => router.push("/login")}>🚀 Login Sekarang</button>
+        <button className="mobile-login-btn" onClick={handleNavigateToLogin}>🚀 Login Sekarang</button>
       </div>
 
       {/* HERO */}
@@ -387,7 +424,7 @@ export default function Home() {
               digunakan untuk seluruh civitas Madrasah Tarbiyatul Mubalighin Sumberjo.
             </p>
             <div className="hero-btns">
-              <button className="btn-primary" onClick={() => router.push("/login")}>🚀 Login Sekarang</button>
+              <button className="btn-primary" onClick={handleNavigateToLogin}>🚀 Login Sekarang</button>
               <button className="btn-secondary" onClick={() => scrollTo("kontak")}>📞 Hubungi Kami</button>
             </div>
           </div>
