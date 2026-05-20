@@ -7,6 +7,12 @@ export default function StudentList() {
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState("");
   const [loading, setLoading] = useState(true);
+  
+  // State Baru untuk Search & Pagination
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   const router = useRouter();
 
   useEffect(() => {
@@ -22,7 +28,10 @@ export default function StudentList() {
     setLoading(true);
     fetch(`/api/students/list${classId ? `?classId=${classId}` : ""}`)
       .then(res => res.json())
-      .then(setStudents)
+      .then((data) => {
+        setStudents(data);
+        setCurrentPage(1); // Reset ke halaman 1 setiap kali filter kelas berubah
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }
@@ -41,6 +50,22 @@ export default function StudentList() {
       alert("Error: " + e.message);
     }
   }
+
+  // --- LOGIKA FILTER SEARCH & PAGINATION ---
+  // 1. Filter santri berdasarkan kata kunci pencarian (Nama atau NIS)
+  const filteredStudents = students.filter(student => {
+    const nameMatch = student.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const nisMatch = student.nis?.toLowerCase().includes(searchQuery.toLowerCase());
+    return nameMatch || nisMatch;
+  });
+
+  // 2. Hitung total halaman data yang terfilter
+  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+
+  // 3. Potong data untuk ditampilkan hanya 10 item per halaman
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentStudents = filteredStudents.slice(indexOfFirstItem, indexOfLastItem);
 
   return (
     <AdminLayout>
@@ -108,8 +133,16 @@ export default function StudentList() {
         .toolbar {
           display: flex;
           align-items: center;
+          justify-content: space-between;
           gap: 10px;
           margin-bottom: 16px;
+          flex-wrap: wrap;
+        }
+
+        .toolbar-left {
+          display: flex;
+          align-items: center;
+          gap: 10px;
           flex-wrap: wrap;
         }
 
@@ -132,6 +165,21 @@ export default function StudentList() {
           box-shadow: 0 0 0 3px rgba(58,143,80,0.1);
         }
 
+        .search-input {
+          padding: 8px 12px;
+          border-radius: 8px;
+          border: 1.5px solid #dde5e0;
+          background: #fafcfb;
+          font-size: 14px;
+          color: #1a3d28;
+          outline: none;
+          width: 240px;
+        }
+        .search-input:focus {
+          border-color: #3a8f50;
+          box-shadow: 0 0 0 3px rgba(58,143,80,0.1);
+        }
+
         .count-badge {
           font-size: 12px;
           color: #7a9a85;
@@ -146,6 +194,7 @@ export default function StudentList() {
           border: 1px solid #e4e9e6;
           border-radius: 14px;
           overflow: hidden;
+          margin-bottom: 20px;
         }
 
         .table-scroll {
@@ -283,8 +332,59 @@ export default function StudentList() {
           font-size: 14px;
         }
 
+        /* --- STYLE PAGINATION --- */
+        .pagination-wrapper {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 12px;
+          padding: 4px 5px;
+        }
+
+        .pagination-info {
+          font-size: 13.5px;
+          color: #5a7a66;
+        }
+
+        .pagination-buttons {
+          display: flex;
+          gap: 6px;
+          align-items: center;
+        }
+
+        .btn-page {
+          background: #fff;
+          color: #2d4a35;
+          border: 1.5px solid #dde5e0;
+          padding: 6px 12px;
+          border-radius: 6px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .btn-page:hover:not(:disabled) {
+          background: #f0f5f1;
+          border-color: #3a8f50;
+          color: #3a8f50;
+        }
+        .btn-page.active {
+          background: #3a8f50;
+          color: white;
+          border-color: #3a8f50;
+        }
+        .btn-page:disabled {
+          background: #f4f7f5;
+          color: #b0c4b8;
+          border-color: #e4e9e6;
+          cursor: not-allowed;
+        }
+
         @media (max-width: 640px) {
           .page-header { flex-direction: column; align-items: flex-start; }
+          .toolbar { flex-direction: column; align-items: flex-start; }
+          .search-input { width: 100%; }
         }
       `}</style>
 
@@ -301,20 +401,34 @@ export default function StudentList() {
         </div>
 
         <div className="toolbar">
-          <select
-            className="filter-select"
-            value={selectedClass}
-            onChange={e => {
-              setSelectedClass(e.target.value);
-              loadStudents(e.target.value);
-            }}
-          >
-            <option value="">-- Semua Kelas --</option>
-            {classes.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-          <span className="count-badge">{students.length} santri</span>
+          <div className="toolbar-left">
+            <select
+              className="filter-select"
+              value={selectedClass}
+              onChange={e => {
+                setSelectedClass(e.target.value);
+                loadStudents(e.target.value);
+              }}
+            >
+              <option value="">-- Semua Kelas --</option>
+              {classes.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            
+            {/* INPUT SEARCH BARU */}
+            <input
+              type="text"
+              placeholder="Cari nama atau NIS santri..."
+              className="search-input"
+              value={searchQuery}
+              onChange={e => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1); // Balik ke halaman 1 saat mengetik kata kunci baru
+              }}
+            />
+          </div>
+          <span className="count-badge">{filteredStudents.length} santri ditemukan</span>
         </div>
 
         <div className="table-card">
@@ -341,15 +455,16 @@ export default function StudentList() {
                   <tr>
                     <td colSpan="12" className="empty-state">Memuat data...</td>
                   </tr>
-                ) : students.length === 0 ? (
+                ) : currentStudents.length === 0 ? (
                   <tr>
                     <td colSpan="12" className="empty-state">
-                      Tidak ada santri{selectedClass ? " di kelas ini" : ""}.
+                      Tidak ada data santri yang cocok.
                     </td>
                   </tr>
-                ) : students.map((s, i) => (
+                ) : currentStudents.map((s, i) => (
                   <tr key={s.id}>
-                    <td>{i + 1}</td>
+                    {/* Nomor otomatis menyesuaikan posisi halaman */}
+                    <td>{indexOfFirstItem + i + 1}</td>
                     <td>
                       <span className="nis-badge">{s.nis || "-"}</span>
                     </td>
@@ -402,6 +517,47 @@ export default function StudentList() {
             </table>
           </div>
         </div>
+
+        {/* --- DOKUMEN TOMBOL NAVIGASI HALAMAN (PAGINATION) --- */}
+        {!loading && filteredStudents.length > 0 && (
+          <div className="pagination-wrapper">
+            <div className="pagination-info">
+              Menampilkan <b>{indexOfFirstItem + 1}</b> - <b>{Math.min(indexOfLastItem, filteredStudents.length)}</b> dari <b>{filteredStudents.length}</b> santri
+            </div>
+            <div className="pagination-buttons">
+              <button
+                className="btn-page"
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                ‹ Sebelumnya
+              </button>
+              
+              {/* Generate nomor halaman dinamis */}
+              {Array.from({ length: totalPages }, (_, index) => {
+                const pageNum = index + 1;
+                return (
+                  <button
+                    key={pageNum}
+                    className={`btn-page ${currentPage === pageNum ? "active" : ""}`}
+                    onClick={() => setCurrentPage(pageNum)}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+
+              <button
+                className="btn-page"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                Selanjutnya ›
+              </button>
+            </div>
+          </div>
+        )}
+
       </div>
     </AdminLayout>
   );
