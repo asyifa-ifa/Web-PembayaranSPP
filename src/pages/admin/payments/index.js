@@ -177,7 +177,7 @@ export default function PaymentPage() {
       <head>
         <title>Kwitansi Pembayaran</title>
         <style>
-          body { font-family: Arial, sans-serif; padding: 40px; max-width: 500px; margin: auto; }
+          body { font-family: Arial, sans-serif; padding: 40px; max-width: 500px; margin: auto; color: #333; }
           .header { text-align: center; border-bottom: 2px solid #2e6b3e; padding-bottom: 15px; margin-bottom: 20px; }
           .header h2 { color: #2e6b3e; margin: 0; font-size: 16px; }
           .header p { margin: 4px 0; color: #666; font-size: 12px; }
@@ -225,13 +225,11 @@ export default function PaymentPage() {
     win.document.close();
   };
 
-  // Filter santri berdasarkan pencarian
   const filteredStudents = students.filter(s =>
     s.name.toLowerCase().includes(searchSantri.toLowerCase()) ||
     (s.nis && s.nis.toLowerCase().includes(searchSantri.toLowerCase()))
   );
 
-  // Nama santri yang dipilih
   const selectedSantriName = tambahStudentId
     ? students.find(s => s.id == tambahStudentId)?.name
     : null;
@@ -241,85 +239,96 @@ export default function PaymentPage() {
       <div className="container">
 
         <div className="header-row">
-          <h2>📄 Data Pembayaran Santri</h2>
+          <div className="title-section">
+            <span className="title-icon">📄</span>
+            <h2>Data Pembayaran Santri</h2>
+          </div>
           <button className="btn-tambah" onClick={() => setShowTambah(true)}>
-            + Buat Tagihan
+            <span style={{ marginRight: '6px' }}>+</span> Buat Tagihan
           </button>
         </div>
 
-        {/* FILTER */}
+        {/* FILTER BAR */}
         <div className="filter-row">
-          <select
-            className="filter-select"
-            value={filterClass}
-            onChange={e => handleFilterClass(e.target.value)}
-          >
-            <option value="">-- Semua Kelas --</option>
-            {classes.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+          <div className="filter-group">
+            <select
+              className="filter-select"
+              value={filterClass}
+              onChange={e => handleFilterClass(e.target.value)}
+            >
+              <option value="">-- Semua Kelas --</option>
+              {classes.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
 
-          <select
-            className="filter-select"
-            value={filterYear}
-            onChange={e => handleFilterYear(e.target.value)}
-          >
-            <option value="">-- Semua Tahun Ajaran --</option>
-            {academicYears.map(y => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
+            <select
+              className="filter-select"
+              value={filterYear}
+              onChange={e => handleFilterYear(e.target.value)}
+            >
+              <option value="">-- Semua Tahun Ajaran --</option>
+              {academicYears.map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
 
-          <span className="count-badge">{students.length} santri</span>
+          <span className="count-badge">{students.length} Santri Terdaftar</span>
         </div>
 
+        {/* MAIN DATA CARD */}
         <div className="card">
-          <table>
-            <thead>
-              <tr>
-                <th>No</th>
-                <th>NIS</th>
-                <th>NISN</th>
-                <th>Kelas</th>
-                <th>Tahun Ajaran</th>
-                <th>Nama</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {students.length === 0 ? (
+          <div className="table-wrapper">
+            <table>
+              <thead>
                 <tr>
-                  <td colSpan="7" style={{ textAlign: "center", color: "#888", padding: "30px" }}>
-                    Tidak ada data santri
-                  </td>
+                  <th style={{ width: "60px", textAlign: "center" }}>No</th>
+                  <th>NIS</th>
+                  <th>NISN</th>
+                  <th>Kelas</th>
+                  <th>Tahun Ajaran</th>
+                  <th>Nama Santri</th>
+                  <th style={{ textAlign: "center", width: "120px" }}>Aksi</th>
                 </tr>
-              ) : students.map((s, i) => (
-                <tr key={s.id}>
-                  <td>{i + 1}</td>
-                  <td>{s.nis || "-"}</td>
-                  <td>{s.nisn || "-"}</td>
-                  <td>{s.class?.name || "-"}</td>
-                  <td>{s.classHistories?.[0]?.academicYear || s.entryYear || "-"}</td>
-                  <td>{s.name}</td>
-                  <td>
-                    <button className="btn-detail" onClick={() => openDetail(s.id)}>
-                      Detail
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {students.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="empty-state">
+                      👋 Tidak ada data santri ditemukan.
+                    </td>
+                  </tr>
+                ) : students.map((s, i) => (
+                  <tr key={s.id}>
+                    <td style={{ textAlign: "center", color: "#888" }}>{i + 1}</td>
+                    <td className="font-mono">{s.nis || "-"}</td>
+                    <td className="font-mono">{s.nisn || "-"}</td>
+                    <td><span className="badge-class">{s.class?.name || "-"}</span></td>
+                    <td>{s.classHistories?.[0]?.academicYear || s.entryYear || "-"}</td>
+                    <td style={{ fontWeight: "500", color: "#2c3e50" }}>{s.name}</td>
+                    <td style={{ textAlign: "center" }}>
+                      <button className="btn-detail" onClick={() => openDetail(s.id)}>
+                        Detail
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* MODAL TAMBAH TAGIHAN */}
         {showTambah && (
           <div className="modal">
             <div className="modal-content">
-              <h3>📋 Buat Tagihan Santri</h3>
+              <div className="modal-header">
+                <h3>📋 Buat Tagihan Santri</h3>
+                <button className="close-x" onClick={() => setShowTambah(false)}>✕</button>
+              </div>
 
-              {/* SEARCHABLE DROPDOWN PILIH SANTRI */}
+              {/* SEARCHABLE DROPDOWN */}
               <div className="field" ref={dropdownRef} style={{ position: "relative" }}>
                 <label>Pilih Santri</label>
                 <div style={{ position: "relative" }}>
@@ -330,60 +339,27 @@ export default function PaymentPage() {
                     onChange={e => {
                       setSearchSantri(e.target.value);
                       setOpenDropdown(true);
-                      // Reset pilihan jika user mengetik ulang
                       if (tambahStudentId) setTambahStudentId("");
                     }}
                     onFocus={() => setOpenDropdown(true)}
-                    style={{
-                      width: "100%",
-                      padding: "10px 36px 10px 12px",
-                      borderRadius: "8px",
-                      border: tambahStudentId ? "1.5px solid #2e6b3e" : "1px solid #ddd",
-                      fontSize: "14px",
-                      boxSizing: "border-box",
-                      outline: "none",
-                      background: tambahStudentId ? "#f0f9f4" : "white",
-                    }}
+                    className="search-input"
                   />
-                  {/* Icon search / clear */}
-                  {tambahStudentId ? (
+                  {tambahStudentId && (
                     <span
                       onClick={() => {
                         setTambahStudentId("");
                         setSearchSantri("");
                         setOpenDropdown(true);
                       }}
-                      style={{
-                        position: "absolute", right: "10px", top: "50%",
-                        transform: "translateY(-50%)", cursor: "pointer",
-                        color: "#888", fontSize: "16px"
-                      }}
+                      className="clear-search"
                     >✕</span>
-                  ) : (
-                    <span style={{
-                      position: "absolute", right: "10px", top: "50%",
-                      transform: "translateY(-50%)", color: "#aaa", fontSize: "14px",
-                      pointerEvents: "none"
-                    }}>🔍</span>
                   )}
                 </div>
 
-                {/* DROPDOWN LIST */}
                 {openDropdown && !tambahStudentId && (
-                  <ul style={{
-                    position: "absolute", top: "calc(100% + 2px)", left: 0, right: 0,
-                    background: "white", border: "1px solid #ddd", borderRadius: "8px",
-                    maxHeight: "220px", overflowY: "auto", zIndex: 1000,
-                    margin: 0, padding: 0, listStyle: "none",
-                    boxShadow: "0 6px 20px rgba(0,0,0,0.12)"
-                  }}>
+                  <ul className="dropdown-list">
                     {filteredStudents.length === 0 ? (
-                      <li style={{
-                        padding: "12px", color: "#888", fontSize: "13px",
-                        textAlign: "center"
-                      }}>
-                        😕 Santri tidak ditemukan
-                      </li>
+                      <li className="dropdown-empty">😕 Santri tidak ditemukan</li>
                     ) : (
                       filteredStudents.map(s => (
                         <li
@@ -393,27 +369,10 @@ export default function PaymentPage() {
                             setSearchSantri("");
                             setOpenDropdown(false);
                           }}
-                          style={{
-                            padding: "10px 14px",
-                            cursor: "pointer",
-                            fontSize: "14px",
-                            borderBottom: "1px solid #f5f5f5",
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            transition: "background 0.15s",
-                          }}
-                          onMouseEnter={e => e.currentTarget.style.background = "#f0f9f4"}
-                          onMouseLeave={e => e.currentTarget.style.background = "white"}
+                          className="dropdown-item"
                         >
                           <span style={{ fontWeight: 500 }}>{s.name}</span>
-                          <span style={{
-                            color: "#888", fontSize: "12px",
-                            background: "#f5f5f5", padding: "2px 8px",
-                            borderRadius: "12px"
-                          }}>
-                            {s.class?.name || "-"}
-                          </span>
+                          <span className="dropdown-badge-class">{s.class?.name || "-"}</span>
                         </li>
                       ))
                     )}
@@ -424,34 +383,38 @@ export default function PaymentPage() {
               {/* JENIS TAGIHAN */}
               <div className="field">
                 <label>Pilih Jenis Tagihan</label>
-                {paymentTypes.map(pt => {
-                  const selected = tambahItems.find(i => i.paymentTypeId === pt.id);
-                  return (
-                    <div key={pt.id} className="pt-item">
-                      <input type="checkbox" checked={!!selected} onChange={() => toggleItem(pt)} />
-                      <span className="pt-name">{pt.name}</span>
-                      <span className="pt-default">Rp {formatRupiah(pt.amount)}</span>
-                      {selected && (
-                        <>
-                          <input
-                            type="number"
-                            placeholder="Nominal"
-                            value={selected.amount}
-                            onChange={e => updateItem(pt.id, "amount", e.target.value)}
-                            className="pt-input"
-                          />
-                          <input
-                            type="date"
-                            value={selected.dueDate}
-                            onChange={e => updateItem(pt.id, "dueDate", e.target.value)}
-                            className="pt-input"
-                            title="Jatuh Tempo"
-                          />
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
+                <div className="pt-container">
+                  {paymentTypes.map(pt => {
+                    const selected = tambahItems.find(i => i.paymentTypeId === pt.id);
+                    return (
+                      <div key={pt.id} className={`pt-item ${selected ? 'active' : ''}`}>
+                        <div className="pt-main-info">
+                          <input type="checkbox" checked={!!selected} onChange={() => toggleItem(pt)} id={`pt-${pt.id}`} />
+                          <label htmlFor={`pt-${pt.id}`} className="pt-name">{pt.name}</label>
+                          <span className="pt-default">Rp {formatRupiah(pt.amount)}</span>
+                        </div>
+                        {selected && (
+                          <div className="pt-inputs-row">
+                            <input
+                              type="number"
+                              placeholder="Nominal (Rp)"
+                              value={selected.amount}
+                              onChange={e => updateItem(pt.id, "amount", e.target.value)}
+                              className="pt-input"
+                            />
+                            <input
+                              type="date"
+                              value={selected.dueDate}
+                              onChange={e => updateItem(pt.id, "dueDate", e.target.value)}
+                              className="pt-input"
+                              title="Jatuh Tempo"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="modal-actions">
@@ -474,112 +437,113 @@ export default function PaymentPage() {
         {/* MODAL DETAIL SANTRI */}
         {selectedStudent && (
           <div className="modal">
-            <div className="modal-content">
-              <h3>👤 Detail Santri</h3>
-              <p><b>NIS:</b> {selectedStudent.nis || "-"}</p>
-              <p><b>NISN:</b> {selectedStudent.nisn || "-"}</p>
-              <p><b>Nama:</b> {selectedStudent.name}</p>
-              <p><b>Kelas:</b> {selectedStudent.class?.name}</p>
-              <p><b>Tahun Ajaran:</b> {selectedStudent.classHistories?.[0]?.academicYear || selectedStudent.entryYear || "-"}</p>
+            <div className="modal-content detail-modal">
+              <div className="modal-header">
+                <h3>👤 Detail Administrasi Santri</h3>
+                <button className="close-x" onClick={() => setSelectedStudent(null)}>✕</button>
+              </div>
+              
+              <div className="info-grid">
+                <div className="info-item"><b>Nama:</b> {selectedStudent.name}</div>
+                <div className="info-item"><b>Kelas:</b> {selectedStudent.class?.name || "-"}</div>
+                <div className="info-item"><b>NIS:</b> <span className="font-mono">{selectedStudent.nis || "-"}</span></div>
+                <div className="info-item"><b>Tahun Ajaran:</b> {selectedStudent.classHistories?.[0]?.academicYear || selectedStudent.entryYear || "-"}</div>
+                <div className="info-item"><b>NISN:</b> <span className="font-mono">{selectedStudent.nisn || "-"}</span></div>
+              </div>
 
-              <hr />
-              <h4>📋 Tagihan</h4>
+              <div className="section-divider" />
+              <h4>📋 Daftar Tagihan Aktif</h4>
               {selectedStudent.bills.length === 0 ? (
-                <p style={{ color: "#888" }}>Belum ada tagihan</p>
+                <p className="empty-subtext">Belum ada tagihan untuk santri ini.</p>
               ) : (
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Jenis</th>
-                      <th>Nominal</th>
-                      <th>Jatuh Tempo</th>
-                      <th>Status</th>
-                      <th>Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedStudent.bills.map(b => (
-                      <tr key={b.id}>
-                        <td>{b.paymentType.name}</td>
-                        <td>Rp {b.amount.toLocaleString("id-ID")}</td>
-                        <td>{b.dueDate ? new Date(b.dueDate).toLocaleDateString("id-ID") : "-"}</td>
-                        <td>
-                          <span style={{ color: b.status === "PAID" ? "green" : "red", fontWeight: "bold" }}>
-                            {b.status === "PAID" ? "✅ LUNAS" : "❌ BELUM BAYAR"}
-                          </span>
-                        </td>
-                        <td>
-                          {b.status === "UNPAID" ? (
-                            <div style={{ display: "flex", gap: "5px", flexWrap: "wrap" }}>
-                              <button className="btn-cash" onClick={() => konfirmasiCash(b.id)}>💵 CASH</button>
-                              <button className="btn-transfer" onClick={() => bayarTransfer(b.id)}>🏦 Transfer</button>
-                              <button className="btn-hapus" onClick={() => hapusBill(b.id)}>🗑️ Hapus</button>
-                            </div>
-                          ) : (
-                            <span style={{ color: "green", fontSize: 13 }}>✅ Lunas</span>
-                          )}
-                        </td>
+                <div className="table-wrapper sub-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Jenis Tagihan</th>
+                        <th>Nominal</th>
+                        <th>Jatuh Tempo</th>
+                        <th style={{ textAlign: "center" }}>Status</th>
+                        <th style={{ textAlign: "center" }}>Aksi</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {selectedStudent.bills.map(b => (
+                        <tr key={b.id}>
+                          <td style={{ fontWeight: 500 }}>{b.paymentType.name}</td>
+                          <td>Rp {b.amount.toLocaleString("id-ID")}</td>
+                          <td>{b.dueDate ? new Date(b.dueDate).toLocaleDateString("id-ID") : "-"}</td>
+                          <td style={{ textAlign: "center" }}>
+                            <span className={`status-badge ${b.status === "PAID" ? "paid" : "unpaid"}`}>
+                              {b.status === "PAID" ? "LUNAS" : "BELUM BAYAR"}
+                            </span>
+                          </td>
+                          <td style={{ textAlign: "center" }}>
+                            {b.status === "UNPAID" ? (
+                              <div className="action-flex-gap">
+                                <button className="btn-cash" onClick={() => konfirmasiCash(b.id)}>💵 Tunai</button>
+                                <button className="btn-transfer" onClick={() => bayarTransfer(b.id)}>🏦 Transfer</button>
+                                <button className="btn-hapus-icon" onClick={() => hapusBill(b.id)} title="Hapus Tagihan">🗑️</button>
+                              </div>
+                            ) : (
+                              <span className="text-success">✔ Terbayar</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
 
-              <hr />
+              <div className="section-divider" />
               <h4>💰 Riwayat Pembayaran</h4>
               {selectedStudent.payments.length === 0 ? (
-                <p style={{ color: "#888" }}>Belum ada riwayat pembayaran</p>
+                <p className="empty-subtext">Belum ada riwayat jejak pembayaran.</p>
               ) : (
-                <table>
-                  <thead>
-                    <tr>
-                      <th>No</th>
-                      <th>Jenis</th>
-                      <th>Nominal</th>
-                      <th>Metode</th>
-                      <th>Status</th>
-                      <th>Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedStudent.payments.map((p, i) => (
-                      <tr key={p.id}>
-                        <td>{i + 1}</td>
-                        <td>{p.paymentType.name}</td>
-                        <td>Rp {p.amount.toLocaleString("id-ID")}</td>
-                        <td>{p.method === "CASH" ? "💵 Tunai" : "🏦 Transfer"}</td>
-                        <td>
-                          <span style={{
-                            color: p.status === "SUCCESS" ? "green" : p.status === "FAILED" ? "red" : "orange",
-                            fontWeight: "bold"
-                          }}>
-                            {p.status === "SUCCESS" ? "✅ SUKSES" : p.status === "FAILED" ? "❌ GAGAL" : "⏳ PENDING"}
-                          </span>
-                        </td>
-                        <td>
-                          <div style={{ display: "flex", gap: "5px", flexWrap: "wrap" }}>
-                            {p.status === "SUCCESS" && (
-                              <button className="btn-cetak" onClick={() => cetakKwitansi(p)}>🖨️ Kwitansi</button>
-                            )}
-                            {(p.status === "PENDING" || p.status === "FAILED") && (
-                              <button className="btn-hapus" onClick={() => hapusPayment(p.id)}>🗑️ Hapus</button>
-                            )}
-                            {p.status === "PENDING" && (
-                              <span style={{ color: "orange", fontSize: 12 }}>⏳ Menunggu</span>
-                            )}
-                            {p.status === "FAILED" && (
-                              <span style={{ color: "red", fontSize: 12 }}>❌ Gagal</span>
-                            )}
-                          </div>
-                        </td>
+                <div className="table-wrapper sub-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th style={{ width: "40px" }}>No</th>
+                        <th>Jenis Pembayaran</th>
+                        <th>Nominal</th>
+                        <th>Metode</th>
+                        <th style={{ textAlign: "center" }}>Status</th>
+                        <th style={{ textAlign: "center" }}>Aksi</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {selectedStudent.payments.map((p, i) => (
+                        <tr key={p.id}>
+                          <td>{i + 1}</td>
+                          <td>{p.paymentType.name}</td>
+                          <td>Rp {p.amount.toLocaleString("id-ID")}</td>
+                          <td>{p.method === "CASH" ? "💵 Tunai" : "🏦 Transfer"}</td>
+                          <td style={{ textAlign: "center" }}>
+                            <span className={`payment-status ${p.status.toLowerCase()}`}>
+                              {p.status}
+                            </span>
+                          </td>
+                          <td style={{ textAlign: "center" }}>
+                            <div className="action-flex-gap justify-center">
+                              {p.status === "SUCCESS" && (
+                                <button className="btn-cetak" onClick={() => cetakKwitansi(p)}>🖨️ Kwitansi</button>
+                              )}
+                              {(p.status === "PENDING" || p.status === "FAILED") && (
+                                <button className="btn-hapus-small" onClick={() => hapusPayment(p.id)}>Hapus</button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
 
-              <div style={{ marginTop: "15px", textAlign: "right" }}>
-                <button className="btn-tutup" onClick={() => setSelectedStudent(null)}>Tutup</button>
+              <div className="modal-footer-action">
+                <button className="btn-tutup" onClick={() => setSelectedStudent(null)}>Tutup Halaman</button>
               </div>
             </div>
           </div>
@@ -587,52 +551,225 @@ export default function PaymentPage() {
       </div>
 
       <style jsx>{`
-        .container { padding: 20px; background: #f5f6fa; min-height: 100vh; }
-        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        h2 { margin: 0; }
+        /* Global & Layout Container */
+        .container { 
+          padding: 24px; 
+          background: #f8fafc; 
+          min-height: 100vh;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        
+        /* Header Section */
+        .header-row { 
+          display: flex; 
+          justify-content: space-between; 
+          align-items: center; 
+          margin-bottom: 24px; 
+        }
+        .title-section {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .title-icon { font-size: 24px; }
+        h2 { margin: 0; color: #1e293b; font-size: 22px; font-weight: 700; }
+        h3 { margin: 0; color: #0f172a; font-size: 18px; }
+        h4 { margin: 16px 0 10px; color: #334155; font-size: 15px; font-weight: 600; }
+
+        /* Filter Controls */
         .filter-row {
-          display: flex; gap: 10px; align-items: center;
-          margin-bottom: 14px; flex-wrap: wrap;
+          display: flex; 
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 18px; 
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+        .filter-group {
+          display: flex;
+          gap: 12px;
         }
         .filter-select {
-          padding: 8px 32px 8px 12px; border-radius: 8px;
-          border: 1.5px solid #dde5e0; background: #fafcfb;
-          font-size: 14px; color: #1a3d28; outline: none;
+          padding: 10px 36px 10px 14px; 
+          border-radius: 8px;
+          border: 1px solid #cbd5e1; 
+          background: white;
+          font-size: 14px; 
+          color: #334155; 
+          outline: none;
           appearance: none;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a7a66' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-          background-repeat: no-repeat; background-position: right 10px center;
-          cursor: pointer; min-width: 160px;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+          background-repeat: no-repeat; 
+          background-position: right 12px center;
+          cursor: pointer; 
+          min-width: 180px;
+          transition: all 0.2s;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.02);
         }
-        .filter-select:focus { border-color: #3a8f50; }
+        .filter-select:focus { border-color: #2e6b3e; box-shadow: 0 0 0 3px rgba(46,107,62,0.15); }
+        
         .count-badge {
-          font-size: 12px; color: #7a9a85; background: #f0f5f1;
-          padding: 4px 10px; border-radius: 20px; border: 1px solid #dde5e0;
+          font-size: 13px; 
+          color: #2e6b3e; 
+          background: #eaf4ed;
+          padding: 6px 14px; 
+          border-radius: 30px; 
+          font-weight: 500;
         }
-        .card { background: white; border-radius: 10px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ddd; padding: 10px; }
-        th { background: #f5f5f5; }
-        .field { margin-bottom: 15px; }
-        .field label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; font-weight: bold; }
-        .field select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 14px; }
-        .pt-item { display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 6px; }
-        .pt-name { flex: 1; font-size: 14px; }
-        .pt-default { color: #888; font-size: 13px; min-width: 90px; }
-        .pt-input { width: 130px; padding: 6px; border-radius: 6px; border: 1px solid #ddd; font-size: 13px; }
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 999; }
-        .modal-content { background: white; padding: 25px; width: 720px; max-height: 88vh; overflow-y: auto; border-radius: 12px; }
-        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-        .btn-tambah { background: #2e6b3e; color: white; padding: 10px 18px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; font-size: 14px; }
-        .btn-detail { background: #f0ad4e; color: white; padding: 5px 12px; border-radius: 6px; border: none; cursor: pointer; }
-        .btn-cash { background: #2e6b3e; color: white; padding: 5px 10px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; }
-        .btn-transfer { background: #1a6db5; color: white; padding: 5px 10px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; }
-        .btn-cetak { background: #6c757d; color: white; padding: 5px 10px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; }
-        .btn-hapus { background: #dc3545; color: white; padding: 5px 10px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; }
-        .btn-hapus:hover { background: #c82333; }
-        .btn-simpan { background: #2e6b3e; color: white; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; }
-        .btn-simpan:disabled { background: #aaa; }
-        .btn-batal { background: white; border: 1px solid #ccc; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
-        .btn-tutup { background: #888; color: white; padding: 8px 20px; border-radius: 8px; border: none; cursor: pointer; }
+
+        /* Card & Design Table Modern */
+        .card { 
+          background: white; 
+          border-radius: 12px; 
+          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+          border: 1px solid #e2e8f0;
+          overflow: hidden;
+        }
+        .table-wrapper { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+        th, td { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; }
+        th { background: #f8fafc; color: #475569; font-weight: 600; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
+        tr:hover { background-color: #fafbfd; }
+        .empty-state { text-align: center; color: #64748b; padding: 40px !important; font-size: 15px; }
+        .font-mono { font-family: monospace; color: #475569; font-size: 13px; }
+        
+        /* Badges */
+        .badge-class {
+          background: #f1f5f9;
+          color: #334155;
+          padding: 4px 8px;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 500;
+        }
+
+        /* Buttons Styling */
+        .btn-tambah { 
+          background: #2e6b3e; 
+          color: white; 
+          padding: 10px 20px; 
+          border-radius: 8px; 
+          border: none; 
+          cursor: pointer; 
+          font-weight: 600; 
+          font-size: 14px;
+          transition: background 0.2s;
+          display: flex;
+          align-items: center;
+          box-shadow: 0 2px 4px rgba(46,107,62,0.2);
+        }
+        .btn-tambah:hover { background: #23522f; }
+        
+        .btn-detail { 
+          background: white; 
+          color: #2e6b3e; 
+          padding: 6px 14px; 
+          border-radius: 6px; 
+          border: 1px solid #2e6b3e; 
+          cursor: pointer; 
+          font-weight: 500;
+          transition: all 0.2s;
+        }
+        .btn-detail:hover { background: #2e6b3e; color: white; }
+
+        /* Modals Modernization */
+        .modal { 
+          position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+          background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px);
+          display: flex; justify-content: center; align-items: center; z-index: 999; 
+        }
+        .modal-content { 
+          background: white; padding: 28px; width: 680px; max-height: 85vh; 
+          overflow-y: auto; border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); 
+        }
+        .modal-header {
+          display: flex; justify-content: space-between; align-items: center;
+          border-bottom: 1px solid #e2e8f0; padding-bottom: 14px; margin-bottom: 20px;
+        }
+        .close-x {
+          background: none; border: none; font-size: 16px; color: #94a3b8; cursor: pointer; padding: 4px;
+        }
+        .close-x:hover { color: #475569; }
+
+        /* Form Controls in Modal */
+        .field { margin-bottom: 20px; }
+        .field label { display: block; font-size: 13px; color: #475569; margin-bottom: 6px; font-weight: 600; }
+        
+        .search-input {
+          width: 100%; padding: 11px 36px 11px 14px; border-radius: 8px;
+          border: 1px solid #cbd5e1; font-size: 14px; outline: none; box-sizing: border-box;
+          transition: border-color 0.2s;
+        }
+        .search-input:focus { border-color: #2e6b3e; }
+        .clear-search {
+          position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+          cursor: pointer; color: #94a3b8; font-size: 14px;
+        }
+
+        /* Search Dropdown list */
+        .dropdown-list {
+          position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+          background: white; border: 1px solid #e2e8f0; border-radius: 8px;
+          max-height: 200px; overflow-y: auto; zIndex: 1000; margin: 0; padding: 4px;
+          list-style: none; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        }
+        .dropdown-item {
+          padding: 10px 12px; cursor: pointer; border-radius: 6px; font-size: 14px;
+          display: flex; justify-content: space-between; align-items: center;
+        }
+        .dropdown-item:hover { background: #f1f5f9; }
+        .dropdown-badge-class { font-size: 11px; background: #e2e8f0; padding: 2px 8px; border-radius: 10px; color: #475569;}
+
+        /* Payment Items Component */
+        .pt-container { border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px; background: #f8fafc; }
+        .pt-item { padding: 10px; border-radius: 6px; background: white; border: 1px solid #e2e8f0; margin-bottom: 6px; transition: all 0.2s;}
+        .pt-item.active { border-color: #2e6b3e; background: #f0f9f4;}
+        .pt-main-info { display: flex; align-items: center; gap: 10px; }
+        .pt-name { flex: 1; font-size: 14px; color: #1e293b; cursor: pointer; }
+        .pt-default { color: #64748b; font-size: 13px; font-weight: 500; }
+        .pt-inputs-row { display: flex; gap: 10px; margin-top: 10px; padding-left: 24px; }
+        .pt-input { flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; }
+        .pt-input:focus { border-color: #2e6b3e; }
+
+        /* Modal Actions Buttons */
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 16px; }
+        .btn-simpan { background: #2e6b3e; color: white; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+        .btn-simpan:disabled { background: #94a3b8; }
+        .btn-batal { background: white; border: 1px solid #cbd5e1; padding: 10px 20px; border-radius: 8px; cursor: pointer; color: #64748b; font-weight: 500; }
+        .btn-batal:hover { background: #f8fafc; color: #334155; }
+
+        /* Student Detail View Modifications */
+        .detail-modal { width: 760px; }
+        .info-grid { display: grid; grid-template-columns: repeat(2, 10fr); gap: 10px 20px; background: #f8fafc; padding: 14px; border-radius: 8px; font-size: 14px; color: #334155;}
+        .section-divider { height: 1px; background: #e2e8f0; margin: 20px 0 14px; }
+        .sub-table table th { background: #f1f5f9; padding: 10px 12px; }
+        .sub-table table td { padding: 10px 12px; font-size: 13px; }
+        .empty-subtext { color: #94a3b8; font-size: 13px; font-style: italic; margin: 5px 0; }
+
+        /* Badges status */
+        .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-block; }
+        .status-badge.paid { background: #dcfce7; color: #15803d; }
+        .status-badge.unpaid { background: #fee2e2; color: #b91c1c; }
+        
+        .payment-status { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 4px; }
+        .payment-status.success { background: #dcfce7; color: #15803d; }
+        .payment-status.pending { background: #fef3c7; color: #b45309; }
+        .payment-status.failed { background: #fee2e2; color: #b91c1c; }
+
+        /* Internal Action buttons */
+        .action-flex-gap { display: flex; gap: 6px; flex-wrap: wrap; }
+        .justify-center { justify-content: center; }
+        .btn-cash { background: #2e6b3e; color: white; padding: 4px 10px; border-radius: 4px; border: none; cursor: pointer; font-size: 12px; font-weight: 500;}
+        .btn-transfer { background: #0284c7; color: white; padding: 4px 10px; border-radius: 4px; border: none; cursor: pointer; font-size: 12px; font-weight: 500;}
+        .btn-cetak { background: #475569; color: white; padding: 4px 10px; border-radius: 4px; border: none; cursor: pointer; font-size: 12px; }
+        .btn-hapus-small { background: #ef4444; color: white; padding: 4px 10px; border-radius: 4px; border: none; cursor: pointer; font-size: 11px; }
+        .btn-hapus-icon { background: #fee2e2; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+        .btn-hapus-icon:hover { background: #fca5a5; }
+        .text-success { color: #16a34a; font-weight: 500; font-size: 13px; }
+
+        .modal-footer-action { margin-top: 20px; text-align: right; border-top: 1px solid #e2e8f0; padding-top: 14px; }
+        .btn-tutup { background: #64748b; color: white; padding: 8px 18px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; }
+        .btn-tutup:hover { background: #475569; }
       `}</style>
     </AdminLayout>
   );
