@@ -76,21 +76,23 @@ export default function Login() {
           overflow: hidden;
         }
 
-        /* SISI KIRI: VISUAL DAN ANIMASI */
-        .visual-side {
-          flex: 1.2;
-          position: relative;
-          background: linear-gradient(135deg, rgba(20,83,45,0.85) 0%, rgba(34,197,94,0.7) 100%), 
-                      url("/ChatGPT Image 5 Mei 2026, 06.20.17.png");
-          background-size: cover;
-          background-position: center;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          padding: 48px;
-          color: white;
-          animation: fadeIn 1s ease-out, scaleBg 1.5s cubic-bezier(0.16, 1, 0.3, 1);
-        }
+          /* SISI KIRI: VISUAL DAN ANIMASI */
+            .visual-side {
+              flex: 1.2;
+              position: relative;
+              background: linear-gradient(135deg, rgba(20,83,45,0.85) 0%, rgba(34,197,94,0.7) 100%), 
+                          url("/gambar-santri.png") no-repeat;
+              background-size: cover;
+              background-position: center;
+              display: flex;
+              flex-direction: column;
+              justify-content: space-between;
+              padding: 48px;
+              color: white;
+
+              /* TAMBAHKAN KATA "forwards" DI SETIAP AKHIR ANIMASI */
+              animation: fadeIn 1s ease-out forwards, scaleBg 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            }
 
         .brand-overlay {
           display: flex;
