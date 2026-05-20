@@ -12,20 +12,23 @@ export default function PaymentPage() {
   const [paymentTypes, setPaymentTypes] = useState([]);
   const [classes, setClasses] = useState([]);
   const [academicYears, setAcademicYears] = useState([]);
+  
+  // Filter Global atas tabel
   const [filterClass, setFilterClass] = useState("");
   const [filterYear, setFilterYear] = useState("");
+  const [searchQuery, setSearchQuery] = useState(""); // Input pencarian tabel utama
 
   const [showTambah, setShowTambah] = useState(false);
   const [tambahStudentId, setTambahStudentId] = useState("");
   const [tambahItems, setTambahItems] = useState([]);
   const [loadingTambah, setLoadingTambah] = useState(false);
 
-  // State untuk searchable dropdown
+  // State untuk searchable dropdown di dalam modal tambah tagihan
   const [searchSantri, setSearchSantri] = useState("");
   const [openDropdown, setOpenDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
-  // --- STATE BARU: PAGINATION ---
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -36,7 +39,7 @@ export default function PaymentPage() {
     loadStudents();
   }, []);
 
-  // Tutup dropdown saat klik di luar
+  // Tutup dropdown modal saat klik di luar
   useEffect(() => {
     function handleClickOutside(e) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -57,7 +60,7 @@ export default function PaymentPage() {
       .then((res) => res.json())
       .then((data) => {
         setStudents(data.students || []);
-        setCurrentPage(1); // Reset ke halaman 1 setiap kali filter berubah
+        setCurrentPage(1); // Reset ke halaman 1 setiap kali basis data filter berubah
       });
   };
 
@@ -232,7 +235,17 @@ export default function PaymentPage() {
     win.document.close();
   };
 
-  const filteredStudents = students.filter(s =>
+  // --- FILTER CLIENT SIDE: MEMPROSES SELECTION FILTER + INPUT KEYWORD SEARCH ---
+  const filteredStudents = students.filter(s => {
+    const matchesSearch = 
+      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (s.nis && s.nis.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (s.nisn && s.nisn.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchesSearch;
+  });
+
+  // Filter untuk dropdown modal tambah tagihan
+  const modalFilteredStudents = students.filter(s =>
     s.name.toLowerCase().includes(searchSantri.toLowerCase()) ||
     (s.nis && s.nis.toLowerCase().includes(searchSantri.toLowerCase()))
   );
@@ -241,11 +254,11 @@ export default function PaymentPage() {
     ? students.find(s => s.id == tambahStudentId)?.name
     : null;
 
-  // --- LOGIC PEMOTONGAN DATA PAGINATION ---
+  // --- LOGIC PEMOTONGAN DATA PAGINATION (Menggunakan filteredStudents) ---
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentStudents = students.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(students.length / itemsPerPage);
+  const currentStudents = filteredStudents.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
 
   return (
     <AdminLayout>
@@ -261,9 +274,23 @@ export default function PaymentPage() {
           </button>
         </div>
 
-        {/* FILTER BAR */}
+        {/* FILTER & SEARCH BAR */}
         <div className="filter-row">
           <div className="filter-group">
+            {/* INPUT PENCARIAN UTAMA */}
+            <div className="search-wrapper">
+              <input
+                type="text"
+                className="main-search-input"
+                placeholder="🔍 Cari nama, NIS atau NISN..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1); // Balik ke page 1 jika mengetik pencarian baru
+                }}
+              />
+            </div>
+
             <select
               className="filter-select"
               value={filterClass}
@@ -287,7 +314,7 @@ export default function PaymentPage() {
             </select>
           </div>
 
-          <span className="count-badge">{students.length} Santri Terdaftar</span>
+          <span className="count-badge">{filteredStudents.length} Santri Ditemukan</span>
         </div>
 
         {/* MAIN DATA CARD */}
@@ -333,11 +360,11 @@ export default function PaymentPage() {
             </table>
           </div>
 
-          {/* --- ELEMENT BARU: NAVIGASI PAGINATION DI BAWAH TABEL --- */}
-          {students.length > 0 && (
+          {/* NAVIGASI PAGINATION DI BAWAH TABEL */}
+          {filteredStudents.length > 0 && (
             <div className="pagination-wrapper">
               <div className="pagination-info">
-                Menampilkan <b>{indexOfFirstItem + 1}</b> - <b>{Math.min(indexOfLastItem, students.length)}</b> dari <b>{students.length}</b> santri
+                Menampilkan <b>{indexOfFirstItem + 1}</b> - <b>{Math.min(indexOfLastItem, filteredStudents.length)}</b> dari <b>{filteredStudents.length}</b> santri
               </div>
               <div className="pagination-buttons">
                 <button 
@@ -371,7 +398,7 @@ export default function PaymentPage() {
                 <button className="close-x" onClick={() => setShowTambah(false)}>✕</button>
               </div>
 
-              {/* SEARCHABLE DROPDOWN */}
+              {/* SEARCHABLE DROPDOWN IN MODAL */}
               <div className="field" ref={dropdownRef} style={{ position: "relative" }}>
                 <label>Pilih Santri</label>
                 <div style={{ position: "relative" }}>
@@ -401,10 +428,10 @@ export default function PaymentPage() {
 
                 {openDropdown && !tambahStudentId && (
                   <ul className="dropdown-list">
-                    {filteredStudents.length === 0 ? (
+                    {modalFilteredStudents.length === 0 ? (
                       <li className="dropdown-empty">😕 Santri tidak ditemukan</li>
                     ) : (
-                      filteredStudents.map(s => (
+                      modalFilteredStudents.map(s => (
                         <li
                           key={s.id}
                           onClick={() => {
@@ -619,7 +646,7 @@ export default function PaymentPage() {
         h3 { margin: 0; color: #0f172a; font-size: 18px; }
         h4 { margin: 16px 0 10px; color: #334155; font-size: 15px; font-weight: 600; }
 
-        /* Filter Controls */
+        /* Filter Controls & NEW SEARCH BAR STYLE */
         .filter-row {
           display: flex; 
           justify-content: space-between;
@@ -630,7 +657,28 @@ export default function PaymentPage() {
         }
         .filter-group {
           display: flex;
+          align-items: center;
           gap: 12px;
+          flex-wrap: wrap;
+        }
+        .search-wrapper {
+          position: relative;
+        }
+        .main-search-input {
+          padding: 10px 16px;
+          border-radius: 8px;
+          border: 1px solid #cbd5e1;
+          background: white;
+          font-size: 14px;
+          color: #334155;
+          outline: none;
+          min-width: 260px;
+          transition: all 0.2s;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        .main-search-input:focus {
+          border-color: #2e6b3e;
+          box-shadow: 0 0 0 3px rgba(46,107,62,0.15);
         }
         .filter-select {
           padding: 10px 36px 10px 14px; 
@@ -686,7 +734,7 @@ export default function PaymentPage() {
           font-weight: 500;
         }
 
-        /* --- CSS PAGINATION BARU --- */
+        /* PAGINATION BAR */
         .pagination-wrapper {
           display: flex;
           justify-content: space-between;
@@ -792,46 +840,6 @@ export default function PaymentPage() {
           position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
           cursor: pointer; color: #94a3b8; font-size: 14px;
         }
-
-        /* Search Dropdown list */
-        .dropdown-list {
-          position: absolute; top: calc(100% + 4px); left: 0; right: 0;
-          background: white; border: 1px solid #e2e8f0; border-radius: 8px;
-          max-height: 200px; overflow-y: auto; z-index: 1000; margin: 0; padding: 4px;
-          list-style: none; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-        }
-        .dropdown-item {
-          padding: 10px 12px; cursor: pointer; border-radius: 6px; font-size: 14px;
-          display: flex; justify-content: space-between; align-items: center;
-        }
-        .dropdown-item:hover { background: #f1f5f9; }
-        .dropdown-badge-class { font-size: 11px; background: #e2e8f0; padding: 2px 8px; border-radius: 10px; color: #475569;}
-
-        /* Payment Items Component */
-        .pt-container { border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px; background: #f8fafc; }
-        .pt-item { padding: 10px; border-radius: 6px; background: white; border: 1px solid #e2e8f0; margin-bottom: 6px; transition: all 0.2s;}
-        .pt-item.active { border-color: #2e6b3e; background: #f0f9f4;}
-        .pt-main-info { display: flex; align-items: center; gap: 10px; }
-        .pt-name { flex: 1; font-size: 14px; color: #1e293b; cursor: pointer; }
-        .pt-default { color: #64748b; font-size: 13px; font-weight: 500; }
-        .pt-inputs-row { display: flex; gap: 10px; margin-top: 10px; padding-left: 24px; }
-        .pt-input { flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; outline: none; }
-        .pt-input:focus { border-color: #2e6b3e; }
-
-        /* Modal Actions Buttons */
-        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 16px; }
-        .btn-simpan { background: #2e6b3e; color: white; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
-        .btn-simpan:disabled { background: #94a3b8; }
-        .btn-batal { background: white; border: 1px solid #cbd5e1; padding: 10px 20px; border-radius: 8px; cursor: pointer; color: #64748b; font-weight: 500; }
-        .btn-batal:hover { background: #f8fafc; color: #334155; }
-
-        /* Student Detail View Modifications */
-        .detail-modal { width: 760px; }
-        .info-grid { display: grid; grid-template-columns: repeat(2, 10fr); gap: 10px 20px; background: #f8fafc; padding: 14px; border-radius: 8px; font-size: 14px; color: #334155;}
-        .section-divider { height: 1px; background: #e2e8f0; margin: 20px 0 14px; }
-        .sub-table table th { background: #f1f5f9; padding: 10px 12px; }
-        .sub-table table td { padding: 10px 12px; font-size: 13px; }
-        .empty-subtext { color: #94a3b8; font-size: 13px; font-style: italic; margin: 5px 0; }
       `}</style>
     </AdminLayout>
   );
