@@ -1,4 +1,4 @@
-// pages/login.js
+// pages/login/index.js
 import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
@@ -68,31 +68,35 @@ export default function Login() {
           to { transform: scale(1); }
         }
 
+        *, *::before, *::after {
+          box-sizing: border-box;
+          margin: 0;
+          padding: 0;
+        }
+
         .login-container {
           min-height: 100vh;
           display: flex;
           font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
           background-color: #fff;
-          overflow: hidden;
+          overflow-x: hidden;
         }
 
-          /* SISI KIRI: VISUAL DAN ANIMASI */
-            .visual-side {
-              flex: 1.2;
-              position: relative;
-              background: linear-gradient(135deg, rgba(20,83,45,0.85) 0%, rgba(34,197,94,0.7) 100%), 
-                          url("/gambar-santri.png") no-repeat;
-              background-size: cover;
-              background-position: center;
-              display: flex;
-              flex-direction: column;
-              justify-content: space-between;
-              padding: 48px;
-              color: white;
-
-              /* TAMBAHKAN KATA "forwards" DI SETIAP AKHIR ANIMASI */
-              animation: fadeIn 1s ease-out forwards, scaleBg 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            }
+        /* SISI KIRI: VISUAL DAN ANIMASI */
+        .visual-side {
+          flex: 1.2;
+          position: relative;
+          background: linear-gradient(135deg, rgba(20,83,45,0.85) 0%, rgba(34,197,94,0.7) 100%), 
+                      url("/gambar-santri.png") no-repeat;
+          background-size: cover;
+          background-position: center;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          padding: 48px;
+          color: white;
+          animation: fadeIn 1s ease-out forwards, scaleBg 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
 
         .brand-overlay {
           display: flex;
@@ -394,24 +398,67 @@ export default function Login() {
           margin-top: 10px;
         }
 
-        /* MEDIA QUERY RESPONSIVENESS (HP & TABLET) */
+        /* ==========================================================================
+           BREAKPOINT MEDIA QUERIES (OPTIMASI RESPONSIVITAS TOTAL)
+           ========================================================================== */
+
+        /* LAYAR TABLET / iPAD (Sisi kiri disembunyikan, form berada di tengah secara presisi) */
         @media (max-width: 968px) {
           .visual-side {
-            display: none; /* Menyembunyikan sisi gambar pada perangkat mobile/layar kecil */
+            display: none;
           }
           .form-side {
             flex: 1;
-            padding: 24px;
+            padding: 40px 24px;
             background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
           }
           .form-wrapper {
             background: #ffffff;
-            padding: 32px 24px;
+            padding: 40px 32px;
             border-radius: 24px;
-            box-shadow: 0 20px 40px rgba(20,83,45,0.08);
+            box-shadow: 0 20px 40px rgba(20,83,45,0.06);
+            max-width: 440px; /* Menjaga proporsi form di layar tablet agar tidak terlalu melar */
           }
           .mobile-footer {
             display: block;
+          }
+        }
+
+        /* LAYAR SMARTPHONE STANDARD (Pengurangan padding agar ruang input lebih lega) */
+        @media (max-width: 480px) {
+          .form-side {
+            padding: 16px;
+          }
+          .form-wrapper {
+            padding: 32px 20px;
+            gap: 16px;
+          }
+          .header-section h2 {
+            font-size: 23px;
+          }
+          .header-section p {
+            font-size: 13.5px;
+          }
+          .input-field, .password-input {
+            padding: 11px 13px;
+            font-size: 14px;
+          }
+          .submit-button {
+            padding: 12px;
+            font-size: 14px;
+          }
+        }
+
+        /* LAYAR SMARTPHONE KECIL (Dibawah 360px - Mencegah teks overlap) */
+        @media (max-width: 350px) {
+          .form-wrapper {
+            padding: 24px 14px;
+          }
+          .header-section h2 {
+            font-size: 20px;
+          }
+          .divider-text {
+            font-size: 11px;
           }
         }
       `}</style>

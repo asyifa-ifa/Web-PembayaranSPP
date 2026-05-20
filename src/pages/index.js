@@ -28,26 +28,27 @@ export default function Home() {
         100% { transform: translateY(0px); }
       }
 
-      /* ANIMASI SAPUAN TRANSISI SAAT PINDAH KE LOGIN */
+      /* ANIMASI SAPUAN TRANSISI DARI KIRI KE KANAN (SMOOTH & ELEGAN) */
       @keyframes slideOutOverlay {
-        0%   { transform: translateY(100%); }
-        100% { transform: translateY(0); }
+        0%   { transform: translateX(-100%); }
+        100% { transform: translateX(0); }
       }
 
       .page-transition-overlay {
         position: fixed;
-        bottom: 0;
+        top: 0;
         left: 0;
         width: 100%;
         height: 100%;
         background: linear-gradient(135deg, #14532d, #16a34a);
         z-index: 9999;
-        transform: translateY(100%);
+        transform: translateX(-100%); /* Default sembunyi di luar layar sebelah kiri */
         pointer-events: none;
       }
 
       .page-transition-overlay.active {
         pointer-events: auto;
+        /* Menggunakan cubic-bezier penutup layar yang sangat halus */
         animation: slideOutOverlay 0.5s cubic-bezier(0.76, 0, 0.24, 1) forwards;
       }
 
@@ -168,7 +169,7 @@ export default function Home() {
       }
       .btn-secondary:hover { background: #f0fdf4; border-color: #22c55e; }
 
-      /* HERO CHARACTER — OPSI 3: glow hijau + fade bawah */
+      /* HERO CHARACTER */
       .hero-char-img {
         width: 100%;
         max-width: 500px;
@@ -177,18 +178,8 @@ export default function Home() {
         object-position: bottom;
         display: block;
         filter: drop-shadow(0 -8px 32px rgba(34,197,94,0.35));
-        -webkit-mask-image: linear-gradient(
-          to top,
-          transparent 0%,
-          rgba(0,0,0,0.6) 20%,
-          black 40%
-        );
-        mask-image: linear-gradient(
-          to top,
-          transparent 0%,
-          rgba(0,0,0,0.6) 20%,
-          black 40%
-        );
+        -webkit-mask-image: linear-gradient(to top, transparent 0%, rgba(0,0,0,0.6) 20%, black 40%);
+        mask-image: linear-gradient(to top, transparent 0%, rgba(0,0,0,0.6) 20%, black 40%);
       }
 
       .blob { position: absolute; border-radius: 50%; z-index: 1; pointer-events: none; }
@@ -242,79 +233,89 @@ export default function Home() {
       /* FOOTER */
       .footer { background: #111827; color: #9ca3af; padding: 28px 60px; text-align: center; font-size: 13px; }
 
+      /* ==========================================================================
+         MEDIA QUERIES - OPTIMASI RESPONSIVITAS TOTAL
+         ========================================================================== */
+
       /* TABLET */
       @media (max-width: 1024px) {
         .navbar { padding: 14px 32px; }
-        .hero { padding: 60px 40px 0; min-height: auto; }
-        .hero-left { padding-bottom: 60px; }
+        .hero { padding: 60px 40px 40px; min-height: auto; }
+        .hero-left { padding-bottom: 40px; }
         .hero-title { font-size: 36px; }
         .hero-char-img { max-width: 380px; }
         .contact-section { padding: 60px 32px; }
         .footer { padding: 24px 32px; }
       }
 
-      /* MOBILE */
+      /* MOBILE STANDARD */
       @media (max-width: 768px) {
         .navbar { padding: 12px 20px; }
         .nav-menu { display: none; }
-        .hamburger { display: flex; }
-
-        .hero { padding: 32px 20px 0; min-height: auto; align-items: flex-start; }
-        .hero-grid { grid-template-columns: 1fr; gap: 16px; text-align: center; }
-        .hero-left  { align-items: center; padding-bottom: 0; order: 1; }
-        .hero-right { order: 0; }
-        .hero-title { font-size: 28px; }
-        .hero-desc  { font-size: 14px; max-width: 100%; margin-bottom: 24px; }
-        .hero-btns  { justify-content: center; margin-bottom: 32px; }
-        .btn-primary, .btn-secondary { padding: 12px 22px; font-size: 14px; }
-        .hero-char-img {
-          max-width: 260px;
-          -webkit-mask-image: linear-gradient(
-            to top,
-            transparent 0%,
-            rgba(0,0,0,0.5) 15%,
-            black 35%
-          );
-          mask-image: linear-gradient(
-            to top,
-            transparent 0%,
-            rgba(0,0,0,0.5) 15%,
-            black 35%
-          );
+        
+        /* Optimasi Hitbox Tombol Hamburger (UX Minimal 44px) */
+        .hamburger { 
+          display: flex; 
+          width: 44px; 
+          height: 44px; 
+          align-items: center; 
+          justify-content: center; 
         }
 
-        .blob1 { width: 220px; height: 220px; top: -60px; right: -50px; }
-        .blob2 { width: 160px; height: 160px; bottom: -40px; left: -40px; }
+        .hero { 
+          padding: 40px 20px 40px; 
+          min-height: auto; 
+          align-items: center; 
+          position: relative;
+        }
+        .hero-grid { grid-template-columns: 1fr; gap: 32px; text-align: center; }
+        .hero-left  { align-items: center; padding-bottom: 0; order: 1; }
+        .hero-right { order: 0; display: flex; justify-content: center; }
+        .hero-title { font-size: 30px; }
+        .hero-desc  { font-size: 14px; max-width: 100%; margin-bottom: 24px; }
+        .hero-btns  { justify-content: center; margin-bottom: 16px; width: 100%; }
+        .btn-primary, .btn-secondary { padding: 12px 24px; font-size: 14px; }
+        
+        .hero-char-img {
+          max-width: 280px;
+          -webkit-mask-image: linear-gradient(to top, transparent 0%, rgba(0,0,0,0.5) 15%, black 35%);
+          mask-image: linear-gradient(to top, transparent 0%, rgba(0,0,0,0.5) 15%, black 35%);
+        }
+
+        /* Mengunci Blob agar tidak bocor menabrak section Kontak */
+        .blob1 { width: 220px; height: 220px; top: -40px; right: -40px; }
+        .blob2 { width: 160px; height: 160px; bottom: 0; left: -40px; }
         .blob3 { display: none; }
 
         .contact-section { padding: 48px 20px; }
-        .contact-grid { grid-template-columns: 1fr; gap: 20px; }
+        .contact-grid { grid-template-columns: 1fr; gap: 24px; }
         .contact-card { padding: 24px 20px; }
-        .map-wrap { height: 240px; }
+        .map-wrap { height: 280px; width: 100%; }
 
         .footer { padding: 20px; font-size: 12px; }
       }
 
-      /* SMALL MOBILE */
+      /* SMALL MOBILE (Layar Kecil / iPhone Lama) */
       @media (max-width: 400px) {
-        .hero-title { font-size: 22px; }
-        .hero-badge { font-size: 11px; padding: 6px 12px; }
-        .hero-char-img { max-width: 200px; }
-        .hero-btns { flex-direction: column; width: 100%; }
-        .btn-primary, .btn-secondary { width: 100%; text-align: center; }
+        .hero-title { font-size: 24px; }
+        .hero-badge { font-size: 11px; padding: 6px 14px; }
+        .hero-char-img { max-width: 220px; }
+        .hero-btns { flex-direction: column; width: 100%; gap: 10px; }
+        .btn-primary, .btn-secondary { width: 100%; text-align: center; box-sizing: border-box; }
+        .contact-card { padding: 20px 16px; }
       }
     `;
     document.head.appendChild(style);
     return () => document.head.removeChild(style);
   }, []);
 
-  // Fungsi kustom untuk memicu animasi transisi halus ke halaman login
+  // Fungsi memicu animasi sapuan horizontal ke kanan, lalu berpindah halaman
   const handleNavigateToLogin = () => {
     setMenuOpen(false);
     setIsTransitioning(true);
     setTimeout(() => {
       router.push("/login");
-    }, 450); // Menunggu animasi slide naik selesai, lalu berpindah halaman
+    }, 450); 
   };
 
   function scrollTo(id) {
@@ -371,7 +372,7 @@ export default function Home() {
 
   return (
     <div>
-      {/* OVERLAY HIT BOX ANIMASI TRANSISI */}
+      {/* OVERLAY HIT BOX ANIMASI TRANSISI HORIZONTAL */}
       <div className={`page-transition-overlay ${isTransitioning ? "active" : ""}`} />
 
       {/* NAVBAR */}
@@ -429,7 +430,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* GAMBAR KARAKTER SANTRI - KANAN (Opsi 3: glow hijau + fade bawah) */}
+          {/* GAMBAR KARAKTER SANTRI - KANAN */}
           <div className="hero-right hero-logo-anim">
             <img
               className="hero-char-img float-char"
