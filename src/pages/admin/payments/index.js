@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import AdminLayout from "@/components/AdminLayout";
 
 const cleanAmount = (amount) => {
@@ -20,11 +20,27 @@ export default function PaymentPage() {
   const [tambahItems, setTambahItems] = useState([]);
   const [loadingTambah, setLoadingTambah] = useState(false);
 
+  // State untuk searchable dropdown
+  const [searchSantri, setSearchSantri] = useState("");
+  const [openDropdown, setOpenDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+
   useEffect(() => {
     fetch("/api/payment-types").then(r => r.json()).then(setPaymentTypes);
     fetch("/api/classes/list").then(r => r.json()).then(setClasses);
     fetch("/api/students/academic-years").then(r => r.json()).then(setAcademicYears);
     loadStudents();
+  }, []);
+
+  // Tutup dropdown saat klik di luar
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpenDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const loadStudents = (classId = "", academicYear = "") => {
@@ -140,6 +156,7 @@ export default function PaymentPage() {
       setShowTambah(false);
       setTambahStudentId("");
       setTambahItems([]);
+      setSearchSantri("");
       loadStudents(filterClass, filterYear);
     } catch (err) {
       alert("Error: " + err.message);
@@ -207,6 +224,17 @@ export default function PaymentPage() {
     win.document.write(html);
     win.document.close();
   };
+
+  // Filter santri berdasarkan pencarian
+  const filteredStudents = students.filter(s =>
+    s.name.toLowerCase().includes(searchSantri.toLowerCase()) ||
+    (s.nis && s.nis.toLowerCase().includes(searchSantri.toLowerCase()))
+  );
+
+  // Nama santri yang dipilih
+  const selectedSantriName = tambahStudentId
+    ? students.find(s => s.id == tambahStudentId)?.name
+    : null;
 
   return (
     <AdminLayout>
@@ -290,15 +318,110 @@ export default function PaymentPage() {
           <div className="modal">
             <div className="modal-content">
               <h3>📋 Buat Tagihan Santri</h3>
-              <div className="field">
+
+              {/* SEARCHABLE DROPDOWN PILIH SANTRI */}
+              <div className="field" ref={dropdownRef} style={{ position: "relative" }}>
                 <label>Pilih Santri</label>
-                <select value={tambahStudentId} onChange={e => setTambahStudentId(e.target.value)}>
-                  <option value="">-- Pilih Santri --</option>
-                  {students.map(s => (
-                    <option key={s.id} value={s.id}>{s.name} - {s.class?.name}</option>
-                  ))}
-                </select>
+                <div style={{ position: "relative" }}>
+                  <input
+                    type="text"
+                    placeholder={selectedSantriName ? selectedSantriName : "🔍 Cari nama atau NIS santri..."}
+                    value={searchSantri}
+                    onChange={e => {
+                      setSearchSantri(e.target.value);
+                      setOpenDropdown(true);
+                      // Reset pilihan jika user mengetik ulang
+                      if (tambahStudentId) setTambahStudentId("");
+                    }}
+                    onFocus={() => setOpenDropdown(true)}
+                    style={{
+                      width: "100%",
+                      padding: "10px 36px 10px 12px",
+                      borderRadius: "8px",
+                      border: tambahStudentId ? "1.5px solid #2e6b3e" : "1px solid #ddd",
+                      fontSize: "14px",
+                      boxSizing: "border-box",
+                      outline: "none",
+                      background: tambahStudentId ? "#f0f9f4" : "white",
+                    }}
+                  />
+                  {/* Icon search / clear */}
+                  {tambahStudentId ? (
+                    <span
+                      onClick={() => {
+                        setTambahStudentId("");
+                        setSearchSantri("");
+                        setOpenDropdown(true);
+                      }}
+                      style={{
+                        position: "absolute", right: "10px", top: "50%",
+                        transform: "translateY(-50%)", cursor: "pointer",
+                        color: "#888", fontSize: "16px"
+                      }}
+                    >✕</span>
+                  ) : (
+                    <span style={{
+                      position: "absolute", right: "10px", top: "50%",
+                      transform: "translateY(-50%)", color: "#aaa", fontSize: "14px",
+                      pointerEvents: "none"
+                    }}>🔍</span>
+                  )}
+                </div>
+
+                {/* DROPDOWN LIST */}
+                {openDropdown && !tambahStudentId && (
+                  <ul style={{
+                    position: "absolute", top: "calc(100% + 2px)", left: 0, right: 0,
+                    background: "white", border: "1px solid #ddd", borderRadius: "8px",
+                    maxHeight: "220px", overflowY: "auto", zIndex: 1000,
+                    margin: 0, padding: 0, listStyle: "none",
+                    boxShadow: "0 6px 20px rgba(0,0,0,0.12)"
+                  }}>
+                    {filteredStudents.length === 0 ? (
+                      <li style={{
+                        padding: "12px", color: "#888", fontSize: "13px",
+                        textAlign: "center"
+                      }}>
+                        😕 Santri tidak ditemukan
+                      </li>
+                    ) : (
+                      filteredStudents.map(s => (
+                        <li
+                          key={s.id}
+                          onClick={() => {
+                            setTambahStudentId(s.id);
+                            setSearchSantri("");
+                            setOpenDropdown(false);
+                          }}
+                          style={{
+                            padding: "10px 14px",
+                            cursor: "pointer",
+                            fontSize: "14px",
+                            borderBottom: "1px solid #f5f5f5",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            transition: "background 0.15s",
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.background = "#f0f9f4"}
+                          onMouseLeave={e => e.currentTarget.style.background = "white"}
+                        >
+                          <span style={{ fontWeight: 500 }}>{s.name}</span>
+                          <span style={{
+                            color: "#888", fontSize: "12px",
+                            background: "#f5f5f5", padding: "2px 8px",
+                            borderRadius: "12px"
+                          }}>
+                            {s.class?.name || "-"}
+                          </span>
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                )}
               </div>
+
+              {/* JENIS TAGIHAN */}
               <div className="field">
                 <label>Pilih Jenis Tagihan</label>
                 {paymentTypes.map(pt => {
@@ -330,8 +453,14 @@ export default function PaymentPage() {
                   );
                 })}
               </div>
+
               <div className="modal-actions">
-                <button className="btn-batal" onClick={() => { setShowTambah(false); setTambahItems([]); setTambahStudentId(""); }}>
+                <button className="btn-batal" onClick={() => {
+                  setShowTambah(false);
+                  setTambahItems([]);
+                  setTambahStudentId("");
+                  setSearchSantri("");
+                }}>
                   Batal
                 </button>
                 <button className="btn-simpan" onClick={handleTambahTagihan} disabled={loadingTambah}>
