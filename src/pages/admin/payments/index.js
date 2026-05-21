@@ -298,7 +298,7 @@ export default function PaymentPage() {
             <div className="stat-icon bg-amber">🔔</div>
             <div>
               <p className="stat-label">Metode Pembayaran</p>
-              <h3>2 <span className="stat-unit">Cash & Midtrans</span></h3>
+              <h3>2 <span className="stat-unit">Cash & Transfer</span></h3>
             </div>
           </div>
         </div>
@@ -594,7 +594,7 @@ export default function PaymentPage() {
                             {b.status === "UNPAID" ? (
                               <div className="action-flex-gap">
                                 <button className="btn-cash" onClick={() => konfirmasiCash(b.id)}>💵 Tunai</button>
-                                <button className="btn-transfer" onClick={() => bayarTransfer(b.id)}>🏦 Midtrans</button>
+                                <button className="btn-transfer" onClick={() => bayarTransfer(b.id)}>🏦 Transfer</button>
                                 <button className="btn-hapus-icon" onClick={() => hapusBill(b.id)} title="Hapus Tagihan">🗑️</button>
                               </div>
                             ) : (
