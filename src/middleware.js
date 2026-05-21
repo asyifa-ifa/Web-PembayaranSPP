@@ -6,7 +6,6 @@ export default withAuth(
     callbacks: {
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl;
-        // Biarkan semua API lewat, auth dicek di masing-masing API
         if (pathname.startsWith("/api/")) return true;
         if (!token) return false;
         if (pathname.startsWith("/admin")) return token.role === "ADMIN";
@@ -23,6 +22,5 @@ export const config = {
     "/admin/:path*",
     "/kepala/:path*",
     "/santri/:path*",
-    // "/api/santri/:path*" ← dihapus, API handle auth sendiri
   ],
 };
