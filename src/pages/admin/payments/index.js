@@ -235,7 +235,7 @@ export default function PaymentPage() {
     win.document.close();
   };
 
-  // --- FILTER CLIENT SIDE: MEMPROSES SELECTION FILTER + INPUT KEYWORD SEARCH ---
+  // --- FILTER CLIENT SIDE ---
   const filteredStudents = students.filter(s => {
     const matchesSearch = 
       s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -254,7 +254,7 @@ export default function PaymentPage() {
     ? students.find(s => s.id == tambahStudentId)?.name
     : null;
 
-  // --- LOGIC PEMOTONGAN DATA PAGINATION (Menggunakan filteredStudents) ---
+  // --- LOGIC PAGINATION ---
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentStudents = filteredStudents.slice(indexOfFirstItem, indexOfLastItem);
@@ -263,40 +263,69 @@ export default function PaymentPage() {
   return (
     <AdminLayout>
       <div className="container">
-
+        
+        {/* HEADER UTAMA */}
         <div className="header-row">
           <div className="title-section">
-            <span className="title-icon">📄</span>
-            <h2>Data Pembayaran Santri</h2>
+            <span className="title-icon">💳</span>
+            <div>
+              <h2>Kelola Pembayaran Santri</h2>
+              <p className="sub-title">Manajemen akses pembayaran tagihan, invoice, dan riwayat cash/transfer.</p>
+            </div>
           </div>
           <button className="btn-tambah" onClick={() => setShowTambah(true)}>
-            <span style={{ marginRight: '6px' }}>+</span> Buat Tagihan
+            <span style={{ marginRight: '8px', fontSize: '18px' }}>+</span> Buat Tagihan
           </button>
         </div>
 
-        {/* FILTER & SEARCH BAR */}
-        <div className="filter-row">
-          <div className="filter-group">
-            {/* INPUT PENCARIAN UTAMA */}
-            <div className="search-wrapper">
-              <input
-                type="text"
-                className="main-search-input"
-                placeholder="🔍 Cari nama, NIS atau NISN..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setCurrentPage(1); // Balik ke page 1 jika mengetik pencarian baru
-                }}
-              />
+        {/* SUMMARY CARDS (Efek Waw Dasbor) */}
+        <div className="stats-grid">
+          <div className="stat-card border-blue">
+            <div className="stat-icon bg-blue">👥</div>
+            <div>
+              <p className="stat-label">Total Database Santri</p>
+              <h3>{students.length} <span className="stat-unit">Santri</span></h3>
             </div>
+          </div>
+          <div className="stat-card border-green">
+            <div className="stat-icon bg-green">✅</div>
+            <div>
+              <p className="stat-label">Hasil Filter Pencarian</p>
+              <h3>{filteredStudents.length} <span className="stat-unit">Santri Cocok</span></h3>
+            </div>
+          </div>
+          <div className="stat-card border-amber">
+            <div className="stat-icon bg-amber">🔔</div>
+            <div>
+              <p className="stat-label">Metode Pembayaran</p>
+              <h3>2 <span className="stat-unit">Cash & Duitku</span></h3>
+            </div>
+          </div>
+        </div>
 
+        {/* CONTROLS & FILTER BAR */}
+        <div className="filter-card">
+          <div className="search-wrapper">
+            <span className="search-icon">🔍</span>
+            <input
+              type="text"
+              className="main-search-input"
+              placeholder="Cari nama santri, NIS atau NISN..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+            />
+          </div>
+
+          <div className="filter-group">
             <select
               className="filter-select"
               value={filterClass}
               onChange={e => handleFilterClass(e.target.value)}
             >
-              <option value="">-- Semua Kelas --</option>
+              <option value="">Semua Kelas</option>
               {classes.map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -307,51 +336,50 @@ export default function PaymentPage() {
               value={filterYear}
               onChange={e => handleFilterYear(e.target.value)}
             >
-              <option value="">-- Semua Tahun Ajaran --</option>
+              <option value="">Semua Angkatan</option>
               {academicYears.map(y => (
                 <option key={y} value={y}>{y}</option>
               ))}
             </select>
           </div>
-
-          <span className="count-badge">{filteredStudents.length} Santri Ditemukan</span>
         </div>
 
-        {/* MAIN DATA CARD */}
+        {/* TABEL UTAMA */}
         <div className="card">
           <div className="table-wrapper">
             <table>
               <thead>
                 <tr>
                   <th style={{ width: "60px", textAlign: "center" }}>No</th>
-                  <th>NIS</th>
+                  <th>NIS / Username</th>
                   <th>NISN</th>
                   <th>Kelas</th>
                   <th>Tahun Ajaran</th>
-                  <th>Nama Santri</th>
-                  <th style={{ textAlign: "center", width: "120px" }}>Aksi</th>
+                  <th>Nama Lengkap Santri</th>
+                  <th style={{ textAlign: "center", width: "140px" }}>Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {currentStudents.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="empty-state">
-                      👋 Tidak ada data santri ditemukan.
+                      <div className="empty-icon">📁</div>
+                      <p>Tidak ada data pembayaran santri ditemukan.</p>
                     </td>
                   </tr>
                 ) : currentStudents.map((s, i) => (
                   <tr key={s.id}>
-                    <td style={{ textAlign: "center", color: "#888" }}>
+                    <td style={{ textAlign: "center", color: "#94a3b8", fontWeight: '500' }}>
                       {indexOfFirstItem + i + 1}
                     </td>
-                    <td className="font-mono">{s.nis || "-"}</td>
-                    <td className="font-mono">{s.nisn || "-"}</td>
+                    <td className="font-mono text-dark">{s.nis || "-"}</td>
+                    <td className="font-mono text-muted">{s.nisn || "-"}</td>
                     <td><span className="badge-class">{s.class?.name || "-"}</span></td>
-                    <td>{s.classHistories?.[0]?.academicYear || s.entryYear || "-"}</td>
-                    <td style={{ fontWeight: "500", color: "#2c3e50" }}>{s.name}</td>
+                    <td style={{ color: '#475569' }}>{s.classHistories?.[0]?.academicYear || s.entryYear || "-"}</td>
+                    <td style={{ fontWeight: "600", color: "#1e293b" }}>{s.name}</td>
                     <td style={{ textAlign: "center" }}>
                       <button className="btn-detail" onClick={() => openDetail(s.id)}>
-                        Detail
+                        👁️ Detail & Bayar
                       </button>
                     </td>
                   </tr>
@@ -360,11 +388,11 @@ export default function PaymentPage() {
             </table>
           </div>
 
-          {/* NAVIGASI PAGINATION DI BAWAH TABEL */}
+          {/* PAGINATION */}
           {filteredStudents.length > 0 && (
             <div className="pagination-wrapper">
               <div className="pagination-info">
-                Menampilkan <b>{indexOfFirstItem + 1}</b> - <b>{Math.min(indexOfLastItem, filteredStudents.length)}</b> dari <b>{filteredStudents.length}</b> santri
+                Menampilkan <span>{indexOfFirstItem + 1}</span> - <span>{Math.min(indexOfLastItem, filteredStudents.length)}</span> dari <span>{filteredStudents.length}</span> Santri
               </div>
               <div className="pagination-buttons">
                 <button 
@@ -372,17 +400,17 @@ export default function PaymentPage() {
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
                 >
-                  ⬅ Sebelumnya
+                  Sebelumnya
                 </button>
                 <span className="page-indicator">
-                  Halaman <b>{currentPage}</b> dari {totalPages}
+                  Halaman <strong>{currentPage}</strong> dari {totalPages}
                 </span>
                 <button 
                   className="btn-page" 
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
                 >
-                  Berikutnya ➡
+                  Berikutnya
                 </button>
               </div>
             </div>
@@ -391,20 +419,23 @@ export default function PaymentPage() {
 
         {/* MODAL TAMBAH TAGIHAN */}
         {showTambah && (
-          <div className="modal">
+          <div className="modal-backdrop">
             <div className="modal-content">
               <div className="modal-header">
-                <h3>📋 Buat Tagihan Santri</h3>
+                <div>
+                  <h3>📋 Buat Tagihan Baru</h3>
+                  <p className="modal-sub">Pilih salah satu santri dan lampirkan beberapa tipe tagihan sekaligus.</p>
+                </div>
                 <button className="close-x" onClick={() => setShowTambah(false)}>✕</button>
               </div>
 
-              {/* SEARCHABLE DROPDOWN IN MODAL */}
-              <div className="field" ref={dropdownRef} style={{ position: "relative" }}>
-                <label>Pilih Santri</label>
+              {/* SEARCHABLE DROPDOWN */}
+              <div className="form-group" ref={dropdownRef}>
+                <label className="form-label">Pilih Santri Penerima</label>
                 <div style={{ position: "relative" }}>
                   <input
                     type="text"
-                    placeholder={selectedSantriName ? selectedSantriName : "🔍 Cari nama atau NIS santri..."}
+                    placeholder={selectedSantriName ? selectedSantriName : "🔍 Ketik nama atau NIS santri untuk mencari..."}
                     value={searchSantri}
                     onChange={e => {
                       setSearchSantri(e.target.value);
@@ -412,7 +443,7 @@ export default function PaymentPage() {
                       if (tambahStudentId) setTambahStudentId("");
                     }}
                     onFocus={() => setOpenDropdown(true)}
-                    className="search-input"
+                    className="form-input search-input-icon"
                   />
                   {tambahStudentId && (
                     <span
@@ -441,8 +472,8 @@ export default function PaymentPage() {
                           }}
                           className="dropdown-item"
                         >
-                          <span style={{ fontWeight: 500 }}>{s.name}</span>
-                          <span className="dropdown-badge-class">{s.class?.name || "-"}</span>
+                          <span className="dropdown-name">{s.name}</span>
+                          <span className="badge-class" style={{fontSize:'11px'}}>{s.class?.name || "-"}</span>
                         </li>
                       ))
                     )}
@@ -450,35 +481,42 @@ export default function PaymentPage() {
                 )}
               </div>
 
-              {/* JENIS TAGIHAN */}
-              <div className="field">
-                <label>Pilih Jenis Tagihan</label>
+              {/* LIST PILIHAN JENIS TAGIHAN */}
+              <div className="form-group">
+                <label className="form-label">Pilih Tipe & Atur Nominal Tagihan</label>
                 <div className="pt-container">
                   {paymentTypes.map(pt => {
                     const selected = tambahItems.find(i => i.paymentTypeId === pt.id);
                     return (
                       <div key={pt.id} className={`pt-item ${selected ? 'active' : ''}`}>
                         <div className="pt-main-info">
-                          <input type="checkbox" checked={!!selected} onChange={() => toggleItem(pt)} id={`pt-${pt.id}`} />
-                          <label htmlFor={`pt-${pt.id}`} className="pt-name">{pt.name}</label>
-                          <span className="pt-default">Rp {formatRupiah(pt.amount)}</span>
+                          <label className="pt-checkbox-label">
+                            <input type="checkbox" checked={!!selected} onChange={() => toggleItem(pt)} />
+                            <span className="pt-name">{pt.name}</span>
+                          </label>
+                          <span className="pt-default">Default: Rp {formatRupiah(pt.amount)}</span>
                         </div>
                         {selected && (
                           <div className="pt-inputs-row">
-                            <input
-                              type="number"
-                              placeholder="Nominal (Rp)"
-                              value={selected.amount}
-                              onChange={e => updateItem(pt.id, "amount", e.target.value)}
-                              className="pt-input"
-                            />
-                            <input
-                              type="date"
-                              value={selected.dueDate}
-                              onChange={e => updateItem(pt.id, "dueDate", e.target.value)}
-                              className="pt-input"
-                              title="Jatuh Tempo"
-                            />
+                            <div style={{flex: 1}}>
+                              <span className="input-hint">Nominal Custom (Rp)</span>
+                              <input
+                                type="number"
+                                placeholder="Nominal (Rp)"
+                                value={selected.amount}
+                                onChange={e => updateItem(pt.id, "amount", e.target.value)}
+                                className="form-input"
+                              />
+                            </div>
+                            <div style={{flex: 1}}>
+                              <span className="input-hint">Tanggal Jatuh Tempo</span>
+                              <input
+                                type="date"
+                                value={selected.dueDate}
+                                onChange={e => updateItem(pt.id, "dueDate", e.target.value)}
+                                className="form-input"
+                              />
+                            </div>
                           </div>
                         )}
                       </div>
@@ -494,10 +532,10 @@ export default function PaymentPage() {
                   setTambahStudentId("");
                   setSearchSantri("");
                 }}>
-                  Batal
+                  Batalkan
                 </button>
                 <button className="btn-simpan" onClick={handleTambahTagihan} disabled={loadingTambah}>
-                  {loadingTambah ? "Menyimpan..." : "💾 Simpan Tagihan"}
+                  {loadingTambah ? "Menyimpan..." : "💾 Simpan & Rilis Tagihan"}
                 </button>
               </div>
             </div>
@@ -506,25 +544,29 @@ export default function PaymentPage() {
 
         {/* MODAL DETAIL SANTRI */}
         {selectedStudent && (
-          <div className="modal">
+          <div className="modal-backdrop">
             <div className="modal-content detail-modal">
               <div className="modal-header">
-                <h3>👤 Detail Administrasi Santri</h3>
+                <div>
+                  <h3>👤 Profil Administrasi Santri</h3>
+                  <p className="modal-sub">Rincian invoice tagihan aktif dan log riwayat transaksi keuangan.</p>
+                </div>
                 <button className="close-x" onClick={() => setSelectedStudent(null)}>✕</button>
               </div>
               
               <div className="info-grid">
-                <div className="info-item"><b>Nama:</b> {selectedStudent.name}</div>
-                <div className="info-item"><b>Kelas:</b> {selectedStudent.class?.name || "-"}</div>
-                <div className="info-item"><b>NIS:</b> <span className="font-mono">{selectedStudent.nis || "-"}</span></div>
-                <div className="info-item"><b>Tahun Ajaran:</b> {selectedStudent.classHistories?.[0]?.academicYear || selectedStudent.entryYear || "-"}</div>
-                <div className="info-item"><b>NISN:</b> <span className="font-mono">{selectedStudent.nisn || "-"}</span></div>
+                <div className="info-item"><span className="info-lbl">Nama Lengkap</span> <span className="info-val">{selectedStudent.name}</span></div>
+                <div className="info-item"><span className="info-lbl">Kelas</span> <span className="badge-class bg-emerald">{selectedStudent.class?.name || "-"}</span></div>
+                <div className="info-item"><span className="info-lbl">Nomor Induk (NIS)</span> <span className="font-mono text-dark">{selectedStudent.nis || "-"}</span></div>
+                <div className="info-item"><span className="info-lbl">Tahun Ajaran</span> <span className="info-val">{selectedStudent.classHistories?.[0]?.academicYear || selectedStudent.entryYear || "-"}</span></div>
+                <div className="info-item"><span className="info-lbl">NISN</span> <span className="font-mono text-dark">{selectedStudent.nisn || "-"}</span></div>
               </div>
 
               <div className="section-divider" />
-              <h4>📋 Daftar Tagihan Aktif</h4>
+              
+              <h4>📋 Daftar Tagihan Aktif (Belum Lunas)</h4>
               {selectedStudent.bills.length === 0 ? (
-                <p className="empty-subtext">Belum ada tagihan untuk santri ini.</p>
+                <p className="empty-subtext">🟢 Aman! Belum ada tagihan aktif untuk santri ini.</p>
               ) : (
                 <div className="table-wrapper sub-table">
                   <table>
@@ -534,14 +576,14 @@ export default function PaymentPage() {
                         <th>Nominal</th>
                         <th>Jatuh Tempo</th>
                         <th style={{ textAlign: "center" }}>Status</th>
-                        <th style={{ textAlign: "center" }}>Aksi</th>
+                        <th style={{ textAlign: "center", width: "230px" }}>Aksi Pembayaran</th>
                       </tr>
                     </thead>
                     <tbody>
                       {selectedStudent.bills.map(b => (
                         <tr key={b.id}>
-                          <td style={{ fontWeight: 500 }}>{b.paymentType.name}</td>
-                          <td>Rp {b.amount.toLocaleString("id-ID")}</td>
+                          <td style={{ fontWeight: 600, color: '#334155' }}>{b.paymentType.name}</td>
+                          <td style={{ fontWeight: 600, color: '#0f172a' }}>Rp {b.amount.toLocaleString("id-ID")}</td>
                           <td>{b.dueDate ? new Date(b.dueDate).toLocaleDateString("id-ID") : "-"}</td>
                           <td style={{ textAlign: "center" }}>
                             <span className={`status-badge ${b.status === "PAID" ? "paid" : "unpaid"}`}>
@@ -552,7 +594,7 @@ export default function PaymentPage() {
                             {b.status === "UNPAID" ? (
                               <div className="action-flex-gap">
                                 <button className="btn-cash" onClick={() => konfirmasiCash(b.id)}>💵 Tunai</button>
-                                <button className="btn-transfer" onClick={() => bayarTransfer(b.id)}>🏦 Transfer</button>
+                                <button className="btn-transfer" onClick={() => bayarTransfer(b.id)}>🏦 Duitku</button>
                                 <button className="btn-hapus-icon" onClick={() => hapusBill(b.id)} title="Hapus Tagihan">🗑️</button>
                               </div>
                             ) : (
@@ -567,29 +609,32 @@ export default function PaymentPage() {
               )}
 
               <div className="section-divider" />
-              <h4>💰 Riwayat Pembayaran</h4>
+              
+              <h4>💰 Log Jejak Riwayat Pembayaran</h4>
               {selectedStudent.payments.length === 0 ? (
-                <p className="empty-subtext">Belum ada riwayat jejak pembayaran.</p>
+                <p className="empty-subtext">Belum ada jejak riwayat pembayaran terekam.</p>
               ) : (
                 <div className="table-wrapper sub-table">
                   <table>
                     <thead>
                       <tr>
-                        <th style={{ width: "40px" }}>No</th>
+                        <th style={{ width: "50px" }}>No</th>
                         <th>Jenis Pembayaran</th>
                         <th>Nominal</th>
                         <th>Metode</th>
                         <th style={{ textAlign: "center" }}>Status</th>
-                        <th style={{ textAlign: "center" }}>Aksi</th>
+                        <th style={{ textAlign: "center", width: "120px" }}>Aksi</th>
                       </tr>
                     </thead>
                     <tbody>
                       {selectedStudent.payments.map((p, i) => (
                         <tr key={p.id}>
-                          <td>{i + 1}</td>
-                          <td>{p.paymentType.name}</td>
-                          <td>Rp {p.amount.toLocaleString("id-ID")}</td>
-                          <td>{p.method === "CASH" ? "💵 Tunai" : "🏦 Transfer"}</td>
+                          <td style={{color: '#94a3b8'}}>{i + 1}</td>
+                          <td style={{fontWeight: '500'}}>{p.paymentType.name}</td>
+                          <td style={{fontWeight: '600'}}>Rp {p.amount.toLocaleString("id-ID")}</td>
+                          <td>
+                            <span className="method-tag">{p.method === "CASH" ? "💵 Tunai" : "🏦 Transfer"}</span>
+                          </td>
                           <td style={{ textAlign: "center" }}>
                             <span className={`payment-status ${p.status.toLowerCase()}`}>
                               {p.status}
@@ -598,7 +643,7 @@ export default function PaymentPage() {
                           <td style={{ textAlign: "center" }}>
                             <div className="action-flex-gap justify-center">
                               {p.status === "SUCCESS" && (
-                                <button className="btn-cetak" onClick={() => cetakKwitansi(p)}>🖨️ Kwitansi</button>
+                                <button className="btn-cetak" onClick={() => cetakKwitansi(p)}>🖨️ Cetak</button>
                               )}
                               {(p.status === "PENDING" || p.status === "FAILED") && (
                                 <button className="btn-hapus-small" onClick={() => hapusPayment(p.id)}>Hapus</button>
@@ -613,7 +658,7 @@ export default function PaymentPage() {
               )}
 
               <div className="modal-footer-action">
-                <button className="btn-tutup" onClick={() => setSelectedStudent(null)}>Tutup Halaman</button>
+                <button className="btn-tutup" onClick={() => setSelectedStudent(null)}>Tutup Rincian</button>
               </div>
             </div>
           </div>
@@ -623,10 +668,10 @@ export default function PaymentPage() {
       <style jsx>{`
         /* Global & Layout Container */
         .container { 
-          padding: 24px; 
+          padding: 28px; 
           background: #f8fafc; 
           min-height: 100vh;
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
         
         /* Header Section */
@@ -634,26 +679,73 @@ export default function PaymentPage() {
           display: flex; 
           justify-content: space-between; 
           align-items: center; 
-          margin-bottom: 24px; 
+          margin-bottom: 28px; 
         }
         .title-section {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 16px;
         }
-        .title-icon { font-size: 24px; }
-        h2 { margin: 0; color: #1e293b; font-size: 22px; font-weight: 700; }
-        h3 { margin: 0; color: #0f172a; font-size: 18px; }
-        h4 { margin: 16px 0 10px; color: #334155; font-size: 15px; font-weight: 600; }
+        .title-icon { 
+          font-size: 32px; 
+          background: white;
+          padding: 10px;
+          border-radius: 12px;
+          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        h2 { margin: 0; color: #0f172a; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+        .sub-title { margin: 4px 0 0; color: #64748b; font-size: 14px; }
+        h3 { margin: 0; color: #0f172a; font-size: 20px; font-weight: 700; }
+        h4 { margin: 24px 0 12px; color: #1e293b; font-size: 15px; font-weight: 600; }
 
-        /* Filter Controls & NEW SEARCH BAR STYLE */
-        .filter-row {
-          display: flex; 
+        /* Summary Stats Cards Grid */
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+          gap: 16px;
+          margin-bottom: 24px;
+        }
+        .stat-card {
+          background: white;
+          padding: 16px 20px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+        .stat-icon {
+          width: 44px;
+          height: 44px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 20px;
+        }
+        .bg-blue { background: #eff6ff; color: #1d4ed8; }
+        .bg-green { background: #ecfdf5; color: #047857; }
+        .bg-amber { background: #fffbeb; color: #b45309; }
+        .border-blue { border-left: 4px solid #3b82f6; }
+        .border-green { border-left: 4px solid #10b981; }
+        .border-amber { border-left: 4px solid #f59e0b; }
+        .stat-label { margin: 0; font-size: 12px; color: #64748b; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-unit { font-size: 13px; color: #64748b; font-weight: 400; }
+
+        /* Filter Controls */
+        .filter-card {
+          background: white;
+          padding: 16px;
+          border-radius: 12px;
+          border: 1px solid #e2e8f0;
+          display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 18px; 
+          gap: 16px;
+          margin-bottom: 20px;
           flex-wrap: wrap;
-          gap: 12px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.02);
         }
         .filter-group {
           display: flex;
@@ -663,22 +755,32 @@ export default function PaymentPage() {
         }
         .search-wrapper {
           position: relative;
+          flex: 1;
+          min-width: 280px;
+        }
+        .search-icon {
+          position: absolute;
+          left: 14px;
+          top: 50%;
+          transform: translateY(-50%);
+          font-size: 14px;
+          color: #94a3b8;
         }
         .main-search-input {
-          padding: 10px 16px;
+          width: 100%;
+          padding: 10px 16px 10px 40px;
           border-radius: 8px;
           border: 1px solid #cbd5e1;
-          background: white;
+          background: #f8fafc;
           font-size: 14px;
           color: #334155;
           outline: none;
-          min-width: 260px;
           transition: all 0.2s;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.02);
         }
         .main-search-input:focus {
-          border-color: #2e6b3e;
-          box-shadow: 0 0 0 3px rgba(46,107,62,0.15);
+          border-color: #10b981;
+          background: white;
+          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
         }
         .filter-select {
           padding: 10px 36px 10px 14px; 
@@ -693,67 +795,111 @@ export default function PaymentPage() {
           background-repeat: no-repeat; 
           background-position: right 12px center;
           cursor: pointer; 
-          min-width: 180px;
+          min-width: 160px;
           transition: all 0.2s;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.02);
         }
-        .filter-select:focus { border-color: #2e6b3e; box-shadow: 0 0 0 3px rgba(46,107,62,0.15); }
+        .filter-select:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12); }
         
-        .count-badge {
-          font-size: 13px; 
-          color: #2e6b3e; 
-          background: #eaf4ed;
-          padding: 6px 14px; 
-          border-radius: 30px; 
-          font-weight: 500;
-        }
-
-        /* Card & Design Table Modern */
+        /* Table Style */
         .card { 
           background: white; 
           border-radius: 12px; 
-          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.01);
           border: 1px solid #e2e8f0;
           overflow: hidden;
         }
         .table-wrapper { width: 100%; overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
-        th, td { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; }
-        th { background: #f8fafc; color: #475569; font-weight: 600; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
-        tr:hover { background-color: #fafbfd; }
-        .empty-state { text-align: center; color: #64748b; padding: 40px !important; font-size: 15px; }
-        .font-mono { font-family: monospace; color: #475569; font-size: 13px; }
+        th, td { padding: 14px 18px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+        th { background: #f8fafc; color: #475569; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.75px; }
+        tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background-color: #f8fafc; }
+        .text-dark { color: #0f172a; }
+        .text-muted { color: #64748b; }
+        .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; }
         
+        .empty-state { text-align: center; color: #94a3b8; padding: 48px !important; }
+        .empty-icon { font-size: 32px; margin-bottom: 8px; }
+        .empty-subtext { color: #64748b; background: #f1f5f9; padding: 12px; border-radius: 8px; font-size: 13px; text-align: center; margin: 8px 0; }
+
         /* Badges */
         .badge-class {
-          background: #f1f5f9;
+          background: #e2e8f0;
           color: #334155;
-          padding: 4px 8px;
+          padding: 4px 10px;
           border-radius: 6px;
           font-size: 12px;
-          font-weight: 500;
+          font-weight: 600;
+          display: inline-block;
         }
+        .bg-emerald { background: #d1fae5; color: #065f46; }
+        .method-tag { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
 
-        /* PAGINATION BAR */
+        .status-badge {
+          padding: 4px 10px;
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+          display: inline-block;
+        }
+        .status-badge.paid { background: #d1fae5; color: #065f46; }
+        .status-badge.unpaid { background: #fee2e2; color: #991b1b; }
+
+        .payment-status {
+          font-size: 11px;
+          font-weight: 700;
+          padding: 2px 8px;
+          border-radius: 4px;
+        }
+        .payment-status.success { background: #d1fae5; color: #065f46; }
+        .payment-status.pending { background: #fef3c7; color: #92400e; }
+        .payment-status.failed { background: #fee2e2; color: #991b1b; }
+
+        /* Buttons Styling */
+        .btn-tambah { 
+          background: #059669; 
+          color: white; 
+          padding: 10px 20px; 
+          border-radius: 8px; 
+          border: none; 
+          cursor: pointer; 
+          font-weight: 600; 
+          font-size: 14px;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.2);
+        }
+        .btn-tambah:hover { background: #047857; transform: translateY(-1px); }
+        
+        .btn-detail { 
+          background: white; 
+          color: #059669; 
+          padding: 6px 14px; 
+          border-radius: 6px; 
+          border: 1px solid #d1fae5; 
+          cursor: pointer; 
+          font-weight: 600; 
+          font-size: 13px;
+          transition: all 0.15s;
+        }
+        .btn-detail:hover { background: #059669; color: white; border-color: #059669; }
+
+        /* Pagination Controls */
         .pagination-wrapper {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 16px 24px;
+          padding: 16px 20px;
           border-top: 1px solid #e2e8f0;
           background: #f8fafc;
           flex-wrap: wrap;
           gap: 12px;
         }
-        .pagination-info {
-          font-size: 13px;
-          color: #64748b;
-        }
-        .pagination-buttons {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
+        .pagination-info { font-size: 13px; color: #64748b; }
+        .pagination-info span { color: #0f172a; font-weight: 600; }
+        .pagination-buttons { display: flex; align-items: center; gap: 12px; }
         .btn-page {
           background: white;
           border: 1px solid #cbd5e1;
@@ -765,81 +911,134 @@ export default function PaymentPage() {
           cursor: pointer;
           transition: all 0.2s;
         }
-        .btn-page:hover:not(:disabled) {
-          background: #f1f5f9;
-          border-color: #94a3b8;
-        }
-        .btn-page:disabled {
-          opacity: 0.4;
-          cursor: not-allowed;
-        }
-        .page-indicator {
-          font-size: 13px;
-          color: #334155;
-        }
+        .btn-page:hover:not(:disabled) { background: #f1f5f9; border-color: #94a3b8; }
+        .btn-page:disabled { opacity: 0.4; cursor: not-allowed; }
+        .page-indicator { font-size: 13px; color: #475569; }
 
-        /* Buttons Styling */
-        .btn-tambah { 
-          background: #2e6b3e; 
-          color: white; 
-          padding: 10px 20px; 
-          border-radius: 8px; 
-          border: none; 
-          cursor: pointer; 
-          font-weight: 600; 
-          font-size: 14px;
-          transition: background 0.2s;
+        /* Modals Glass & Backdrop Base */
+        .modal-backdrop {
+          position: fixed;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(15, 23, 42, 0.3);
+          backdrop-filter: blur(4px);
           display: flex;
           align-items: center;
-          box-shadow: 0 2px 4px rgba(46,107,62,0.2);
+          justify-content: center;
+          z-index: 999;
+          padding: 16px;
         }
-        .btn-tambah:hover { background: #23522f; }
-        
-        .btn-detail { 
-          background: white; 
-          color: #2e6b3e; 
-          padding: 6px 14px; 
-          border-radius: 6px; 
-          border: 1px solid #2e6b3e; 
-          cursor: pointer; 
-          font-weight: 500;
-          transition: all 0.2s;
+        .modal-content {
+          background: white;
+          border-radius: 16px;
+          width: 100%;
+          max-width: 580px;
+          box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+          border: 1px solid #e2e8f0;
+          display: flex;
+          flex-direction: column;
+          max-height: 90vh;
+          overflow-y: auto;
+          padding: 24px;
         }
-        .btn-detail:hover { background: #2e6b3e; color: white; }
-
-        /* Modals Modernization */
-        .modal { 
-          position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-          background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px);
-          display: flex; justify-content: center; align-items: center; z-index: 999; 
-        }
-        .modal-content { 
-          background: white; padding: 28px; width: 680px; max-height: 85vh; 
-          overflow-y: auto; border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); 
-        }
+        .detail-modal { max-width: 800px; }
         .modal-header {
-          display: flex; justify-content: space-between; align-items: center;
-          border-bottom: 1px solid #e2e8f0; padding-bottom: 14px; margin-bottom: 20px;
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 20px;
+          border-bottom: 1px solid #f1f5f9;
+          padding-bottom: 14px;
         }
+        .modal-sub { margin: 4px 0 0; font-size: 13px; color: #64748b; }
         .close-x {
-          background: none; border: none; font-size: 16px; color: #94a3b8; cursor: pointer; padding: 4px;
+          background: #f1f5f9; border: none; border-radius: 50%;
+          width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+          color: #64748b; cursor: pointer; transition: all 0.2s; font-size: 12px;
         }
-        .close-x:hover { color: #475569; }
+        .close-x:hover { background: #fee2e2; color: #ef4444; }
 
-        /* Form Controls in Modal */
-        .field { margin-bottom: 20px; }
-        .field label { display: block; font-size: 13px; color: #475569; margin-bottom: 6px; font-weight: 600; }
-        
-        .search-input {
-          width: 100%; padding: 11px 36px 11px 14px; border-radius: 8px;
-          border: 1px solid #cbd5e1; font-size: 14px; outline: none; box-sizing: border-box;
-          transition: border-color 0.2s;
+        /* Form Inputs Modern design */
+        .form-group { margin-bottom: 18px; position: relative; }
+        .form-label { display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 6px; }
+        .form-input {
+          width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #cbd5e1;
+          font-size: 14px; color: #0f172a; outline: none; transition: all 0.2s; background: #f8fafc;
         }
-        .search-input:focus { border-color: #2e6b3e; }
+        .form-input:focus { border-color: #10b981; background: white; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12); }
+        .input-hint { display: block; font-size: 11px; color: #64748b; margin-bottom: 2px; font-weight: 500; }
+
+        /* Searchable Dropdown List Inside Modal */
         .clear-search {
-          position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-          cursor: pointer; color: #94a3b8; font-size: 14px;
+          position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+          color: #94a3b8; cursor: pointer; font-size: 12px;
         }
+        .dropdown-list {
+          position: absolute; top: 100%; left: 0; right: 0; background: white;
+          border: 1px solid #e2e8f0; border-radius: 8px; max-height: 200px; overflow-y: auto;
+          z-index: 10; margin: 4px 0 0; padding: 0; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+        }
+        .dropdown-item {
+          padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;
+          cursor: pointer; border-bottom: 1px solid #f8fafc; list-style: none;
+        }
+        .dropdown-item:hover { background: #f0fdf4; }
+        .dropdown-name { font-size: 14px; font-weight: 500; color: #1e293b; }
+        .dropdown-empty { padding: 12px; text-align: center; color: #94a3b8; font-size: 13px; list-style: none; }
+
+        /* Payment Items Checkbox styling inside creation */
+        .pt-container {
+          border: 1px solid #e2e8f0; border-radius: 10px; max-height: 260px; overflow-y: auto; background: #f8fafc;
+        }
+        .pt-item { padding: 12px; border-bottom: 1px solid #e2e8f0; transition: background 0.15s; }
+        .pt-item:last-child { border-bottom: none; }
+        .pt-item.active { background: white; border-left: 4px solid #10b981; }
+        .pt-main-info { display: flex; justify-content: space-between; align-items: center; }
+        .pt-checkbox-label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 500; color: #334155; }
+        .pt-name { font-size: 14px; }
+        .pt-default { font-size: 12px; color: #64748b; font-weight: 500; }
+        .pt-inputs-row { display: flex; gap: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e2e8f0; }
+
+        /* Modal Student Profile Grid */
+        .info-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 12px;
+          background: #f8fafc; padding: 16px; border-radius: 10px; border: 1px solid #e2e8f0;
+        }
+        .info-item { display: flex; flex-direction: column; gap: 4px; }
+        .info-lbl { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; letter-spacing: 0.5px; }
+        .info-val { font-size: 14px; font-weight: 600; color: #1e293b; }
+        .section-divider { height: 1px; background: #e2e8f0; margin: 20px 0; }
+        .sub-table th { background: #f1f5f9; padding: 10px 14px; }
+        .sub-table td { padding: 12px 14px; font-size: 13px; }
+
+        /* Action Buttons Inside Table Details */
+        .action-flex-gap { display: flex; gap: 6px; align-items: center; }
+        .justify-center { justify-content: center; }
+        .btn-cash { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .btn-cash:hover { background: #047857; color: white; }
+        .btn-transfer { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .btn-transfer:hover { background: #1d4ed8; color: white; }
+        .btn-hapus-icon { background: #fff5f5; border: 1px solid #fed7d7; border-radius: 6px; padding: 3px 6px; cursor: pointer; }
+        .btn-hapus-icon:hover { background: #fee2e2; }
+        .text-success { color: #059669; font-weight: 600; font-size: 13px; }
+
+        .btn-cetak { background: #f1f5f9; border: 1px solid #cbd5e1; color: #334155; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .btn-cetak:hover { background: #e2e8f0; }
+        .btn-hapus-small { background: transparent; border: none; color: #ef4444; font-size: 12px; cursor: pointer; text-decoration: underline; }
+        .btn-hapus-small:hover { color: #991b1b; }
+
+        /* Action Modal Footers */
+        .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px; }
+        .btn-batal { background: white; border: 1px solid #cbd5e1; color: #475569; padding: 10px 18px; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; }
+        .btn-batal:hover { background: #f8fafc; }
+        .btn-simpan { background: #059669; border: none; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; box-shadow: 0 2px 4px rgba(5,150,105,0.15); }
+        .btn-simpan:hover:not(:disabled) { background: #047857; }
+        .btn-simpan:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .modal-footer-action { display: flex; justify-content: flex-end; margin-top: 20px; }
+        .btn-tutup { background: #334155; border: none; color: white; padding: 10px 18px; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; }
+        .btn-tutup:hover { background: #1e293b; }
       `}</style>
     </AdminLayout>
   );

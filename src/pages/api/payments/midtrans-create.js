@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma"
-import { createMidtransTransaction } from "@/lib/midtrans"
+import { createSnapToken } from "@/lib/midtrans"
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end()
@@ -24,46 +24,45 @@ export default async function handler(req, res) {
         return res.status(404).json({ message: "Tagihan tidak ditemukan" })
       }
 
-      const student = bills[0].student
+      const student     = bills[0].student
       const totalAmount = bills.reduce((sum, b) => sum + b.amount, 0)
-      const orderId = `SPP-BULK-${Date.now()}`
+      const orderId     = `SPP-BULK-${Date.now()}`
 
       const itemDetails = bills.map(b => ({
-        id: String(b.id),
-        price: Number(b.amount),
+        id:       String(b.id),
+        price:    Number(b.amount),
         quantity: 1,
-        name: `${b.paymentType.name} - ${b.student.name}`.slice(0, 50),
+        name:     `${b.paymentType.name} - ${b.student.name}`.slice(0, 50),
       }))
 
-      const snap = await createMidtransTransaction({
+      // Pakai createSnapToken → hanya return token, bukan redirect_url
+      const snap = await createSnapToken({
         orderId,
-        amount: totalAmount,
+        amount:         totalAmount,
         productDetails: `Pembayaran ${bills.length} Tagihan - ${student.name}`,
-        email: student.email,
-        name: student.name,
-        returnUrl: `${process.env.NEXTAUTH_URL}/santri/dashboard`,
+        email:          student.email,
+        name:           student.name,
         itemDetails,
       })
 
-      if (!snap.redirect_url) {
+      if (!snap.token) {
         return res.status(500).json({ message: "Gagal membuat transaksi Midtrans", detail: snap })
       }
 
       // Simpan semua payment sebagai PENDING
       await prisma.payment.createMany({
         data: bills.map(b => ({
-          studentId: b.studentId,
+          studentId:     b.studentId,
           paymentTypeId: b.paymentTypeId,
-          amount: b.amount,
-          method: "TRANSFER",
-          status: "PENDING",
-          gatewayRef: orderId,
+          amount:        b.amount,
+          method:        "TRANSFER",
+          status:        "PENDING",
+          gatewayRef:    orderId,
         })),
       })
 
       return res.status(200).json({
-        paymentUrl: snap.redirect_url,
-        token: snap.token,
+        snapToken: snap.token, // ← dikirim ke frontend untuk window.snap.pay()
         orderId,
       })
     }
@@ -76,43 +75,42 @@ export default async function handler(req, res) {
     const bill = await prisma.bill.findUnique({
       where: { id: Number(billId) },
       include: {
-        student: true,
+        student:     true,
         paymentType: true,
       },
     })
 
-    if (!bill) return res.status(404).json({ message: "Tagihan tidak ditemukan" })
+    if (!bill)                  return res.status(404).json({ message: "Tagihan tidak ditemukan" })
     if (bill.status === "PAID") return res.status(400).json({ message: "Tagihan sudah lunas" })
 
     const orderId = `SPP-${bill.id}-${Date.now()}`
 
-    const snap = await createMidtransTransaction({
+    // Pakai createSnapToken → hanya return token
+    const snap = await createSnapToken({
       orderId,
-      amount: bill.amount,
+      amount:         bill.amount,
       productDetails: `Pembayaran ${bill.paymentType.name} - ${bill.student.name}`,
-      email: bill.student.email,
-      name: bill.student.name,
-      returnUrl: `${process.env.NEXTAUTH_URL}/santri/dashboard`,
+      email:          bill.student.email,
+      name:           bill.student.name,
     })
 
-    if (!snap.redirect_url) {
+    if (!snap.token) {
       return res.status(500).json({ message: "Gagal membuat transaksi Midtrans", detail: snap })
     }
 
     await prisma.payment.create({
       data: {
-        studentId: bill.studentId,
+        studentId:     bill.studentId,
         paymentTypeId: bill.paymentTypeId,
-        amount: bill.amount,
-        method: "TRANSFER",
-        status: "PENDING",
-        gatewayRef: orderId,
+        amount:        bill.amount,
+        method:        "TRANSFER",
+        status:        "PENDING",
+        gatewayRef:    orderId,
       },
     })
 
     return res.status(200).json({
-      paymentUrl: snap.redirect_url,
-      token: snap.token,
+      snapToken: snap.token, // ← dikirim ke frontend untuk window.snap.pay()
       orderId,
     })
 

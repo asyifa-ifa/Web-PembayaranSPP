@@ -1,7 +1,8 @@
 // pages/santri/dashboard.js
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { signOut } from "next-auth/react";
+import Head from "next/head";
 
 export default function Dashboard() {
   const [student, setStudent]             = useState(null);
@@ -16,12 +17,29 @@ export default function Dashboard() {
   const [editForm, setEditForm]           = useState({});
   const [editLoading, setEditLoading]     = useState(false);
   const [toast, setToast]                 = useState(null);
-  const [checkingPayment, setCheckingPayment] = useState(false);
+  const [snapReady, setSnapReady]         = useState(false);
+  const sseRef = useRef(null); // simpan referensi EventSource
   const router = useRouter();
 
+  // ── Load Snap.js Midtrans sekali saat halaman pertama kali dibuka ──────
   useEffect(() => {
-    setCheckingPayment(false);
+    const existingScript = document.getElementById("midtrans-snap");
+    if (existingScript) { setSnapReady(true); return; }
+
+    const script = document.createElement("script");
+    script.id  = "midtrans-snap";
+    script.src = process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === "true"
+      ? "https://app.midtrans.com/snap/snap.js"
+      : "https://app.sandbox.midtrans.com/snap/snap.js";
+    script.setAttribute("data-client-key", process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY);
+    script.onload = () => setSnapReady(true);
+    document.body.appendChild(script);
+  }, []);
+
+  useEffect(() => {
     fetchData();
+    // Bersihkan SSE saat komponen unmount
+    return () => { if (sseRef.current) sseRef.current.close(); };
   }, []);
 
   const showToast = (msg, type = "success") => {
@@ -44,22 +62,90 @@ export default function Dashboard() {
     });
   };
 
+  /**
+   * Buka SSE listener untuk orderId tertentu.
+   * Begitu dapat event SUCCESS dari server, langsung fetchData()
+   * sehingga UI update tanpa refresh dan tanpa polling.
+   */
+  const listenSSE = (orderId) => {
+    // Tutup koneksi SSE lama jika ada
+    if (sseRef.current) sseRef.current.close();
+
+    const es = new EventSource(`/api/payments/sse?orderId=${encodeURIComponent(orderId)}`);
+    sseRef.current = es;
+
+    es.onmessage = (event) => {
+      if (event.data === "connected") return; // heartbeat awal
+      try {
+        const payload = JSON.parse(event.data);
+        if (payload.status === "SUCCESS") {
+          es.close();
+          sseRef.current = null;
+          showToast("✅ Pembayaran berhasil dikonfirmasi!");
+          fetchData(); // refresh data tanpa reload halaman
+        }
+      } catch (_) {}
+    };
+
+    es.onerror = () => {
+      // Koneksi terputus (normal setelah notif dikirim), cukup close
+      es.close();
+      sseRef.current = null;
+    };
+
+    // Auto-close setelah 10 menit (jaga-jaga jika webhook terlambat)
+    setTimeout(() => {
+      es.close();
+      sseRef.current = null;
+    }, 600_000);
+  };
+
+  /**
+   * Handler bayar single tagihan.
+   * Menggunakan Snap.js popup — santri TETAP di halaman ini.
+   */
   const handleBayar = async (bill) => {
+    if (!snapReady) {
+      showToast("Snap.js belum siap, coba lagi sebentar", "error");
+      return;
+    }
     setLoading(true);
     setShowPayModal(null);
     try {
       const res = await fetch("/api/payments/midtrans-create", {
-        method: "POST",
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ billId: bill.id }),
+        body:    JSON.stringify({ billId: bill.id }),
       });
       const data = await res.json();
-      if (data.paymentUrl) {
-        window.open(data.paymentUrl, "_blank");
-        startPolling(data.orderId);
-      } else {
-        showToast("Gagal: " + data.message, "error");
+
+      if (!data.snapToken) {
+        showToast("Gagal: " + (data.message || "Tidak ada snap token"), "error");
+        return;
       }
+
+      // Buka SSE listener SEBELUM popup dibuka
+      // (supaya notif webhook tidak terlewat meski sangat cepat)
+      listenSSE(data.orderId);
+
+      // Buka popup Snap.js — halaman TIDAK pindah
+      window.snap.pay(data.snapToken, {
+        onSuccess: () => {
+          // Kadang webhook lebih cepat dari onSuccess, fetchData() aman dipanggil 2x
+          fetchData();
+          showToast("✅ Pembayaran berhasil!");
+        },
+        onPending: () => {
+          showToast("⏳ Pembayaran pending, menunggu konfirmasi...", "info");
+        },
+        onError: (result) => {
+          showToast("❌ Pembayaran gagal: " + (result?.status_message || ""), "error");
+        },
+        onClose: () => {
+          // User menutup popup tanpa bayar — tidak apa-apa
+          showToast("Popup ditutup. Kamu bisa bayar lagi kapan saja.", "info");
+        },
+      });
     } catch (err) {
       showToast("Error: " + err.message, "error");
     } finally {
@@ -67,52 +153,53 @@ export default function Dashboard() {
     }
   };
 
+  /**
+   * Handler bayar bulk tagihan.
+   * Sama seperti single — popup Snap.js, halaman tidak pindah.
+   */
   const handleBulkBayar = async () => {
     if (selectedIds.length === 0) return;
+    if (!snapReady) {
+      showToast("Snap.js belum siap, coba lagi sebentar", "error");
+      return;
+    }
     setLoading(true);
     setShowBulkModal(false);
     try {
       const res = await fetch("/api/payments/midtrans-create", {
-        method: "POST",
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ billIds: selectedIds }),
+        body:    JSON.stringify({ billIds: selectedIds }),
       });
       const data = await res.json();
-      if (data.paymentUrl) {
-        window.open(data.paymentUrl, "_blank");
-        startPolling(data.orderId);
-      } else {
-        showToast("Gagal: " + data.message, "error");
+
+      if (!data.snapToken) {
+        showToast("Gagal: " + (data.message || "Tidak ada snap token"), "error");
+        return;
       }
+
+      listenSSE(data.orderId);
+
+      window.snap.pay(data.snapToken, {
+        onSuccess: () => {
+          fetchData();
+          showToast("✅ Semua tagihan berhasil dibayar!");
+        },
+        onPending: () => {
+          showToast("⏳ Pembayaran pending, menunggu konfirmasi...", "info");
+        },
+        onError: (result) => {
+          showToast("❌ Pembayaran gagal: " + (result?.status_message || ""), "error");
+        },
+        onClose: () => {
+          showToast("Popup ditutup. Kamu bisa bayar lagi kapan saja.", "info");
+        },
+      });
     } catch (err) {
       showToast("Error: " + err.message, "error");
     } finally {
       setLoading(false);
     }
-  };
-
-  const startPolling = (orderId) => {
-    setCheckingPayment(true);
-    showToast("Menunggu konfirmasi pembayaran... ⏳", "info");
-    const interval = setInterval(async () => {
-      try {
-        const checkRes = await fetch("/api/payments/check-status", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderId }),
-        });
-        const checkData = await checkRes.json();
-        if (checkData.updated || checkData.alreadySuccess) {
-          clearInterval(interval);
-          setCheckingPayment(false);
-          if (checkData.updated) showToast("✅ Pembayaran berhasil dikonfirmasi!");
-          fetchData();
-        }
-      } catch (e) {
-        console.error("Polling error:", e);
-      }
-    }, 5000);
-    setTimeout(() => { clearInterval(interval); setCheckingPayment(false); }, 600000);
   };
 
   const handleEditSubmit = async (e) => {
@@ -120,9 +207,9 @@ export default function Dashboard() {
     setEditLoading(true);
     try {
       const res = await fetch("/api/santri/update-profile", {
-        method: "POST",
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editForm),
+        body:    JSON.stringify(editForm),
       });
       if (!res.ok) throw new Error("Gagal menyimpan");
       await fetchData();
@@ -174,84 +261,29 @@ export default function Dashboard() {
       display: flex; align-items: center; justify-content: center;
       min-height: 100vh; padding: 24px;
     }
-    .wrap {
-      background: #fff;
-      border-radius: 20px;
-      box-shadow: 0 8px 40px rgba(0,0,0,.12);
-      width: 100%; max-width: 420px;
-      overflow: hidden;
-    }
-    .top {
-      background: linear-gradient(135deg, #1a3d28 0%, #2e6b3e 55%, #3a8f50 100%);
-      padding: 28px 24px 22px;
-      text-align: center;
-      position: relative;
-    }
+    .wrap { background: #fff; border-radius: 20px; box-shadow: 0 8px 40px rgba(0,0,0,.12); width: 100%; max-width: 420px; overflow: hidden; }
+    .top { background: linear-gradient(135deg, #1a3d28 0%, #2e6b3e 55%, #3a8f50 100%); padding: 28px 24px 22px; text-align: center; position: relative; }
     .top-logo { font-size: 36px; margin-bottom: 8px; }
-    .top h2 {
-      font-size: 15px; font-weight: 800; color: #fff;
-      letter-spacing: .3px; margin-bottom: 3px;
-    }
+    .top h2 { font-size: 15px; font-weight: 800; color: #fff; letter-spacing: .3px; margin-bottom: 3px; }
     .top p { font-size: 11.5px; color: rgba(255,255,255,.65); }
-    .stamp {
-      position: absolute; top: 16px; right: 16px;
-      background: rgba(255,255,255,.15);
-      border: 1.5px solid rgba(255,255,255,.3);
-      border-radius: 8px; padding: 4px 10px;
-      font-size: 10px; font-weight: 700; color: rgba(255,255,255,.85);
-      letter-spacing: .5px;
-    }
-    .status-bar {
-      background: #edf7ef; border-bottom: 1px solid #c3dfc9;
-      padding: 12px 24px;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-    }
+    .stamp { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,.15); border: 1.5px solid rgba(255,255,255,.3); border-radius: 8px; padding: 4px 10px; font-size: 10px; font-weight: 700; color: rgba(255,255,255,.85); letter-spacing: .5px; }
+    .status-bar { background: #edf7ef; border-bottom: 1px solid #c3dfc9; padding: 12px 24px; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .status-bar span { font-size: 13px; font-weight: 700; color: #1a6b35; }
     .body { padding: 20px 24px; }
-    .amount-box {
-      background: linear-gradient(135deg, #f0fdf4, #edf7ef);
-      border: 1.5px solid #bbf7d0;
-      border-radius: 14px; padding: 18px;
-      text-align: center; margin-bottom: 20px;
-    }
+    .amount-box { background: linear-gradient(135deg, #f0fdf4, #edf7ef); border: 1.5px solid #bbf7d0; border-radius: 14px; padding: 18px; text-align: center; margin-bottom: 20px; }
     .amount-box .lbl { font-size: 11px; font-weight: 700; color: #7a9a85; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px; }
     .amount-box .val { font-size: 30px; font-weight: 800; color: #1a3d28; line-height: 1; }
-    .rows {}
-    .row {
-      display: flex; justify-content: space-between; align-items: flex-start;
-      padding: 10px 0; border-bottom: 1px solid #f0f5f1;
-      gap: 12px;
-    }
+    .row { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid #f0f5f1; gap: 12px; }
     .row:last-child { border-bottom: none; }
     .rl { font-size: 12px; color: #9ab5a3; font-weight: 600; flex-shrink: 0; }
     .rv { font-size: 12.5px; color: #1a3d28; font-weight: 600; text-align: right; }
-    .method-badge {
-      display: inline-block;
-      background: #e3f2fd; color: #1565c0;
-      padding: 2px 10px; border-radius: 20px;
-      font-size: 11px; font-weight: 700;
-    }
+    .method-badge { display: inline-block; background: #e3f2fd; color: #1565c0; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
     .method-badge.cash { background: #fff8e1; color: #e65100; }
-    .footer {
-      background: #f7faf8; border-top: 1px dashed #dde8e0;
-      padding: 14px 24px; text-align: center;
-    }
+    .footer { background: #f7faf8; border-top: 1px dashed #dde8e0; padding: 14px 24px; text-align: center; }
     .footer p { font-size: 11.5px; color: #9ab5a3; line-height: 1.6; }
     .footer strong { color: #1a3d28; }
-    .btn-print {
-      display: block; width: calc(100% - 48px); margin: 0 24px 20px;
-      padding: 13px;
-      background: linear-gradient(135deg, #1a6b35, #3a8f50);
-      color: #fff; border: none; border-radius: 12px;
-      font-size: 14px; font-weight: 700; cursor: pointer;
-      font-family: inherit;
-      box-shadow: 0 4px 14px rgba(26,107,53,.3);
-    }
-    @media print {
-      body { background: #fff; padding: 0; }
-      .wrap { box-shadow: none; border-radius: 0; max-width: 100%; }
-      .btn-print { display: none; }
-    }
+    .btn-print { display: block; width: calc(100% - 48px); margin: 0 24px 20px; padding: 13px; background: linear-gradient(135deg, #1a6b35, #3a8f50); color: #fff; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; box-shadow: 0 4px 14px rgba(26,107,53,.3); }
+    @media print { body { background: #fff; padding: 0; } .wrap { box-shadow: none; border-radius: 0; max-width: 100%; } .btn-print { display: none; } }
   </style>
 </head>
 <body>
@@ -262,67 +294,27 @@ export default function Dashboard() {
       <h2>MADRASAH TARBIYATUL MUBALIGHIN</h2>
       <p>Sumberjo · Bukti Pembayaran SPP</p>
     </div>
-
-    <div class="status-bar">
-      <span>✅ Pembayaran Berhasil</span>
-    </div>
-
+    <div class="status-bar"><span>✅ Pembayaran Berhasil</span></div>
     <div class="body">
       <div class="amount-box">
         <div class="lbl">Total Dibayar</div>
         <div class="val">${rp(pay.amount)}</div>
       </div>
-
       <div class="rows">
-        <div class="row">
-          <span class="rl">No. Bukti</span>
-          <span class="rv">${noKwitansi}</span>
-        </div>
-        <div class="row">
-          <span class="rl">Tanggal</span>
-          <span class="rv">${tanggal}, ${jam}</span>
-        </div>
-        <div class="row">
-          <span class="rl">Nama Santri</span>
-          <span class="rv">${student.name}</span>
-        </div>
-        <div class="row">
-          <span class="rl">NIS</span>
-          <span class="rv">${student.nis || "-"}</span>
-        </div>
-        <div class="row">
-          <span class="rl">NISN</span>
-          <span class="rv">${student.nisn || "-"}</span>
-        </div>
-        <div class="row">
-          <span class="rl">Kelas</span>
-          <span class="rv">${student.class?.name || "-"}</span>
-        </div>
-        <div class="row">
-          <span class="rl">Jenis Tagihan</span>
-          <span class="rv">${pay.paymentType?.name || "-"}</span>
-        </div>
-        <div class="row">
-          <span class="rl">Metode</span>
-          <span class="rv">
-            <span class="method-badge ${pay.method === "CASH" ? "cash" : ""}">
-              ${pay.method === "CASH" ? "💵 Tunai" : "🏦 Transfer"}
-            </span>
-          </span>
-        </div>
-        <div class="row">
-          <span class="rl">Status</span>
-          <span class="rv" style="color:#1a6b35;font-weight:800">✅ LUNAS</span>
-        </div>
+        <div class="row"><span class="rl">No. Bukti</span><span class="rv">${noKwitansi}</span></div>
+        <div class="row"><span class="rl">Tanggal</span><span class="rv">${tanggal}, ${jam}</span></div>
+        <div class="row"><span class="rl">Nama Santri</span><span class="rv">${student.name}</span></div>
+        <div class="row"><span class="rl">NIS</span><span class="rv">${student.nis || "-"}</span></div>
+        <div class="row"><span class="rl">NISN</span><span class="rv">${student.nisn || "-"}</span></div>
+        <div class="row"><span class="rl">Kelas</span><span class="rv">${student.class?.name || "-"}</span></div>
+        <div class="row"><span class="rl">Jenis Tagihan</span><span class="rv">${pay.paymentType?.name || "-"}</span></div>
+        <div class="row"><span class="rl">Metode</span><span class="rv"><span class="method-badge ${pay.method === "CASH" ? "cash" : ""}">${pay.method === "CASH" ? "💵 Tunai" : "🏦 Transfer"}</span></span></div>
+        <div class="row"><span class="rl">Status</span><span class="rv" style="color:#1a6b35;font-weight:800">✅ LUNAS</span></div>
       </div>
     </div>
-
     <button class="btn-print" onclick="window.print()">🖨️ Cetak / Simpan PDF</button>
-
     <div class="footer">
-      <p>Terima kasih atas pembayaran Anda.<br/>
-      Simpan bukti ini sebagai tanda lunas yang sah.<br/>
-      <strong>Madrasah Tarbiyatul Mubalighin Sumberjo</strong></p>
+      <p>Terima kasih atas pembayaran Anda.<br/>Simpan bukti ini sebagai tanda lunas yang sah.<br/><strong>Madrasah Tarbiyatul Mubalighin Sumberjo</strong></p>
     </div>
   </div>
 </body>
@@ -348,7 +340,6 @@ export default function Dashboard() {
   const totalTerbayar  = paidBills.reduce((s, b) => s + (b.amount || 0), 0);
   const initials       = student.name?.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
   const recentPayments = payments.slice(0, 3);
-
   const selectedBills  = unpaidBills.filter(b => selectedIds.includes(b.id));
   const totalSelected  = selectedBills.reduce((s, b) => s + (b.amount || 0), 0);
   const allChecked     = unpaidBills.length > 0 && selectedIds.length === unpaidBills.length;
@@ -368,6 +359,10 @@ export default function Dashboard() {
 
   return (
     <>
+      <Head>
+        {/* Snap.js tidak perlu di-load lewat Head — sudah di-inject via useEffect di atas */}
+      </Head>
+
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Lora:wght@600;700&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -379,10 +374,6 @@ export default function Dashboard() {
         .toast.error{background:#c62828;color:#fff}
         .toast.info{background:#1565c0;color:#fff}
         @keyframes tin{from{opacity:0;top:4px}to{opacity:1;top:16px}}
-
-        .checking-banner{background:#e3f2fd;border:1px solid #90caf9;border-radius:12px;padding:11px 15px;margin-bottom:13px;display:flex;align-items:center;gap:9px;font-size:13px;color:#1565c0;font-weight:600}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        .spinner{display:inline-block;width:16px;height:16px;border:2.5px solid #90caf9;border-top-color:#1565c0;border-radius:50%;animation:spin 1s linear infinite;flex-shrink:0}
 
         .app{min-height:100vh;display:flex;flex-direction:column;background:#eef5f0;width:100%}
 
@@ -482,7 +473,6 @@ export default function Dashboard() {
         .btn-bulk:hover:not(:disabled){transform:translateY(-1px)}
         .btn-bulk:disabled{opacity:.45;cursor:not-allowed;background:#aaa;box-shadow:none}
 
-        /* ── PAYMENT ROWS (riwayat) ── */
         .pr{display:flex;align-items:center;gap:11px;padding:12px 17px;border-bottom:1px solid #f5f8f5}
         .pr:last-child{border-bottom:none}
         .pi{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
@@ -499,16 +489,7 @@ export default function Dashboard() {
         .ps.failed{background:#fff0f0;color:#c62828}
         .ps.pending{background:#fffbeb;color:#92400e}
 
-        /* Tombol cetak bukti */
-        .btn-cetak-bukti{
-          background:#f0fdf4;color:#1a6b35;
-          border:1.5px solid #c3dfc9;
-          padding:5px 11px;border-radius:8px;
-          font-size:11px;font-weight:700;
-          cursor:pointer;font-family:inherit;
-          display:flex;align-items:center;gap:4px;
-          transition:.15s;white-space:nowrap;
-        }
+        .btn-cetak-bukti{background:#f0fdf4;color:#1a6b35;border:1.5px solid #c3dfc9;padding:5px 11px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;transition:.15s;white-space:nowrap}
         .btn-cetak-bukti:hover{background:#dcfce7;border-color:#86efac}
 
         .brow{display:flex;gap:11px;padding:11px 17px;border-bottom:1px solid #f5f8f5;align-items:flex-start}
@@ -561,38 +542,14 @@ export default function Dashboard() {
         .btn-cn{background:#f5f8f5;color:#5a7a66;border:none;padding:13px 18px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
         .btn-cn:hover{background:#eaefeb}
 
-        @media(max-width:380px){
-          .sg{grid-template-columns:1fr 1fr}
-          .sg .sc:last-child{grid-column:span 2}
-          .qg{grid-template-columns:1fr}
-          .hi h2{font-size:16px}
-        }
-        @media(min-width:640px){
-          .topbar{padding:0 28px}
-          .tb-user{display:block}
-          .hero{padding:30px 28px 68px}
-          .ct{padding:0 20px}
-          .page{padding-bottom:0}
-          .bnav{display:none}
-          .snav{display:flex;flex-direction:column}
-          .sg{gap:13px}
-          .sc{padding:17px 15px}
-          .sc-val{font-size:22px}
-          .qg{grid-template-columns:repeat(4,1fr);padding:15px}
-          .hi h2{font-size:21px}
-          .card{border-radius:18px}
-        }
-        @media(min-width:1024px){
-          .ct-wrap{max-width:900px;margin:0 auto}
-          .hero{padding:34px 36px 76px}
-          .ct{padding:0 28px}
-        }
+        @media(max-width:380px){.sg{grid-template-columns:1fr 1fr}.sg .sc:last-child{grid-column:span 2}.qg{grid-template-columns:1fr}.hi h2{font-size:16px}}
+        @media(min-width:640px){.topbar{padding:0 28px}.tb-user{display:block}.hero{padding:30px 28px 68px}.ct{padding:0 20px}.page{padding-bottom:0}.bnav{display:none}.snav{display:flex;flex-direction:column}.sg{gap:13px}.sc{padding:17px 15px}.sc-val{font-size:22px}.qg{grid-template-columns:repeat(4,1fr);padding:15px}.hi h2{font-size:21px}.card{border-radius:18px}}
+        @media(min-width:1024px){.ct-wrap{max-width:900px;margin:0 auto}.hero{padding:34px 36px 76px}.ct{padding:0 28px}}
       `}</style>
 
       {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
 
       <div className="app">
-        {/* TOPBAR */}
         <div className="topbar">
           <div className="tb-brand">
             <div className="tb-logo">🌿</div>
@@ -606,9 +563,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* MAIN */}
         <div className="main">
-          {/* SIDEBAR desktop */}
           <nav className="snav">
             <div className="snav-lbl">Menu</div>
             {tabs.map(t => (
@@ -618,9 +573,7 @@ export default function Dashboard() {
             ))}
           </nav>
 
-          {/* PAGE */}
           <div className="page">
-            {/* HERO */}
             <div className="hero">
               <div className="hdeco" style={{top:-50,right:-50,width:180,height:180}}/>
               <div className="hdeco" style={{bottom:-30,left:20,width:100,height:100}}/>
@@ -638,15 +591,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* CONTENT */}
             <div className="ct">
-              {checkingPayment && (
-                <div className="checking-banner">
-                  <div className="spinner"/>
-                  Menunggu konfirmasi pembayaran dari Midtrans...
-                </div>
-              )}
-
               {/* ════ BERANDA ════ */}
               {activeTab==="beranda" && <>
                 {unpaidBills.length > 0 && (
@@ -658,13 +603,11 @@ export default function Dashboard() {
                     </div>
                   </div>
                 )}
-
                 <div className="sg">
                   <div className="sc red"><div className="sc-em">🧾</div><div className="sc-lbl">Tagihan</div><div className="sc-val">{unpaidBills.length}</div><div className="sc-sub">{rp(totalTagihan)}</div></div>
                   <div className="sc grn"><div className="sc-em">✅</div><div className="sc-lbl">Terbayar</div><div className="sc-val">{paidBills.length}</div><div className="sc-sub">{rp(totalTerbayar)}</div></div>
                   <div className="sc"><div className="sc-em">📊</div><div className="sc-lbl">Riwayat</div><div className="sc-val">{payments.length}</div><div className="sc-sub">Transaksi</div></div>
                 </div>
-
                 <div className="card">
                   <div className="ch"><span className="ct2">Menu Cepat</span></div>
                   <div className="qg">
@@ -681,7 +624,6 @@ export default function Dashboard() {
                     ))}
                   </div>
                 </div>
-
                 {unpaidBills.length > 0 && (
                   <div className="card">
                     <div className="ch"><span className="ct2">Tagihan Menunggu</span><span className="bdg red">{unpaidBills.length}</span></div>
@@ -693,7 +635,7 @@ export default function Dashboard() {
                           <div className="ba u">{rp(bill.amount)}</div>
                           {bill.dueDate && <div className="bd">Jatuh tempo: {new Date(bill.dueDate).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})}</div>}
                         </div>
-                        <button className="btn-b" onClick={()=>setShowPayModal(bill)} disabled={loading||checkingPayment}>Bayar</button>
+                        <button className="btn-b" onClick={()=>setShowPayModal(bill)} disabled={loading}>Bayar</button>
                       </div>
                     ))}
                     {unpaidBills.length > 3 && (
@@ -703,7 +645,6 @@ export default function Dashboard() {
                     )}
                   </div>
                 )}
-
                 {recentPayments.length > 0 && (
                   <div className="card">
                     <div className="ch"><span className="ct2">Pembayaran Terakhir</span><button className="lnk" onClick={()=>setActiveTab("riwayat")}>Semua →</button></div>
@@ -767,13 +708,12 @@ export default function Dashboard() {
                         <div className="bulk-count">{selectedIds.length > 0 ? `${selectedIds.length} tagihan dipilih` : "Pilih tagihan di atas"}</div>
                         <div className="bulk-total">{rp(totalSelected)}</div>
                       </div>
-                      <button className="btn-bulk" disabled={selectedIds.length === 0 || loading || checkingPayment} onClick={() => setShowBulkModal(true)}>
+                      <button className="btn-bulk" disabled={selectedIds.length === 0 || loading} onClick={() => setShowBulkModal(true)}>
                         {loading ? "Memproses..." : "Bayar Tagihan"}
                       </button>
                     </div>
                   </>)}
                 </div>
-
                 <div className="card">
                   <div className="ch">
                     <span className="ct2">Sudah Dibayar</span>
@@ -809,20 +749,13 @@ export default function Dashboard() {
                           <div className={`pi ${s.cls}`}>{s.em}</div>
                           <div className="pif">
                             <div className="pn">{pay.paymentType?.name}</div>
-                            <div className="pm">
-                              {pay.method} · {new Date(pay.createdAt).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})}
-                            </div>
+                            <div className="pm">{pay.method} · {new Date(pay.createdAt).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})}</div>
                           </div>
                           <div className="pr-r">
                             <div className="pa">{rp(pay.amount)}</div>
                             <span className={`ps ${s.cls}`}>{s.label}</span>
-                            {/* ── TOMBOL CETAK BUKTI (hanya untuk SUCCESS) ── */}
                             {pay.status === "SUCCESS" && (
-                              <button
-                                className="btn-cetak-bukti"
-                                onClick={() => cetakBukti(pay)}
-                                title="Cetak bukti pembayaran"
-                              >
+                              <button className="btn-cetak-bukti" onClick={() => cetakBukti(pay)} title="Cetak bukti pembayaran">
                                 🖨️ Bukti
                               </button>
                             )}
@@ -887,7 +820,7 @@ export default function Dashboard() {
             <div className="mh"/>
             <div className="cico">💳</div>
             <div className="ctit">Konfirmasi Pembayaran</div>
-            <div className="cdesc">Kamu akan diarahkan ke halaman pembayaran. Setelah bayar, sistem akan otomatis mengkonfirmasi pembayaranmu.</div>
+            <div className="cdesc">Kamu akan membayar via popup Midtrans. Halaman ini tidak akan pindah.</div>
             <div className="cbox">
               <div className="cbl">{showPayModal.paymentType?.name}</div>
               <div className="cbv">{rp(showPayModal.amount)}</div>
@@ -910,7 +843,7 @@ export default function Dashboard() {
             <div className="mh"/>
             <div className="cico">🧾</div>
             <div className="ctit">Konfirmasi Pembayaran</div>
-            <div className="cdesc">Kamu akan membayar {selectedBills.length} tagihan sekaligus. Pastikan daftarnya sudah benar.</div>
+            <div className="cdesc">Kamu akan membayar {selectedBills.length} tagihan sekaligus via popup Midtrans.</div>
             <div className="bulk-list">
               {selectedBills.map(b => (
                 <div key={b.id} className="bulk-li">

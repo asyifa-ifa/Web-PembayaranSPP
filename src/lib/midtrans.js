@@ -10,6 +10,7 @@ const authHeader = "Basic " + Buffer.from(SERVER_KEY + ":").toString("base64")
 /**
  * Buat transaksi Snap Midtrans
  * Returns: { token, redirect_url } jika sukses
+ * (dipakai untuk bulk / jika masih butuh redirect_url)
  */
 export async function createMidtransTransaction({
   orderId,
@@ -18,13 +19,14 @@ export async function createMidtransTransaction({
   email,
   name,
   returnUrl,
+  itemDetails,
 }) {
   const body = {
     transaction_details: {
       order_id: orderId,
       gross_amount: Number(amount),
     },
-    item_details: [
+    item_details: itemDetails || [
       {
         id: orderId,
         price: Number(amount),
@@ -37,7 +39,7 @@ export async function createMidtransTransaction({
       email: email,
     },
     callbacks: {
-  finish: returnUrl,
+      finish: returnUrl,
     },
     notification_url: `${process.env.NEXTAUTH_URL}/api/payments/midtrans-callback`,
   }
@@ -60,6 +62,58 @@ export async function createMidtransTransaction({
 
   try {
     return JSON.parse(text)
+  } catch {
+    return { error: text }
+  }
+}
+
+/**
+ * [BARU] Buat Snap Token saja (tanpa redirect_url)
+ * Dipakai agar popup Snap.js terbuka di halaman yang sama
+ * Returns: { token, orderId }
+ */
+export async function createSnapToken({
+  orderId,
+  amount,
+  productDetails,
+  email,
+  name,
+  itemDetails,
+}) {
+  const body = {
+    transaction_details: {
+      order_id: orderId,
+      gross_amount: Number(amount),
+    },
+    item_details: itemDetails || [
+      {
+        id: orderId,
+        price: Number(amount),
+        quantity: 1,
+        name: productDetails,
+      },
+    ],
+    customer_details: {
+      first_name: name,
+      email: email,
+    },
+    // Tidak perlu callbacks.finish karena kita pakai onSuccess di Snap.js
+    notification_url: `${process.env.NEXTAUTH_URL}/api/payments/midtrans-callback`,
+  }
+
+  const res = await fetch(`${BASE_URL}/transactions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+      "Authorization": authHeader,
+    },
+    body: JSON.stringify(body),
+  })
+
+  const text = await res.text()
+  try {
+    return JSON.parse(text) // { token, redirect_url, ... }
   } catch {
     return { error: text }
   }
