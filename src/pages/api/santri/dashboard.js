@@ -1,43 +1,63 @@
 // pages/api/santri/dashboard.js
 import prisma from "@/lib/prisma"
 import { getServerSession } from "next-auth/next"
-import { authOptions } from "../auth/[...nextauth]" // Sesuaikan path jika berbeda
+import { authOptions } from "../auth/[...nextauth]"
 
 export default async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).end()
 
   try {
-    // 1. Cek sesi login user
+    // cek session login
     const session = await getServerSession(req, res, authOptions)
+
     if (!session || !session.user) {
-      return res.status(401).json({ message: "Belum terautentikasi" })
+      return res.status(401).json({
+        message: "Belum login"
+      })
     }
 
-    // 2. Ambil data santri berdasarkan email/username dari session login
+    // cari santri berdasarkan NIS
     const student = await prisma.student.findUnique({
-      where: { email: session.user.email }, 
-      include: { class: true }
+      where: {
+        nis: session.user.name
+      },
+      include: {
+        class: true
+      }
     })
 
     if (!student) {
-      return res.status(404).json({ message: "Data santri tidak ditemukan" })
+      return res.status(404).json({
+        message: "Data santri tidak ditemukan"
+      })
     }
 
-    // 3. Tarik data tagihan (bills) milik santri tersebut
+    // ambil tagihan
     const bills = await prisma.bill.findMany({
-      where: { studentId: student.id },
-      include: { paymentType: true },
-      orderBy: { createdAt: "desc" }
+      where: {
+        studentId: student.id
+      },
+      include: {
+        paymentType: true
+      },
+      orderBy: {
+        createdAt: "desc"
+      }
     })
 
-    // 4. Tarik riwayat pembayaran (payments) milik santri tersebut
+    // ambil pembayaran
     const payments = await prisma.payment.findMany({
-      where: { studentId: student.id },
-      include: { paymentType: true },
-      orderBy: { createdAt: "desc" }
+      where: {
+        studentId: student.id
+      },
+      include: {
+        paymentType: true
+      },
+      orderBy: {
+        createdAt: "desc"
+      }
     })
 
-    // 5. Kembalikan data dalam format JSON murni ke frontend
     return res.status(200).json({
       student,
       bills,
@@ -46,6 +66,10 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error("DASHBOARD API ERROR:", error)
-    return res.status(500).json({ message: "Internal Server Error", detail: error.message })
+
+    return res.status(500).json({
+      message: "Internal Server Error",
+      detail: error.message
+    })
   }
 }
