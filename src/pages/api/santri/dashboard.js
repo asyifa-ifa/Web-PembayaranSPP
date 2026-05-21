@@ -13,13 +13,28 @@ export default async function handler(req, res) {
       return res.status(401).json({ message: "Belum login" });
     }
 
+    // Cari student by id (dari session) atau by email (Google login)
     const student = await prisma.student.findFirst({
-      where: { nis: session.user.name },
+      where: {
+        OR: [
+          { nis: session.user.nis || "" },
+          { email: session.user.email || "" },
+          { id: session.user.studentId ? Number(session.user.studentId) : -1 },
+        ],
+      },
       include: { class: true },
     });
 
     if (!student) {
-      return res.status(404).json({ message: "Data santri tidak ditemukan" });
+      return res.status(404).json({ 
+        message: "Data santri tidak ditemukan",
+        debug: { 
+          nis: session.user.nis,
+          email: session.user.email,
+          studentId: session.user.studentId,
+          name: session.user.name,
+        }
+      });
     }
 
     const bills = await prisma.bill.findMany({

@@ -60,6 +60,9 @@ export const authOptions = {
           name: user.student?.name || user.username,
           email: user.student?.email || null,
           role: user.role,
+          // ✅ Simpan NIS dan studentId agar bisa dicari di API
+          nis: user.student?.nis || null,
+          studentId: user.student?.id || null,
         };
       },
     }),
@@ -85,6 +88,7 @@ export const authOptions = {
         user.role = "SANTRI";
         user.studentId = student.id;
         user.studentName = student.name;
+        user.nis = student.nis;  // ✅ Simpan NIS untuk Google login
         return true;
       }
       return true;
@@ -95,6 +99,9 @@ export const authOptions = {
         token.id = user.id;
         token.name = user.studentName || user.name;
         token.role = user.role;
+        token.nis = user.nis || null;          // ✅ Simpan NIS ke token
+        token.studentId = user.studentId || null; // ✅ Simpan studentId ke token
+        token.email = user.email || null;
       }
       return token;
     },
@@ -104,11 +111,13 @@ export const authOptions = {
         id: token.id,
         name: token.name,
         role: token.role,
+        nis: token.nis,              // ✅ Expose NIS ke session
+        studentId: token.studentId,  // ✅ Expose studentId ke session
+        email: token.email,
       };
       return session;
     },
 
-    // ✅ FIX: redirect selalu ke /auth-redirect agar role-based routing bekerja
     async redirect({ url, baseUrl }) {
       if (
         url === baseUrl ||
@@ -117,9 +126,7 @@ export const authOptions = {
       ) {
         return `${baseUrl}/auth-redirect`;
       }
-
       if (url.startsWith(baseUrl)) return url;
-
       return `${baseUrl}/auth-redirect`;
     },
   },
