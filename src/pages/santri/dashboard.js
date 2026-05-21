@@ -16,11 +16,9 @@ export default function Dashboard() {
   const [editForm, setEditForm]           = useState({});
   const [editLoading, setEditLoading]     = useState(false);
   const [toast, setToast]                 = useState(null);
-  const [checkingPayment, setCheckingPayment] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    setCheckingPayment(false);
     fetchData();
   }, []);
 
@@ -54,9 +52,13 @@ export default function Dashboard() {
         body: JSON.stringify({ billId: bill.id }),
       });
       const data = await res.json();
-      if (data.paymentUrl) {
-        window.open(data.paymentUrl, "_blank");
-        startPolling(data.orderId);
+      if (data.snapToken) {
+        window.snap.pay(data.snapToken, {
+          onSuccess: () => { showToast("✅ Pembayaran berhasil!"); fetchData(); },
+          onPending: () => { showToast("⏳ Menunggu pembayaran...", "info"); },
+          onError:   () => { showToast("❌ Pembayaran gagal", "error"); },
+          onClose:   () => { showToast("Pembayaran dibatalkan", "error"); },
+        });
       } else {
         showToast("Gagal: " + data.message, "error");
       }
@@ -78,9 +80,13 @@ export default function Dashboard() {
         body: JSON.stringify({ billIds: selectedIds }),
       });
       const data = await res.json();
-      if (data.paymentUrl) {
-        window.open(data.paymentUrl, "_blank");
-        startPolling(data.orderId);
+      if (data.snapToken) {
+        window.snap.pay(data.snapToken, {
+          onSuccess: () => { showToast("✅ Pembayaran berhasil!"); fetchData(); },
+          onPending: () => { showToast("⏳ Menunggu pembayaran...", "info"); },
+          onError:   () => { showToast("❌ Pembayaran gagal", "error"); },
+          onClose:   () => { showToast("Pembayaran dibatalkan", "error"); },
+        });
       } else {
         showToast("Gagal: " + data.message, "error");
       }
@@ -89,30 +95,6 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const startPolling = (orderId) => {
-    setCheckingPayment(true);
-    showToast("Menunggu konfirmasi pembayaran... ⏳", "info");
-    const interval = setInterval(async () => {
-      try {
-        const checkRes = await fetch("/api/payments/check-status", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderId }),
-        });
-        const checkData = await checkRes.json();
-        if (checkData.updated || checkData.alreadySuccess) {
-          clearInterval(interval);
-          setCheckingPayment(false);
-          if (checkData.updated) showToast("✅ Pembayaran berhasil dikonfirmasi!");
-          fetchData();
-        }
-      } catch (e) {
-        console.error("Polling error:", e);
-      }
-    }, 5000);
-    setTimeout(() => { clearInterval(interval); setCheckingPayment(false); }, 600000);
   };
 
   const handleEditSubmit = async (e) => {
@@ -380,10 +362,6 @@ export default function Dashboard() {
         .toast.info{background:#1565c0;color:#fff}
         @keyframes tin{from{opacity:0;top:4px}to{opacity:1;top:16px}}
 
-        .checking-banner{background:#e3f2fd;border:1px solid #90caf9;border-radius:12px;padding:11px 15px;margin-bottom:13px;display:flex;align-items:center;gap:9px;font-size:13px;color:#1565c0;font-weight:600}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        .spinner{display:inline-block;width:16px;height:16px;border:2.5px solid #90caf9;border-top-color:#1565c0;border-radius:50%;animation:spin 1s linear infinite;flex-shrink:0}
-
         .app{min-height:100vh;display:flex;flex-direction:column;background:#eef5f0;width:100%}
 
         .topbar{background:#fff;border-bottom:1px solid #e4ede6;height:58px;padding:0 20px;width:100%;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 1px 6px rgba(0,0,0,.04)}
@@ -640,12 +618,6 @@ export default function Dashboard() {
 
             {/* CONTENT */}
             <div className="ct">
-              {checkingPayment && (
-                <div className="checking-banner">
-                  <div className="spinner"/>
-                  Menunggu konfirmasi pembayaran dari Midtrans...
-                </div>
-              )}
 
               {/* ════ BERANDA ════ */}
               {activeTab==="beranda" && <>
@@ -693,7 +665,7 @@ export default function Dashboard() {
                           <div className="ba u">{rp(bill.amount)}</div>
                           {bill.dueDate && <div className="bd">Jatuh tempo: {new Date(bill.dueDate).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})}</div>}
                         </div>
-                        <button className="btn-b" onClick={()=>setShowPayModal(bill)} disabled={loading||checkingPayment}>Bayar</button>
+                        <button className="btn-b" onClick={()=>setShowPayModal(bill)} disabled={loading}>Bayar</button>
                       </div>
                     ))}
                     {unpaidBills.length > 3 && (
@@ -767,7 +739,7 @@ export default function Dashboard() {
                         <div className="bulk-count">{selectedIds.length > 0 ? `${selectedIds.length} tagihan dipilih` : "Pilih tagihan di atas"}</div>
                         <div className="bulk-total">{rp(totalSelected)}</div>
                       </div>
-                      <button className="btn-bulk" disabled={selectedIds.length === 0 || loading || checkingPayment} onClick={() => setShowBulkModal(true)}>
+                      <button className="btn-bulk" disabled={selectedIds.length === 0 || loading} onClick={() => setShowBulkModal(true)}>
                         {loading ? "Memproses..." : "Bayar Tagihan"}
                       </button>
                     </div>
@@ -887,7 +859,7 @@ export default function Dashboard() {
             <div className="mh"/>
             <div className="cico">💳</div>
             <div className="ctit">Konfirmasi Pembayaran</div>
-            <div className="cdesc">Kamu akan diarahkan ke halaman pembayaran. Setelah bayar, sistem akan otomatis mengkonfirmasi pembayaranmu.</div>
+            <div className="cdesc">Pilih metode pembayaran di popup Midtrans. Setelah selesai, status tagihan akan otomatis diperbarui.</div>
             <div className="cbox">
               <div className="cbl">{showPayModal.paymentType?.name}</div>
               <div className="cbv">{rp(showPayModal.amount)}</div>
