@@ -278,7 +278,7 @@ export default function PaymentPage() {
           </button>
         </div>
 
-        {/* SUMMARY CARDS (Efek Waw Dasbor) */}
+        {/* SUMMARY CARDS */}
         <div className="stats-grid">
           <div className="stat-card border-blue">
             <div className="stat-icon bg-blue">👥</div>
@@ -568,7 +568,7 @@ export default function PaymentPage() {
               {selectedStudent.bills.length === 0 ? (
                 <p className="empty-subtext">🟢 Aman! Belum ada tagihan aktif untuk santri ini.</p>
               ) : (
-                <div className="table-wrapper sub-table">
+                <div className="table-wrapper sub-table responsiveness-fix">
                   <table>
                     <thead>
                       <tr>
@@ -582,9 +582,9 @@ export default function PaymentPage() {
                     <tbody>
                       {selectedStudent.bills.map(b => (
                         <tr key={b.id}>
-                          <td style={{ fontWeight: 600, color: '#334155' }}>{b.paymentType.name}</td>
-                          <td style={{ fontWeight: 600, color: '#0f172a' }}>Rp {b.amount.toLocaleString("id-ID")}</td>
-                          <td>{b.dueDate ? new Date(b.dueDate).toLocaleDateString("id-ID") : "-"}</td>
+                          <td style={{ fontWeight: 600, color: '#334155', whiteSpace: 'nowrap' }}>{b.paymentType.name}</td>
+                          <td style={{ fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap' }}>Rp {b.amount.toLocaleString("id-ID")}</td>
+                          <td style={{ whiteSpace: 'nowrap' }}>{b.dueDate ? new Date(b.dueDate).toLocaleDateString("id-ID") : "-"}</td>
                           <td style={{ textAlign: "center" }}>
                             <span className={`status-badge ${b.status === "PAID" ? "paid" : "unpaid"}`}>
                               {b.status === "PAID" ? "LUNAS" : "BELUM BAYAR"}
@@ -594,7 +594,7 @@ export default function PaymentPage() {
                             {b.status === "UNPAID" ? (
                               <div className="action-flex-gap">
                                 <button className="btn-cash" onClick={() => konfirmasiCash(b.id)}>💵 Tunai</button>
-                                <button className="btn-transfer" onClick={() => bayarTransfer(b.id)}>🏦 Duitku</button>
+                                <button className="btn-transfer" onClick={() => bayarTransfer(b.id)}>🏦 Midtrans</button>
                                 <button className="btn-hapus-icon" onClick={() => hapusBill(b.id)} title="Hapus Tagihan">🗑️</button>
                               </div>
                             ) : (
@@ -614,7 +614,7 @@ export default function PaymentPage() {
               {selectedStudent.payments.length === 0 ? (
                 <p className="empty-subtext">Belum ada jejak riwayat pembayaran terekam.</p>
               ) : (
-                <div className="table-wrapper sub-table">
+                <div className="table-wrapper sub-table responsiveness-fix">
                   <table>
                     <thead>
                       <tr>
@@ -630,9 +630,9 @@ export default function PaymentPage() {
                       {selectedStudent.payments.map((p, i) => (
                         <tr key={p.id}>
                           <td style={{color: '#94a3b8'}}>{i + 1}</td>
-                          <td style={{fontWeight: '500'}}>{p.paymentType.name}</td>
-                          <td style={{fontWeight: '600'}}>Rp {p.amount.toLocaleString("id-ID")}</td>
-                          <td>
+                          <td style={{fontWeight: '500', whiteSpace: 'nowrap'}}>{p.paymentType.name}</td>
+                          <td style={{fontWeight: '600', whiteSpace: 'nowrap'}}>Rp {p.amount.toLocaleString("id-ID")}</td>
+                          <td style={{ whiteSpace: 'nowrap' }}>
                             <span className="method-tag">{p.method === "CASH" ? "💵 Tunai" : "🏦 Transfer"}</span>
                           </td>
                           <td style={{ textAlign: "center" }}>
@@ -698,7 +698,7 @@ export default function PaymentPage() {
         h3 { margin: 0; color: #0f172a; font-size: 20px; font-weight: 700; }
         h4 { margin: 24px 0 12px; color: #1e293b; font-size: 15px; font-weight: 600; }
 
-        /* Summary Stats Cards Grid */
+        /* Summary Letters Cards Grid */
         .stats-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -756,170 +756,201 @@ export default function PaymentPage() {
         .search-wrapper {
           position: relative;
           flex: 1;
-          min-width: 280px;
+          min-width: 260px;
         }
         .search-icon {
           position: absolute;
           left: 14px;
           top: 50%;
           transform: translateY(-50%);
-          font-size: 14px;
           color: #94a3b8;
+          font-size: 16px;
         }
         .main-search-input {
           width: 100%;
-          padding: 10px 16px 10px 40px;
+          padding: 10px 14px 10px 40px;
           border-radius: 8px;
           border: 1px solid #cbd5e1;
-          background: #f8fafc;
           font-size: 14px;
-          color: #334155;
           outline: none;
           transition: all 0.2s;
         }
         .main-search-input:focus {
           border-color: #10b981;
-          background: white;
-          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
         }
         .filter-select {
-          padding: 10px 36px 10px 14px; 
+          padding: 10px 14px;
           border-radius: 8px;
-          border: 1px solid #cbd5e1; 
+          border: 1px solid #cbd5e1;
+          font-size: 14px;
           background: white;
-          font-size: 14px; 
-          color: #334155; 
           outline: none;
-          appearance: none;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-          background-repeat: no-repeat; 
-          background-position: right 12px center;
-          cursor: pointer; 
           min-width: 160px;
-          transition: all 0.2s;
+          cursor: pointer;
         }
-        .filter-select:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12); }
-        
-        /* Table Style */
-        .card { 
-          background: white; 
-          border-radius: 12px; 
-          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.01);
+
+        /* Tables & Wrappers */
+        .card {
+          background: white;
+          border-radius: 12px;
           border: 1px solid #e2e8f0;
+          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
           overflow: hidden;
         }
-        .table-wrapper { width: 100%; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
-        th, td { padding: 14px 18px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
-        th { background: #f8fafc; color: #475569; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.75px; }
-        tr:last-child td { border-bottom: none; }
-        tbody tr:hover { background-color: #f8fafc; }
-        .text-dark { color: #0f172a; }
-        .text-muted { color: #64748b; }
-        .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; }
+        .table-wrapper {
+          width: 100%;
+          overflow-x: auto;
+        }
         
-        .empty-state { text-align: center; color: #94a3b8; padding: 48px !important; }
-        .empty-icon { font-size: 32px; margin-bottom: 8px; }
-        .empty-subtext { color: #64748b; background: #f1f5f9; padding: 12px; border-radius: 8px; font-size: 13px; text-align: center; margin: 8px 0; }
-
-        /* Badges */
-        .badge-class {
-          background: #e2e8f0;
+        /* PERBAIKAN UTAMA: Tambahan class ini menangani overflow tabel di dalam modal secara anggun */
+        .responsiveness-fix {
+          width: 100% !important;
+          overflow-x: auto !important;
+          -webkit-overflow-scrolling: touch;
+          margin-bottom: 15px;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+        }
+        
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          text-align: left;
+          font-size: 14px;
+        }
+        th {
+          background: #f8fafc;
+          padding: 14px 18px;
+          color: #475569;
+          font-weight: 600;
+          border-bottom: 1px solid #e2e8f0;
+        }
+        td {
+          padding: 14px 18px;
+          border-bottom: 1px solid #f1f5f9;
           color: #334155;
+        }
+        tr:last-child td { border-bottom: none; }
+        
+        /* Badges & Tags */
+        .badge-class {
+          background: #f1f5f9;
+          color: #475569;
           padding: 4px 10px;
           border-radius: 6px;
           font-size: 12px;
           font-weight: 600;
           display: inline-block;
         }
-        .bg-emerald { background: #d1fae5; color: #065f46; }
-        .method-tag { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
-
+        .bg-emerald { background: #d1fae5 !important; color: #065f46 !important; }
+        .font-mono { font-family: monospace; font-size: 13px; }
+        .text-dark { color: #0f172a; font-weight: 500; }
+        .text-muted { color: #64748b; }
         .status-badge {
-          padding: 4px 10px;
-          border-radius: 20px;
+          padding: 4px 8px;
+          border-radius: 6px;
           font-size: 11px;
           font-weight: 700;
           letter-spacing: 0.5px;
           display: inline-block;
         }
-        .status-badge.paid { background: #d1fae5; color: #065f46; }
         .status-badge.unpaid { background: #fee2e2; color: #991b1b; }
-
+        .status-badge.paid { background: #d1fae5; color: #065f46; }
         .payment-status {
           font-size: 11px;
           font-weight: 700;
-          padding: 2px 8px;
+          padding: 3px 8px;
           border-radius: 4px;
+          text-transform: uppercase;
         }
         .payment-status.success { background: #d1fae5; color: #065f46; }
         .payment-status.pending { background: #fef3c7; color: #92400e; }
         .payment-status.failed { background: #fee2e2; color: #991b1b; }
+        .method-tag { font-size: 13px; color: #475569; font-weight: 500; }
 
-        /* Buttons Styling */
-        .btn-tambah { 
-          background: #059669; 
-          color: white; 
-          padding: 10px 20px; 
-          border-radius: 8px; 
-          border: none; 
-          cursor: pointer; 
-          font-weight: 600; 
+        /* Buttons & Actions */
+        .btn-tambah {
+          background: #10b981;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 8px;
+          font-weight: 600;
           font-size: 14px;
-          transition: all 0.2s;
+          cursor: pointer;
           display: flex;
           align-items: center;
-          box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.2);
+          transition: background 0.2s;
         }
-        .btn-tambah:hover { background: #047857; transform: translateY(-1px); }
-        
-        .btn-detail { 
-          background: white; 
-          color: #059669; 
-          padding: 6px 14px; 
-          border-radius: 6px; 
-          border: 1px solid #d1fae5; 
-          cursor: pointer; 
-          font-weight: 600; 
+        .btn-tambah:hover { background: #059669; }
+        .btn-detail {
+          background: white;
+          border: 1px solid #cbd5e1;
+          padding: 6px 12px;
+          border-radius: 6px;
           font-size: 13px;
-          transition: all 0.15s;
+          font-weight: 500;
+          cursor: pointer;
+          color: #334155;
+          transition: all 0.2s;
         }
-        .btn-detail:hover { background: #059669; color: white; border-color: #059669; }
+        .btn-detail:hover { background: #f8fafc; border-color: #94a3b8; }
+        
+        /* Flex Utilities */
+        .action-flex-gap {
+          display: flex;
+          gap: 6px;
+          align-items: center;
+          justify-content: center;
+          min-width: 190px; /* Menjamin tombol-tombol aksi tidak bertumpuk */
+        }
+        .justify-center { justify-content: center; }
+        
+        /* Sub Action Buttons */
+        .btn-cash { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .btn-cash:hover { background: #dcfce7; }
+        .btn-transfer { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .btn-transfer:hover { background: #dbeafe; }
+        .btn-hapus-icon { background: #fff5f5; border: 1px solid #fed7d7; padding: 4px 8px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+        .btn-hapus-icon:hover { background: #fee2e2; border-color: #fca5a5; }
+        .btn-cetak { background: #f8fafc; border: 1px solid #cbd5e1; color: #334155; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; }
+        .btn-cetak:hover { background: #f1f5f9; }
+        .btn-hapus-small { background: transparent; border: none; color: #ef4444; font-size: 12px; cursor: pointer; font-weight: 500; }
+        .btn-hapus-small:hover { text-decoration: underline; }
 
-        /* Pagination Controls */
+        /* Pagination Layout */
         .pagination-wrapper {
+          padding: 16px 20px;
+          border-top: 1px solid #e2e8f0;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 16px 20px;
-          border-top: 1px solid #e2e8f0;
           background: #f8fafc;
           flex-wrap: wrap;
           gap: 12px;
         }
         .pagination-info { font-size: 13px; color: #64748b; }
-        .pagination-info span { color: #0f172a; font-weight: 600; }
+        .pagination-info span { font-weight: 600; color: #334155; }
         .pagination-buttons { display: flex; align-items: center; gap: 12px; }
         .btn-page {
           background: white;
           border: 1px solid #cbd5e1;
-          color: #334155;
           padding: 6px 14px;
           border-radius: 6px;
           font-size: 13px;
           font-weight: 500;
           cursor: pointer;
-          transition: all 0.2s;
+          color: #334155;
         }
-        .btn-page:hover:not(:disabled) { background: #f1f5f9; border-color: #94a3b8; }
-        .btn-page:disabled { opacity: 0.4; cursor: not-allowed; }
-        .page-indicator { font-size: 13px; color: #475569; }
+        .btn-page:disabled { opacity: 0.5; cursor: not-allowed; }
+        .page-indicator { font-size: 13px; color: #64748b; }
 
-        /* Modals Glass & Backdrop Base */
+        /* Modal Structure Styles */
         .modal-backdrop {
           position: fixed;
           top: 0; left: 0; right: 0; bottom: 0;
-          background: rgba(15, 23, 42, 0.3);
+          background: rgba(15, 23, 42, 0.4);
           backdrop-filter: blur(4px);
           display: flex;
           align-items: center;
@@ -932,113 +963,116 @@ export default function PaymentPage() {
           border-radius: 16px;
           width: 100%;
           max-width: 580px;
-          box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
-          border: 1px solid #e2e8f0;
-          display: flex;
-          flex-direction: column;
-          max-height: 90vh;
-          overflow-y: auto;
           padding: 24px;
+          box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+          max-height: 90vh;
+          overflow-y: auto; /* Untuk modal input tagihan */
         }
-        .detail-modal { max-width: 800px; }
+        
+        /* PERBAIKAN UTAMA: Menaikkan max-width khusus detail modal agar menampung tabel dengan baik */
+        .detail-modal {
+          max-width: 800px !important; 
+        }
+        
         .modal-header {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
           margin-bottom: 20px;
-          border-bottom: 1px solid #f1f5f9;
-          padding-bottom: 14px;
         }
-        .modal-sub { margin: 4px 0 0; font-size: 13px; color: #64748b; }
+        .modal-sub { margin: 4px 0 0; color: #64748b; font-size: 13px; }
         .close-x {
-          background: #f1f5f9; border: none; border-radius: 50%;
-          width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
-          color: #64748b; cursor: pointer; transition: all 0.2s; font-size: 12px;
+          background: #f1f5f9; border: none; color: #64748b;
+          width: 28px; height: 28px; border-radius: 50%;
+          font-size: 12px; cursor: pointer; display: flex;
+          align-items: center; justify-content: center;
         }
-        .close-x:hover { background: #fee2e2; color: #ef4444; }
+        .close-x:hover { background: #e2e8f0; color: #1e293b; }
 
-        /* Form Inputs Modern design */
-        .form-group { margin-bottom: 18px; position: relative; }
-        .form-label { display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 6px; }
+        /* Searchable Dropdown Inside Modal */
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
         .form-input {
-          width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #cbd5e1;
-          font-size: 14px; color: #0f172a; outline: none; transition: all 0.2s; background: #f8fafc;
+          width: 100%; padding: 10px 12px; border-radius: 8px;
+          border: 1px solid #cbd5e1; font-size: 14px; outline: none;
         }
-        .form-input:focus { border-color: #10b981; background: white; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12); }
-        .input-hint { display: block; font-size: 11px; color: #64748b; margin-bottom: 2px; font-weight: 500; }
-
-        /* Searchable Dropdown List Inside Modal */
+        .form-input:focus { border-color: #10b981; }
         .clear-search {
-          position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
-          color: #94a3b8; cursor: pointer; font-size: 12px;
+          position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+          color: #94a3b8; font-size: 12px; cursor: pointer; background: #f1f5f9;
+          width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
         }
         .dropdown-list {
-          position: absolute; top: 100%; left: 0; right: 0; background: white;
-          border: 1px solid #e2e8f0; border-radius: 8px; max-height: 200px; overflow-y: auto;
-          z-index: 10; margin: 4px 0 0; padding: 0; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+          position: absolute; top: 100%; left: 0; right: 0;
+          background: white; border: 1px solid #e2e8f0; border-radius: 8px;
+          margin: 4px 0 0; padding: 6px 0; list-style: none;
+          max-height: 200px; overflow-y: auto; z-index: 10;
+          box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
         }
         .dropdown-item {
-          padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;
-          cursor: pointer; border-bottom: 1px solid #f8fafc; list-style: none;
+          padding: 8px 14px; display: flex; justify-content: space-between;
+          align-items: center; cursor: pointer;
         }
-        .dropdown-item:hover { background: #f0fdf4; }
+        .dropdown-item:hover { background: #f8fafc; }
         .dropdown-name { font-size: 14px; font-weight: 500; color: #1e293b; }
-        .dropdown-empty { padding: 12px; text-align: center; color: #94a3b8; font-size: 13px; list-style: none; }
+        .dropdown-empty { padding: 12px; text-align: center; color: #64748b; font-size: 13px; }
 
-        /* Payment Items Checkbox styling inside creation */
+        /* Payment Type Checklist Item Container */
         .pt-container {
-          border: 1px solid #e2e8f0; border-radius: 10px; max-height: 260px; overflow-y: auto; background: #f8fafc;
+          border: 1px solid #e2e8f0; border-radius: 8px;
+          max-height: 240px; overflow-y: auto; padding: 4px;
+          background: #f8fafc;
         }
-        .pt-item { padding: 12px; border-bottom: 1px solid #e2e8f0; transition: background 0.15s; }
-        .pt-item:last-child { border-bottom: none; }
-        .pt-item.active { background: white; border-left: 4px solid #10b981; }
+        .pt-item {
+          background: white; border: 1px solid #e2e8f0;
+          border-radius: 6px; padding: 12px; margin-bottom: 4px;
+        }
+        .pt-item.active { border-color: #a7f3d0; background: #f0fdf4; }
         .pt-main-info { display: flex; justify-content: space-between; align-items: center; }
-        .pt-checkbox-label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 500; color: #334155; }
-        .pt-name { font-size: 14px; }
+        .pt-checkbox-label { display: flex; align-items: center; gap: 10px; cursor: pointer; margin: 0; }
+        .pt-name { font-size: 14px; font-weight: 600; color: #1e293b; }
         .pt-default { font-size: 12px; color: #64748b; font-weight: 500; }
-        .pt-inputs-row { display: flex; gap: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e2e8f0; }
+        .pt-inputs-row { display: flex; gap: 12px; margin-top: 10px; border-top: 1px dashed #e2e8f0; padding-top: 10px; }
+        .input-hint { display: block; font-size: 11px; color: #64748b; margin-bottom: 4px; font-weight: 500; }
 
-        /* Modal Student Profile Grid */
+        /* Student Detail Info Mini Grid */
         .info-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 12px;
-          background: #f8fafc; padding: 16px; border-radius: 10px; border: 1px solid #e2e8f0;
+          gap: 12px 20px;
+          background: #f8fafc; padding: 16px; border-radius: 10px;
+          border: 1px solid #e2e8f0;
         }
-        .info-item { display: flex; flex-direction: column; gap: 4px; }
-        .info-lbl { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; letter-spacing: 0.5px; }
-        .info-val { font-size: 14px; font-weight: 600; color: #1e293b; }
+        .info-item { display: flex; flex-direction: column; gap: 2px; }
+        .info-lbl { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; }
+        .info-val { font-size: 14px; font-weight: 600; color: #0f172a; }
         .section-divider { height: 1px; background: #e2e8f0; margin: 20px 0; }
-        .sub-table th { background: #f1f5f9; padding: 10px 14px; }
-        .sub-table td { padding: 12px 14px; font-size: 13px; }
 
-        /* Action Buttons Inside Table Details */
-        .action-flex-gap { display: flex; gap: 6px; align-items: center; }
-        .justify-center { justify-content: center; }
-        .btn-cash { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
-        .btn-cash:hover { background: #047857; color: white; }
-        .btn-transfer { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
-        .btn-transfer:hover { background: #1d4ed8; color: white; }
-        .btn-hapus-icon { background: #fff5f5; border: 1px solid #fed7d7; border-radius: 6px; padding: 3px 6px; cursor: pointer; }
-        .btn-hapus-icon:hover { background: #fee2e2; }
-        .text-success { color: #059669; font-weight: 600; font-size: 13px; }
-
-        .btn-cetak { background: #f1f5f9; border: 1px solid #cbd5e1; color: #334155; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
-        .btn-cetak:hover { background: #e2e8f0; }
-        .btn-hapus-small { background: transparent; border: none; color: #ef4444; font-size: 12px; cursor: pointer; text-decoration: underline; }
-        .btn-hapus-small:hover { color: #991b1b; }
-
-        /* Action Modal Footers */
-        .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 16px; }
-        .btn-batal { background: white; border: 1px solid #cbd5e1; color: #475569; padding: 10px 18px; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; }
-        .btn-batal:hover { background: #f8fafc; }
-        .btn-simpan { background: #059669; border: none; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; box-shadow: 0 2px 4px rgba(5,150,105,0.15); }
-        .btn-simpan:hover:not(:disabled) { background: #047857; }
-        .btn-simpan:disabled { opacity: 0.5; cursor: not-allowed; }
-
+        /* Modal Footer Action Bars */
+        .modal-actions {
+          display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;
+        }
+        .btn-batal {
+          background: white; border: 1px solid #cbd5e1; padding: 10px 18px;
+          border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; color: #475569;
+        }
+        .btn-simpan {
+          background: #1e293b; color: white; border: none; padding: 10px 18px;
+          border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
+        }
+        .btn-simpan:disabled { opacity: 0.6; }
         .modal-footer-action { display: flex; justify-content: flex-end; margin-top: 20px; }
-        .btn-tutup { background: #334155; border: none; color: white; padding: 10px 18px; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; }
-        .btn-tutup:hover { background: #1e293b; }
+        .btn-tutup {
+          background: #64748b; color: white; border: none; padding: 10px 20px;
+          border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
+        }
+        .btn-tutup:hover { background: #475569; }
+
+        /* States Text definitions */
+        .empty-state { text-align: center; padding: 40px !important; color: #64748b; }
+        .empty-icon { font-size: 32px; margin-bottom: 8px; }
+        .empty-subtext { color: #64748b; font-size: 13px; font-style: italic; background: #f8fafc; padding: 12px; border-radius: 6px; text-align: center; margin: 0; }
+        .text-success { color: #166534; font-size: 13px; font-weight: 600; }
       `}</style>
     </AdminLayout>
   );
