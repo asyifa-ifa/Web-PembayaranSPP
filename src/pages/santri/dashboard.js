@@ -28,9 +28,12 @@ export default function Dashboard() {
   };
 
   const fetchData = async () => {
-    const res = await fetch("/api/santri/dashboard");
-    if (res.status === 401) { router.push("/login"); return; }
-    const data = await res.json();
+  console.log("Fetching from:", "/api/santri/dashboard");
+  const res = await fetch("/api/santri/dashboard");
+  console.log("Response status:", res.status);
+  if (res.status === 401) { router.push("/login"); return; }
+  if (res.status === 404) { console.log("404! Response:", await res.text()); return; }
+  const data = await res.json();
     setStudent(data.student);
     setBills(data.bills || []);
     setPayments(data.payments || []);
