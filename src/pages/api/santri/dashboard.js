@@ -1,6 +1,7 @@
+// pages/api/santri/dashboard.js
 import prisma from "@/lib/prisma"
 import { getServerSession } from "next-auth/next"
-import { authOptions } from "../auth/[...nextauth]" // Sesuaikan path nextauth kamu
+import { authOptions } from "../auth/[...nextauth]" // Sesuaikan path jika berbeda
 
 export default async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).end()
@@ -14,7 +15,7 @@ export default async function handler(req, res) {
 
     // 2. Ambil data santri berdasarkan email/username dari session login
     const student = await prisma.student.findUnique({
-      where: { email: session.user.email }, // atau ganti ke 'username: session.user.name' sesuai skema prisma
+      where: { email: session.user.email }, 
       include: { class: true }
     })
 
