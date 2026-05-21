@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/pages/api/auth/[...nextauth]";
+import { authOptions } from "../auth/[...nextauth]";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
@@ -35,6 +35,7 @@ export default async function handler(req, res) {
     });
 
     return res.status(200).json({ student, bills, payments });
+
   } catch (error) {
     console.error("DASHBOARD API ERROR:", error);
     return res.status(500).json({ message: "Internal Server Error", detail: error.message });
