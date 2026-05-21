@@ -6,10 +6,13 @@ export default withAuth(
     callbacks: {
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl;
+
+        // Biarkan semua API lewat, auth dicek di masing-masing API
+        if (pathname.startsWith("/api/")) return true;
+
         if (!token) return false;
         if (pathname.startsWith("/admin")) return token.role === "ADMIN";
         if (pathname.startsWith("/kepala")) return token.role === "KEPALA";
-        // Halaman santri (bukan API)
         if (pathname.startsWith("/santri")) return token.role === "SANTRI";
         return true;
       },
@@ -20,9 +23,8 @@ export default withAuth(
 export const config = {
   matcher: [
     "/admin/:path*",
-    "/santri/:path*",
     "/kepala/:path*",
-    // Exclude API routes dari middleware
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+    "/santri/:path*",
+    "/api/santri/:path*",
   ],
 };
