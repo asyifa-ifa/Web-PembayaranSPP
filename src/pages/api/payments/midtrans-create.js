@@ -35,7 +35,6 @@ export default async function handler(req, res) {
         name:     `${b.paymentType.name} - ${b.student.name}`.slice(0, 50),
       }))
 
-      // Pakai createSnapToken → hanya return token, bukan redirect_url
       const snap = await createSnapToken({
         orderId,
         amount:         totalAmount,
@@ -45,8 +44,14 @@ export default async function handler(req, res) {
         itemDetails,
       })
 
-      if (!snap.token) {
-        return res.status(500).json({ message: "Gagal membuat transaksi Midtrans", detail: snap })
+      // 🔴 AMAN: Ekstraksi token secara aman, apakah dalam bentuk string langsung atau objek
+      const tokenHasil = typeof snap === 'string' ? snap : (snap?.token || snap?.snapToken);
+
+      if (!tokenHasil) {
+        return res.status(500).json({ 
+          message: "Gagal membuat transaksi Midtrans di sistem core", 
+          detail: snap 
+        })
       }
 
       // Simpan semua payment sebagai PENDING
@@ -62,7 +67,7 @@ export default async function handler(req, res) {
       })
 
       return res.status(200).json({
-        snapToken: snap.token, // ← dikirim ke frontend untuk window.snap.pay()
+        snapToken: tokenHasil, // Dijamin string token valid
         orderId,
       })
     }
@@ -85,7 +90,6 @@ export default async function handler(req, res) {
 
     const orderId = `SPP-${bill.id}-${Date.now()}`
 
-    // Pakai createSnapToken → hanya return token
     const snap = await createSnapToken({
       orderId,
       amount:         bill.amount,
@@ -94,8 +98,14 @@ export default async function handler(req, res) {
       name:           bill.student.name,
     })
 
-    if (!snap.token) {
-      return res.status(500).json({ message: "Gagal membuat transaksi Midtrans", detail: snap })
+    // 🔴 AMAN: Ekstraksi token secara aman untuk single payment
+    const tokenHasilSingle = typeof snap === 'string' ? snap : (snap?.token || snap?.snapToken);
+
+    if (!tokenHasilSingle) {
+      return res.status(500).json({ 
+        message: "Gagal membuat transaksi Midtrans di sistem core", 
+        detail: snap 
+      })
     }
 
     await prisma.payment.create({
@@ -110,12 +120,12 @@ export default async function handler(req, res) {
     })
 
     return res.status(200).json({
-      snapToken: snap.token, // ← dikirim ke frontend untuk window.snap.pay()
+      snapToken: tokenHasilSingle, 
       orderId,
     })
 
   } catch (error) {
     console.error("MIDTRANS CREATE ERROR:", error)
-    return res.status(500).json({ message: "Gagal membuat pembayaran" })
+    return res.status(500).json({ message: "Gagal membuat pembayaran: " + error.message })
   }
 }
