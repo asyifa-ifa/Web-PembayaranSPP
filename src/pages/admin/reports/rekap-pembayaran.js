@@ -1,6 +1,19 @@
 import { useEffect, useState } from "react"
 import AdminLayout from "@/components/AdminLayout"
 
+// 🌟 Fungsi pembantu otomatis membuat daftar tahun ajaran berdasarkan waktu sistem saat ini
+const generateAcademicYears = () => {
+  const currentYear = new Date().getFullYear() // Membaca tahun aktif sekarang
+  const years = []
+  
+  // Mengambil rentang otomatis: 3 tahun ke belakang hingga 1 tahun ke depan
+  for (let i = currentYear - 3; i <= currentYear + 1; i++) {
+    years.push(`${i}/${i + 1}`)
+  }
+  
+  return years.reverse() // Mengurutkan dari tahun terbaru di paling atas
+}
+
 export default function RekapPembayaran() {
   const [classes, setClasses] = useState([])
   const [paymentTypes, setPaymentTypes] = useState([])
@@ -8,8 +21,18 @@ export default function RekapPembayaran() {
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
 
+  // 🌟 Mendapatkan Default Tahun Ajaran saat ini secara otomatis (jika masuk Juli, bergeser otomatis)
+  const currentMonth = new Date().getMonth() // 0 = Januari, 6 = Juli
+  const currentYear = new Date().getFullYear()
+  const defaultAcademicYear = currentMonth >= 6 
+    ? `${currentYear}/${currentYear + 1}` 
+    : `${currentYear - 1}/${currentYear}`
+
+  // 🌟 Inisialisasi daftar tahun otomatis ke dalam state
+  const [academicYears] = useState(generateAcademicYears())
+
   const [filter, setFilter] = useState({
-    academicYear: "",
+    academicYear: defaultAcademicYear, // Default langsung mengarah ke tahun ajaran yang sedang aktif
     classId: "",
     paymentTypeId: "",
     status: "",
@@ -31,25 +54,14 @@ export default function RekapPembayaran() {
     try {
       const params = new URLSearchParams()
 
-      if (filter.academicYear)
-        params.append("academicYear", filter.academicYear)
+      if (filter.academicYear) params.append("academicYear", filter.academicYear)
+      if (filter.classId) params.append("classId", filter.classId)
+      if (filter.paymentTypeId) params.append("paymentTypeId", filter.paymentTypeId)
+      if (filter.status) params.append("status", filter.status)
 
-      if (filter.classId)
-        params.append("classId", filter.classId)
-
-      if (filter.paymentTypeId)
-        params.append("paymentTypeId", filter.paymentTypeId)
-
-      if (filter.status)
-        params.append("status", filter.status)
-
-      const res = await fetch(
-        `/api/reports/rekap-pembayaran?${params.toString()}`
-      )
-
+      const res = await fetch(`/api/reports/rekap-pembayaran?${params.toString()}`)
       const json = await res.json()
 
-      // ✅ Pastikan data adalah array
       if (Array.isArray(json)) {
         setData(json)
       } else {
@@ -67,38 +79,15 @@ export default function RekapPembayaran() {
     }
   }
 
-  const rp = (n) =>
-    "Rp " + Number(n || 0).toLocaleString("id-ID")
+  const rp = (n) => "Rp " + Number(n || 0).toLocaleString("id-ID")
 
-  const paidData = data.filter(d => d.status === "PAID")
-  const unpaidData = data.filter(d => d.status === "UNPAID")
-
-  const totalPaid = paidData.reduce(
-    (s, d) => s + Number(d.amount || 0),
-    0
-  )
-
-  const totalUnpaid = unpaidData.reduce(
-    (s, d) => s + Number(d.amount || 0),
-    0
-  )
-
-  const totalAll = data.reduce(
-    (s, d) => s + Number(d.amount || 0),
-    0
-  )
+  const totalAll = data.reduce((s, d) => s + Number(d.amount || 0), 0)
 
   const grouped = paymentTypes.map(pt => {
-    const items = data.filter(
-      d => d.paymentType?.id === pt.id
-    )
-
+    const items = data.filter(d => d.paymentType?.id === pt.id)
     return {
       name: pt.name,
-      total: items.reduce(
-        (s, d) => s + Number(d.amount || 0),
-        0
-      ),
+      total: items.reduce((s, d) => s + Number(d.amount || 0), 0),
       count: items.length,
     }
   })
@@ -112,24 +101,14 @@ export default function RekapPembayaran() {
       Kelas: d.student?.class?.name || "-",
       "Jenis Pembayaran": d.paymentType?.name || "-",
       Jumlah: d.amount || 0,
-      Status:
-        d.status === "PAID"
-          ? "Sudah Bayar"
-          : "Belum Bayar",
-      Tanggal: d.createdAt
-        ? new Date(d.createdAt).toLocaleDateString("id-ID")
-        : "-",
+      Status: d.status === "PAID" ? "Sudah Bayar" : "Belum Bayar",
+      Tanggal: d.createdAt ? new Date(d.createdAt).toLocaleDateString("id-ID") : "-",
     }))
 
     const ws = XLSX.utils.json_to_sheet(rows)
     const wb = XLSX.utils.book_new()
 
-    XLSX.utils.book_append_sheet(
-      wb,
-      ws,
-      "Rekap Pembayaran"
-    )
-
+    XLSX.utils.book_append_sheet(wb, ws, "Rekap Pembayaran")
     XLSX.writeFile(wb, "Rekap_Pembayaran.xlsx")
   }
 
@@ -144,37 +123,25 @@ export default function RekapPembayaran() {
     })
 
     doc.setFontSize(16)
+    doc.text("REKAP PEMBAYARAN SANTRI", 148, 15, { align: "center" })
 
-    doc.text(
-      "REKAP PEMBAYARAN SANTRI",
-      148,
-      15,
-      { align: "center" }
-    )
-
-    doc.autoTable({
-      startY: 25,
-      head: [[
-        "No",
-        "Nama",
-        "Kelas",
-        "Jenis",
-        "Jumlah",
-        "Status",
-      ]],
-      body: data.map((d, i) => [
-        i + 1,
-        d.student?.name || "-",
-        d.student?.class?.name || "-",
-        d.paymentType?.name || "-",
-        rp(d.amount),
-        d.status === "PAID"
-          ? "Sudah"
-          : "Belum",
-      ]),
-    })
-
-    doc.save("Rekap_Pembayaran.pdf")
+    if (typeof doc.autoTable === "function") {
+      doc.autoTable({
+        startY: 25,
+        head: [["No", "Nama", "Kelas", "Jenis", "Jumlah", "Status"]],
+        body: data.map((d, i) => [
+          i + 1,
+          d.student?.name || "-",
+          d.student?.class?.name || "-",
+          d.paymentType?.name || "-",
+          rp(d.amount),
+          d.status === "PAID" ? "Sudah" : "Belum",
+        ]),
+      })
+      doc.save("Rekap_Pembayaran.pdf")
+    } else {
+      alert("Gagal memuat ekspor PDF. Silakan coba kembali.")
+    }
   }
 
   return (
@@ -207,10 +174,23 @@ export default function RekapPembayaran() {
           margin-bottom: 20px;
         }
 
+        /* Pembungkus flex untuk menyatukan struktur grid filter dan tombol aksi */
+        .filter-container {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+
         .filter-grid {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
           gap: 14px;
+        }
+
+        /* Memposisikan tombol tampilkan di pojok kanan bawah container filter */
+        .filter-actions {
+          display: flex;
+          justify-content: flex-end;
         }
 
         .field {
@@ -233,18 +213,23 @@ export default function RekapPembayaran() {
           padding: 0 12px;
           font-size: 14px;
           outline: none;
+          background-color: #fff;
         }
 
         .btn {
-          margin-top: 18px;
-          height: 45px;
+          height: 44px;
           border: none;
           border-radius: 10px;
           background: #3a8f50;
           color: white;
-          padding: 0 22px;
+          padding: 0 32px;
           font-weight: 600;
           cursor: pointer;
+          transition: background 0.2s;
+        }
+
+        .btn:hover {
+          background: #2d733e;
         }
 
         .summary {
@@ -283,9 +268,10 @@ export default function RekapPembayaran() {
 
         .table-header {
           padding: 16px 20px;
-          font-size: 20px;
+          font-size: 18px;
           font-weight: 700;
           border-bottom: 1px solid #edf2ef;
+          color: #153728;
         }
 
         table {
@@ -298,29 +284,35 @@ export default function RekapPembayaran() {
           padding: 14px;
           font-size: 13px;
           text-align: left;
+          color: #53705f;
+          font-weight: 600;
         }
 
         td {
           padding: 14px;
           border-top: 1px solid #edf2ef;
+          font-size: 14px;
+          color: #333;
         }
 
         .badge-paid {
           background: #e8f5e9;
           color: #2e7d32;
-          padding: 5px 10px;
+          padding: 5px 12px;
           border-radius: 20px;
           font-size: 12px;
           font-weight: 600;
+          display: inline-block;
         }
 
         .badge-unpaid {
           background: #ffebee;
           color: #c62828;
-          padding: 5px 10px;
+          padding: 5px 12px;
           border-radius: 20px;
           font-size: 12px;
           font-weight: 600;
+          display: inline-block;
         }
 
         .export {
@@ -335,6 +327,9 @@ export default function RekapPembayaran() {
           border-radius: 10px;
           cursor: pointer;
           font-weight: 600;
+          display: flex;
+          align-items: center;
+          gap: 6px;
         }
 
         .excel {
@@ -349,107 +344,86 @@ export default function RekapPembayaran() {
       `}</style>
 
       <div className="page">
-
         <div className="title">
           <h2>📊 Dashboard Laporan</h2>
           <p>Rekapan pembayaran & data santri</p>
         </div>
 
         <div className="card">
-          <div className="filter-grid">
+          <div className="filter-container">
+            <div className="filter-grid">
+              
+              {/* 🌟 Berubah dari input teks biasa menjadi Dropdown Select otomatis */}
+              <div className="field">
+                <label>Tahun Ajaran</label>
+                <select
+                  value={filter.academicYear}
+                  onChange={(e) => setFilter({ ...filter, academicYear: e.target.value })}
+                >
+                  <option value="">-- Pilih Tahun Ajaran --</option>
+                  {academicYears.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div className="field">
-              <label>Tahun Ajaran</label>
-              <input
-                placeholder="2024/2025"
-                value={filter.academicYear}
-                onChange={(e) =>
-                  setFilter({
-                    ...filter,
-                    academicYear: e.target.value
-                  })
-                }
-              />
+              <div className="field">
+                <label>Kelas</label>
+                <select
+                  value={filter.classId}
+                  onChange={(e) => setFilter({ ...filter, classId: e.target.value })}
+                >
+                  <option value="">-- Semua Kelas --</option>
+                  {classes.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="field">
+                <label>Jenis Pembayaran</label>
+                <select
+                  value={filter.paymentTypeId}
+                  onChange={(e) => setFilter({ ...filter, paymentTypeId: e.target.value })}
+                >
+                  <option value="">-- Semua Jenis --</option>
+                  {paymentTypes.map(pt => (
+                    <option key={pt.id} value={pt.id}>
+                      {pt.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="field">
+                <label>Status</label>
+                <select
+                  value={filter.status}
+                  onChange={(e) => setFilter({ ...filter, status: e.target.value })}
+                >
+                  <option value="">-- Semua Status --</option>
+                  <option value="PAID">Sudah Bayar</option>
+                  <option value="UNPAID">Belum Bayar</option>
+                </select>
+              </div>
             </div>
 
-            <div className="field">
-              <label>Kelas</label>
-              <select
-                value={filter.classId}
-                onChange={(e) =>
-                  setFilter({
-                    ...filter,
-                    classId: e.target.value
-                  })
-                }
-              >
-                <option value="">-- Semua Kelas --</option>
-
-                {classes.map(c => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="field">
-              <label>Jenis Pembayaran</label>
-
-              <select
-                value={filter.paymentTypeId}
-                onChange={(e) =>
-                  setFilter({
-                    ...filter,
-                    paymentTypeId: e.target.value
-                  })
-                }
-              >
-                <option value="">-- Semua Jenis --</option>
-
-                {paymentTypes.map(pt => (
-                  <option key={pt.id} value={pt.id}>
-                    {pt.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="field">
-              <label>Status</label>
-
-              <select
-                value={filter.status}
-                onChange={(e) =>
-                  setFilter({
-                    ...filter,
-                    status: e.target.value
-                  })
-                }
-              >
-                <option value="">-- Semua Status --</option>
-                <option value="PAID">
-                  Sudah Bayar
-                </option>
-                <option value="UNPAID">
-                  Belum Bayar
-                </option>
-              </select>
+            {/* 🌟 Posisi tombol dipindah ke area aksi kanan bawah agar struktur UI lebih bersih */}
+            <div className="filter-actions">
+              <button className="btn" onClick={handleSearch} disabled={loading}>
+                {loading ? "Memuat..." : "Tampilkan Laporan"}
+              </button>
             </div>
           </div>
-
-          <button
-            className="btn"
-            onClick={handleSearch}
-          >
-            {loading ? "Memuat..." : "Tampilkan"}
-          </button>
         </div>
 
         {searched && (
           <>
             <div className="summary">
-
               <div className="sum-card">
                 <h3>Total Pembayaran</h3>
                 <h1>{rp(totalAll)}</h1>
@@ -463,21 +437,13 @@ export default function RekapPembayaran() {
               <div className="sum-card">
                 <h3>Santri</h3>
                 <h1>
-                  {
-                    [...new Set(
-                      data.map(d => d.student?.id)
-                    )].length
-                  }
+                  {[...new Set(data.map(d => d.student?.id))].length}
                 </h1>
               </div>
-
             </div>
 
             <div className="table-card">
-              <div className="table-header">
-                Rincian Pembayaran
-              </div>
-
+              <div className="table-header">Rincian Pembayaran Per Kategori</div>
               <table>
                 <thead>
                   <tr>
@@ -486,7 +452,6 @@ export default function RekapPembayaran() {
                     <th>Total</th>
                   </tr>
                 </thead>
-
                 <tbody>
                   {grouped.map((g, i) => (
                     <tr key={i}>
@@ -501,27 +466,17 @@ export default function RekapPembayaran() {
 
             {data.length > 0 && (
               <div className="export">
-                <button
-                  className="btn-export excel"
-                  onClick={exportExcel}
-                >
+                <button className="btn-export excel" onClick={exportExcel}>
                   📊 Export Excel
                 </button>
-
-                <button
-                  className="btn-export pdf"
-                  onClick={exportPDF}
-                >
+                <button className="btn-export pdf" onClick={exportPDF}>
                   📄 Export PDF
                 </button>
               </div>
             )}
 
             <div className="table-card">
-              <div className="table-header">
-                Detail Pembayaran
-              </div>
-
+              <div className="table-header">Detail Pembayaran Santri</div>
               <table>
                 <thead>
                   <tr>
@@ -534,45 +489,24 @@ export default function RekapPembayaran() {
                     <th>Tanggal</th>
                   </tr>
                 </thead>
-
                 <tbody>
                   {data.map((d, i) => (
                     <tr key={d.id}>
                       <td>{i + 1}</td>
-
-                      <td>
-                        {d.student?.name}
-                      </td>
-
-                      <td>
-                        {d.student?.class?.name}
-                      </td>
-
-                      <td>
-                        {d.paymentType?.name}
-                      </td>
-
-                      <td>
-                        {rp(d.amount)}
-                      </td>
-
+                      <td>{d.student?.name || "-"}</td>
+                      <td>{d.student?.class?.name || "-"}</td>
+                      <td>{d.paymentType?.name || "-"}</td>
+                      <td>{rp(d.amount)}</td>
                       <td>
                         {d.status === "PAID" ? (
-                          <span className="badge-paid">
-                            ✓ Sudah Bayar
-                          </span>
+                          <span className="badge-paid">✓ Sudah Bayar</span>
                         ) : (
-                          <span className="badge-unpaid">
-                            ✗ Belum Bayar
-                          </span>
+                          <span className="badge-unpaid">✗ Belum Bayar</span>
                         )}
                       </td>
-
                       <td>
                         {d.createdAt
-                          ? new Date(
-                              d.createdAt
-                            ).toLocaleDateString("id-ID")
+                          ? new Date(d.createdAt).toLocaleDateString("id-ID")
                           : "-"}
                       </td>
                     </tr>
@@ -582,7 +516,6 @@ export default function RekapPembayaran() {
             </div>
           </>
         )}
-
       </div>
     </AdminLayout>
   )
