@@ -42,6 +42,7 @@ export default function Dashboard() {
     });
   };
 
+  // ── BAYAR SINGLE ──────────────────────────────────────────────────────────
   const handleBayar = async (bill) => {
     setLoading(true);
     setShowPayModal(null);
@@ -55,7 +56,7 @@ export default function Dashboard() {
       if (data.snapToken) {
         window.snap.pay(data.snapToken, {
           onSuccess: () => { showToast("✅ Pembayaran berhasil!"); fetchData(); },
-          onPending: () => { showToast("⏳ Menunggu pembayaran...", "info"); },
+          onPending: () => { showToast("⏳ Menunggu pembayaran...", "info"); fetchData(); },
           onError:   () => { showToast("❌ Pembayaran gagal", "error"); },
           onClose:   () => { showToast("Pembayaran dibatalkan", "error"); },
         });
@@ -69,6 +70,7 @@ export default function Dashboard() {
     }
   };
 
+  // ── BAYAR BULK ────────────────────────────────────────────────────────────
   const handleBulkBayar = async () => {
     if (selectedIds.length === 0) return;
     setLoading(true);
@@ -83,7 +85,7 @@ export default function Dashboard() {
       if (data.snapToken) {
         window.snap.pay(data.snapToken, {
           onSuccess: () => { showToast("✅ Pembayaran berhasil!"); fetchData(); },
-          onPending: () => { showToast("⏳ Menunggu pembayaran...", "info"); },
+          onPending: () => { showToast("⏳ Menunggu pembayaran...", "info"); fetchData(); },
           onError:   () => { showToast("❌ Pembayaran gagal", "error"); },
           onClose:   () => { showToast("Pembayaran dibatalkan", "error"); },
         });
@@ -460,7 +462,6 @@ export default function Dashboard() {
         .btn-bulk:hover:not(:disabled){transform:translateY(-1px)}
         .btn-bulk:disabled{opacity:.45;cursor:not-allowed;background:#aaa;box-shadow:none}
 
-        /* ── PAYMENT ROWS (riwayat) ── */
         .pr{display:flex;align-items:center;gap:11px;padding:12px 17px;border-bottom:1px solid #f5f8f5}
         .pr:last-child{border-bottom:none}
         .pi{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
@@ -477,7 +478,6 @@ export default function Dashboard() {
         .ps.failed{background:#fff0f0;color:#c62828}
         .ps.pending{background:#fffbeb;color:#92400e}
 
-        /* Tombol cetak bukti */
         .btn-cetak-bukti{
           background:#f0fdf4;color:#1a6b35;
           border:1.5px solid #c3dfc9;
@@ -788,7 +788,6 @@ export default function Dashboard() {
                           <div className="pr-r">
                             <div className="pa">{rp(pay.amount)}</div>
                             <span className={`ps ${s.cls}`}>{s.label}</span>
-                            {/* ── TOMBOL CETAK BUKTI (hanya untuk SUCCESS) ── */}
                             {pay.status === "SUCCESS" && (
                               <button
                                 className="btn-cetak-bukti"
@@ -859,7 +858,7 @@ export default function Dashboard() {
             <div className="mh"/>
             <div className="cico">💳</div>
             <div className="ctit">Konfirmasi Pembayaran</div>
-            <div className="cdesc">Pilih metode pembayaran di popup Midtrans. Setelah selesai, status tagihan akan otomatis diperbarui.</div>
+            <div className="cdesc">Kamu akan diarahkan ke halaman pembayaran. Setelah bayar, sistem akan otomatis mengkonfirmasi pembayaranmu.</div>
             <div className="cbox">
               <div className="cbl">{showPayModal.paymentType?.name}</div>
               <div className="cbv">{rp(showPayModal.amount)}</div>
