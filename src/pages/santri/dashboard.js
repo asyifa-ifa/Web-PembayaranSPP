@@ -111,12 +111,12 @@ export default function Dashboard() {
     }
     setLoading(true);
     setShowPayModal(null);
-    try {
-      const res = await fetch("/api/payments/midtrans-create", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ billId: bill.id }),
-      });
+    // try {
+    //   const res = await fetch("/api/payments/midtrans-create", {
+    //     method:  "POST",
+    //     headers: { "Content-Type": "application/json" },
+    //     body:    JSON.stringify({ billId: bill.id }),
+    //   });
       const data = await res.json();
 
       if (!data.snapToken) {
