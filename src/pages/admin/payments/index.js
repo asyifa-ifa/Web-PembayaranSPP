@@ -298,7 +298,7 @@ export default function PaymentPage() {
             <div className="stat-icon bg-amber">🔔</div>
             <div>
               <p className="stat-label">Metode Pembayaran</p>
-              <h3>2 <span className="stat-unit">Cash & Duitku</span></h3>
+              <h3>2 <span className="stat-unit">Cash & Midtrans</span></h3>
             </div>
           </div>
         </div>
