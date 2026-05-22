@@ -44,32 +44,33 @@ export default async function handler(req, res) {
         itemDetails,
       })
 
-      // 🔴 AMAN: Ekstraksi token secara aman, apakah dalam bentuk string langsung atau objek
-      const tokenHasil = typeof snap === 'string' ? snap : (snap?.token || snap?.snapToken);
+      const tokenHasil = typeof snap === 'string' ? snap : (snap?.token || snap?.snapToken)
 
       if (!tokenHasil) {
-        return res.status(500).json({ 
-          message: "Gagal membuat transaksi Midtrans di sistem core", 
-          detail: snap 
+        return res.status(500).json({
+          message: "Gagal membuat transaksi Midtrans",
+          detail: snap,
         })
       }
 
-      // Simpan semua payment sebagai PENDING
-      await prisma.payment.createMany({
-        data: bills.map(b => ({
-          studentId:     b.studentId,
-          paymentTypeId: b.paymentTypeId,
-          amount:        b.amount,
-          method:        "TRANSFER",
-          status:        "PENDING",
-          gatewayRef:    orderId,
-        })),
-      })
+      // ✅ Simpan payment dengan billId
+      await prisma.$transaction(
+        bills.map(b =>
+          prisma.payment.create({
+            data: {
+              studentId:     b.studentId,
+              paymentTypeId: b.paymentTypeId,
+              amount:        b.amount,
+              method:        "TRANSFER",
+              status:        "PENDING",
+              gatewayRef:    orderId,
+              billId:        b.id, // ✅ simpan billId
+            },
+          })
+        )
+      )
 
-      return res.status(200).json({
-        snapToken: tokenHasil, // Dijamin string token valid
-        orderId,
-      })
+      return res.status(200).json({ snapToken: tokenHasil, orderId })
     }
 
     // ── SINGLE PAYMENT (billId) ───────────────────────────────────────────
@@ -98,16 +99,16 @@ export default async function handler(req, res) {
       name:           bill.student.name,
     })
 
-    // 🔴 AMAN: Ekstraksi token secara aman untuk single payment
-    const tokenHasilSingle = typeof snap === 'string' ? snap : (snap?.token || snap?.snapToken);
+    const tokenHasilSingle = typeof snap === 'string' ? snap : (snap?.token || snap?.snapToken)
 
     if (!tokenHasilSingle) {
-      return res.status(500).json({ 
-        message: "Gagal membuat transaksi Midtrans di sistem core", 
-        detail: snap 
+      return res.status(500).json({
+        message: "Gagal membuat transaksi Midtrans",
+        detail: snap,
       })
     }
 
+    // ✅ Simpan payment dengan billId
     await prisma.payment.create({
       data: {
         studentId:     bill.studentId,
@@ -116,13 +117,11 @@ export default async function handler(req, res) {
         method:        "TRANSFER",
         status:        "PENDING",
         gatewayRef:    orderId,
+        billId:        bill.id, // ✅ simpan billId
       },
     })
 
-    return res.status(200).json({
-      snapToken: tokenHasilSingle, 
-      orderId,
-    })
+    return res.status(200).json({ snapToken: tokenHasilSingle, orderId })
 
   } catch (error) {
     console.error("MIDTRANS CREATE ERROR:", error)

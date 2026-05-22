@@ -135,6 +135,8 @@ model Bill {
   status        BillStatus  @default(UNPAID)
   dueDate       DateTime?
   createdAt     DateTime    @default(now())
+
+  payments      Payment[]
 }
 
 enum BillStatus {
@@ -156,6 +158,9 @@ model Payment {
 
   semesterId Int?
   semester   Semester? @relation(fields: [semesterId], references: [id])
+
+  billId    Int?
+  bill      Bill?   @relation(fields: [billId], references: [id])
 
   amount Int
   method PaymentMethod
