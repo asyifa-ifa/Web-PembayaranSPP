@@ -426,7 +426,13 @@ export default function PaymentPage() {
                   <h3>📋 Buat Tagihan Baru</h3>
                   <p className="modal-sub">Pilih salah satu santri dan lampirkan beberapa tipe tagihan sekaligus.</p>
                 </div>
-                <button className="close-x" onClick={() => setShowTambah(false)}>✕</button>
+                <button className="close-x" onClick={() => {
+                  setShowTambah(false);
+                  setTambahItems([]);
+                  setTambahStudentId("");
+                  setSearchSantri("");
+                  setOpenDropdown(false);
+                }}>✕</button>
               </div>
 
               {/* SEARCHABLE DROPDOWN */}
@@ -435,12 +441,14 @@ export default function PaymentPage() {
                 <div style={{ position: "relative" }}>
                   <input
                     type="text"
-                    placeholder={selectedSantriName ? selectedSantriName : "🔍 Ketik nama atau NIS santri untuk mencari..."}
-                    value={searchSantri}
+                    placeholder="🔍 Ketik nama atau NIS santri untuk mencari..."
+                    value={tambahStudentId ? selectedSantriName : searchSantri}
                     onChange={e => {
                       setSearchSantri(e.target.value);
                       setOpenDropdown(true);
-                      if (tambahStudentId) setTambahStudentId("");
+                      if (tambahStudentId) {
+                        setTambahStudentId("");
+                      }
                     }}
                     onFocus={() => setOpenDropdown(true)}
                     className="form-input search-input-icon"
@@ -453,14 +461,15 @@ export default function PaymentPage() {
                         setOpenDropdown(true);
                       }}
                       className="clear-search"
+                      style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', color: '#94a3b8' }}
                     >✕</span>
                   )}
                 </div>
 
-                {openDropdown && !tambahStudentId && (
-                  <ul className="dropdown-list">
+                {openDropdown && (
+                  <ul className="dropdown-list" style={{ position: 'absolute', width: '100%', zIndex: 50, background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', marginTop: '4px', maxHeight: '200px', overflowY: 'auto', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
                     {modalFilteredStudents.length === 0 ? (
-                      <li className="dropdown-empty">😕 Santri tidak ditemukan</li>
+                      <li className="dropdown-empty" style={{ padding: '10px 14px', color: '#64748b' }}>😕 Santri tidak ditemukan</li>
                     ) : (
                       modalFilteredStudents.map(s => (
                         <li
@@ -471,9 +480,10 @@ export default function PaymentPage() {
                             setOpenDropdown(false);
                           }}
                           className="dropdown-item"
+                          style={{ padding: '10px 14px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9' }}
                         >
-                          <span className="dropdown-name">{s.name}</span>
-                          <span className="badge-class" style={{fontSize:'11px'}}>{s.class?.name || "-"}</span>
+                          <span className="dropdown-name" style={{ fontWeight: '500', color: '#1e293b' }}>{s.name}</span>
+                          <span className="badge-class" style={{ fontSize: '11px', background: '#f1f5f9', padding: '2px 8px', borderRadius: '4px' }}>{s.class?.name || "-"}</span>
                         </li>
                       ))
                     )}
@@ -531,6 +541,7 @@ export default function PaymentPage() {
                   setTambahItems([]);
                   setTambahStudentId("");
                   setSearchSantri("");
+                  setOpenDropdown(false);
                 }}>
                   Batalkan
                 </button>
@@ -747,332 +758,94 @@ export default function PaymentPage() {
           flex-wrap: wrap;
           box-shadow: 0 1px 3px rgba(0,0,0,0.02);
         }
-        .filter-group {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          flex-wrap: wrap;
-        }
-        .search-wrapper {
-          position: relative;
-          flex: 1;
-          min-width: 260px;
-        }
-        .search-icon {
-          position: absolute;
-          left: 14px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: #94a3b8;
-          font-size: 16px;
-        }
-        .main-search-input {
-          width: 100%;
-          padding: 10px 14px 10px 40px;
-          border-radius: 8px;
-          border: 1px solid #cbd5e1;
-          font-size: 14px;
-          outline: none;
-          transition: all 0.2s;
-        }
-        .main-search-input:focus {
-          border-color: #10b981;
-          box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-        }
-        .filter-select {
-          padding: 10px 14px;
-          border-radius: 8px;
-          border: 1px solid #cbd5e1;
-          font-size: 14px;
-          background: white;
-          outline: none;
-          min-width: 160px;
-          cursor: pointer;
-        }
+        .search-wrapper { position: relative; flex: 1; min-width: 280px; }
+        .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+        .main-search-input { width: 100%; padding: 10px 10px 10px 40px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; outline: none; }
+        .filter-group { display: flex; gap: 12px; }
+        .filter-select { padding: 10px 14px; border-radius: 8px; border: 1px solid #cbd5e1; background: white; font-size: 14px; color: #334155; outline: none; cursor: pointer; }
 
-        /* Tables & Wrappers */
-        .card {
-          background: white;
-          border-radius: 12px;
-          border: 1px solid #e2e8f0;
-          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
-          overflow: hidden;
-        }
-        .table-wrapper {
-          width: 100%;
-          overflow-x: auto;
-        }
+        /* Tables & Cards UI */
+        .card { background: white; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); overflow: hidden; }
+        .table-wrapper { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+        th { background: #f8fafc; padding: 14px 18px; color: #475569; font-weight: 600; border-bottom: 1px solid #e2e8f0; }
+        td { padding: 14px 18px; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: middle; }
+        tr:hover td { background: #f8fafc; }
         
-        /* PERBAIKAN UTAMA: Tambahan class ini menangani overflow tabel di dalam modal secara anggun */
-        .responsiveness-fix {
-          width: 100% !important;
-          overflow-x: auto !important;
-          -webkit-overflow-scrolling: touch;
-          margin-bottom: 15px;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-        }
+        /* Badges & Buttons Styling */
+        .badge-class { background: #f0fdf4; color: #16a34a; padding: 4px 10px; border-radius: 9999px; font-weight: 600; font-size: 12px; display: inline-block; }
+        .btn-tambah { background: #2e6b3e; color: white; border: none; padding: 11px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; transition: all 0.2s; }
+        .btn-tambah:hover { background: #22522e; }
+        .btn-detail { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 8px 14px; border-radius: 6px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+        .btn-detail:hover { background: #e2e8f0; }
         
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          text-align: left;
-          font-size: 14px;
-        }
-        th {
-          background: #f8fafc;
-          padding: 14px 18px;
-          color: #475569;
-          font-weight: 600;
-          border-bottom: 1px solid #e2e8f0;
-        }
-        td {
-          padding: 14px 18px;
-          border-bottom: 1px solid #f1f5f9;
-          color: #334155;
-        }
-        tr:last-child td { border-bottom: none; }
+        /* Modals & Backdrop Styling */
+        .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); }
+        .modal-content { background: white; border-radius: 16px; width: 100%; max-width: 580px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); position: relative; max-height: 90vh; overflow-y: auto; }
+        .detail-modal { max-width: 800px; }
+        .modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+        .modal-header h3 { font-size: 18px; color: #0f172a; margin: 0; }
+        .modal-sub { margin: 4px 0 0; color: #64748b; font-size: 13px; }
+        .close-x { background: none; border: none; font-size: 18px; color: #94a3b8; cursor: pointer; }
+        .close-x:hover { color: #475569; }
+
+        /* Form Controls inside Modal */
+        .form-group { margin-bottom: 18px; position: relative; }
+        .form-label { display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 6px; }
+        .form-input { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none; }
+        .form-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,131,246,0.1); }
         
-        /* Badges & Tags */
-        .badge-class {
-          background: #f1f5f9;
-          color: #475569;
-          padding: 4px 10px;
-          border-radius: 6px;
-          font-size: 12px;
-          font-weight: 600;
-          display: inline-block;
-        }
-        .bg-emerald { background: #d1fae5 !important; color: #065f46 !important; }
-        .font-mono { font-family: monospace; font-size: 13px; }
-        .text-dark { color: #0f172a; font-weight: 500; }
-        .text-muted { color: #64748b; }
-        .status-badge {
-          padding: 4px 8px;
-          border-radius: 6px;
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.5px;
-          display: inline-block;
-        }
-        .status-badge.unpaid { background: #fee2e2; color: #991b1b; }
+        /* Dropdown list item style */
+        .dropdown-item:hover { background: #f8fafc; }
+        
+        /* Custom UI list item payment types */
+        .pt-container { display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto; border: 1px solid #e2e8f0; padding: 8px; border-radius: 8px; }
+        .pt-item { border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; transition: all 0.15s; }
+        .pt-item.active { border-color: #2e6b3e; background: #f0f9f4; }
+        .pt-main-info { display: flex; justify-content: space-between; align-items: center; }
+        .pt-checkbox-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 500; }
+        .pt-default { font-size: 12px; color: #64748b; font-weight: 500; }
+        .pt-inputs-row { display: flex; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed #cbd5e1; }
+        .input-hint { display: block; font-size: 11px; color: #64748b; margin-bottom: 4px; font-weight: 500; }
+        
+        /* Modal Actions Footer Buttons */
+        .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 16px; }
+        .btn-batal { background: white; border: 1px solid #cbd5e1; color: #475569; padding: 10px 18px; border-radius: 8px; font-weight: 500; cursor: pointer; }
+        .btn-batal:hover { background: #f8fafc; }
+        .btn-simpan { background: #2e6b3e; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        .btn-simpan:hover { background: #22522e; }
+
+        /* Detail Student Info Grid */
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .info-item { display: flex; flex-direction: column; gap: 4px; }
+        .info-lbl { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600; letter-spacing: 0.5px; }
+        .info-val { font-size: 14px; font-weight: 600; color: #0f172a; }
+        .section-divider { height: 1px; background: #e2e8f0; margin: 20px 0; }
+        
+        /* Inner Sub-tables & Action items for bills */
+        .action-flex-gap { display: flex; gap: 6px; justify-content: center; align-items: center; }
+        .btn-cash { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 5px 10px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; }
+        .btn-transfer { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 5px 10px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; }
+        .btn-hapus-icon { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 5px 8px; border-radius: 6px; cursor: pointer; }
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; display: inline-block; }
         .status-badge.paid { background: #d1fae5; color: #065f46; }
-        .payment-status {
-          font-size: 11px;
-          font-weight: 700;
-          padding: 3px 8px;
-          border-radius: 4px;
-          text-transform: uppercase;
-        }
-        .payment-status.success { background: #d1fae5; color: #065f46; }
-        .payment-status.pending { background: #fef3c7; color: #92400e; }
-        .payment-status.failed { background: #fee2e2; color: #991b1b; }
-        .method-tag { font-size: 13px; color: #475569; font-weight: 500; }
-
-        /* Buttons & Actions */
-        .btn-tambah {
-          background: #10b981;
-          color: white;
-          border: none;
-          padding: 10px 20px;
-          border-radius: 8px;
-          font-weight: 600;
-          font-size: 14px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          transition: background 0.2s;
-        }
-        .btn-tambah:hover { background: #059669; }
-        .btn-detail {
-          background: white;
-          border: 1px solid #cbd5e1;
-          padding: 6px 12px;
-          border-radius: 6px;
-          font-size: 13px;
-          font-weight: 500;
-          cursor: pointer;
-          color: #334155;
-          transition: all 0.2s;
-        }
-        .btn-detail:hover { background: #f8fafc; border-color: #94a3b8; }
+        .status-badge.unpaid { background: #fee2e2; color: #991b1b; }
         
-        /* Flex Utilities */
-        .action-flex-gap {
-          display: flex;
-          gap: 6px;
-          align-items: center;
-          justify-content: center;
-          min-width: 190px; /* Menjamin tombol-tombol aksi tidak bertumpuk */
-        }
-        .justify-center { justify-content: center; }
-        
-        /* Sub Action Buttons */
-        .btn-cash { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
-        .btn-cash:hover { background: #dcfce7; }
-        .btn-transfer { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
-        .btn-transfer:hover { background: #dbeafe; }
-        .btn-hapus-icon { background: #fff5f5; border: 1px solid #fed7d7; padding: 4px 8px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
-        .btn-hapus-icon:hover { background: #fee2e2; border-color: #fca5a5; }
-        .btn-cetak { background: #f8fafc; border: 1px solid #cbd5e1; color: #334155; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; }
-        .btn-cetak:hover { background: #f1f5f9; }
-        .btn-hapus-small { background: transparent; border: none; color: #ef4444; font-size: 12px; cursor: pointer; font-weight: 500; }
-        .btn-hapus-small:hover { text-decoration: underline; }
-
-        /* Pagination Layout */
-        .pagination-wrapper {
-          padding: 16px 20px;
-          border-top: 1px solid #e2e8f0;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          background: #f8fafc;
-          flex-wrap: wrap;
-          gap: 12px;
-        }
+        /* Pagination Section */
+        .pagination-wrapper { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: white; border-top: 1px solid #e2e8f0; }
         .pagination-info { font-size: 13px; color: #64748b; }
         .pagination-info span { font-weight: 600; color: #334155; }
         .pagination-buttons { display: flex; align-items: center; gap: 12px; }
-        .btn-page {
-          background: white;
-          border: 1px solid #cbd5e1;
-          padding: 6px 14px;
-          border-radius: 6px;
-          font-size: 13px;
-          font-weight: 500;
-          cursor: pointer;
-          color: #334155;
-        }
-        .btn-page:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-page { background: white; border: 1px solid #cbd5e1; color: #334155; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; }
+        .btn-page:disabled { color: #cbd5e1; cursor: not-allowed; border-color: #e2e8f0; }
         .page-indicator { font-size: 13px; color: #64748b; }
-
-        /* Modal Structure Styles */
-        .modal-backdrop {
-          position: fixed;
-          top: 0; left: 0; right: 0; bottom: 0;
-          background: rgba(15, 23, 42, 0.4);
-          backdrop-filter: blur(4px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 999;
-          padding: 16px;
-        }
-        .modal-content {
-          background: white;
-          border-radius: 16px;
-          width: 100%;
-          max-width: 580px;
-          padding: 24px;
-          box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
-          max-height: 90vh;
-          overflow-y: auto; /* Untuk modal input tagihan */
-        }
         
-        /* PERBAIKAN UTAMA: Menaikkan max-width khusus detail modal agar menampung tabel dengan baik */
-        .detail-modal {
-          max-width: 800px !important; 
-        }
-        
-        .modal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 20px;
-        }
-        .modal-sub { margin: 4px 0 0; color: #64748b; font-size: 13px; }
-        .close-x {
-          background: #f1f5f9; border: none; color: #64748b;
-          width: 28px; height: 28px; border-radius: 50%;
-          font-size: 12px; cursor: pointer; display: flex;
-          align-items: center; justify-content: center;
-        }
-        .close-x:hover { background: #e2e8f0; color: #1e293b; }
-
-        /* Searchable Dropdown Inside Modal */
-        .form-group { margin-bottom: 16px; }
-        .form-label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
-        .form-input {
-          width: 100%; padding: 10px 12px; border-radius: 8px;
-          border: 1px solid #cbd5e1; font-size: 14px; outline: none;
-        }
-        .form-input:focus { border-color: #10b981; }
-        .clear-search {
-          position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-          color: #94a3b8; font-size: 12px; cursor: pointer; background: #f1f5f9;
-          width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-        }
-        .dropdown-list {
-          position: absolute; top: 100%; left: 0; right: 0;
-          background: white; border: 1px solid #e2e8f0; border-radius: 8px;
-          margin: 4px 0 0; padding: 6px 0; list-style: none;
-          max-height: 200px; overflow-y: auto; z-index: 10;
-          box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
-        }
-        .dropdown-item {
-          padding: 8px 14px; display: flex; justify-content: space-between;
-          align-items: center; cursor: pointer;
-        }
-        .dropdown-item:hover { background: #f8fafc; }
-        .dropdown-name { font-size: 14px; font-weight: 500; color: #1e293b; }
-        .dropdown-empty { padding: 12px; text-align: center; color: #64748b; font-size: 13px; }
-
-        /* Payment Type Checklist Item Container */
-        .pt-container {
-          border: 1px solid #e2e8f0; border-radius: 8px;
-          max-height: 240px; overflow-y: auto; padding: 4px;
-          background: #f8fafc;
-        }
-        .pt-item {
-          background: white; border: 1px solid #e2e8f0;
-          border-radius: 6px; padding: 12px; margin-bottom: 4px;
-        }
-        .pt-item.active { border-color: #a7f3d0; background: #f0fdf4; }
-        .pt-main-info { display: flex; justify-content: space-between; align-items: center; }
-        .pt-checkbox-label { display: flex; align-items: center; gap: 10px; cursor: pointer; margin: 0; }
-        .pt-name { font-size: 14px; font-weight: 600; color: #1e293b; }
-        .pt-default { font-size: 12px; color: #64748b; font-weight: 500; }
-        .pt-inputs-row { display: flex; gap: 12px; margin-top: 10px; border-top: 1px dashed #e2e8f0; padding-top: 10px; }
-        .input-hint { display: block; font-size: 11px; color: #64748b; margin-bottom: 4px; font-weight: 500; }
-
-        /* Student Detail Info Mini Grid */
-        .info-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 12px 20px;
-          background: #f8fafc; padding: 16px; border-radius: 10px;
-          border: 1px solid #e2e8f0;
-        }
-        .info-item { display: flex; flex-direction: column; gap: 2px; }
-        .info-lbl { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; }
-        .info-val { font-size: 14px; font-weight: 600; color: #0f172a; }
-        .section-divider { height: 1px; background: #e2e8f0; margin: 20px 0; }
-
-        /* Modal Footer Action Bars */
-        .modal-actions {
-          display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;
-        }
-        .btn-batal {
-          background: white; border: 1px solid #cbd5e1; padding: 10px 18px;
-          border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; color: #475569;
-        }
-        .btn-simpan {
-          background: #1e293b; color: white; border: none; padding: 10px 18px;
-          border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
-        }
-        .btn-simpan:disabled { opacity: 0.6; }
-        .modal-footer-action { display: flex; justify-content: flex-end; margin-top: 20px; }
-        .btn-tutup {
-          background: #64748b; color: white; border: none; padding: 10px 20px;
-          border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
-        }
-        .btn-tutup:hover { background: #475569; }
-
-        /* States Text definitions */
+        /* Helper Utility */
+        .font-mono { font-family: monospace; font-size: 13px; }
+        .text-dark { color: #1e293b; font-weight: 500; }
+        .text-muted { color: #64748b; }
         .empty-state { text-align: center; padding: 40px !important; color: #64748b; }
         .empty-icon { font-size: 32px; margin-bottom: 8px; }
-        .empty-subtext { color: #64748b; font-size: 13px; font-style: italic; background: #f8fafc; padding: 12px; border-radius: 6px; text-align: center; margin: 0; }
-        .text-success { color: #166534; font-size: 13px; font-weight: 600; }
       `}</style>
     </AdminLayout>
   );
