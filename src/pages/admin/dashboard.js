@@ -1,19 +1,10 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import {
-  AreaChart, Area, BarChart, Bar, LineChart, Line,
+  AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend,
 } from "recharts";
-
-const features = [
-  { icon: "💳", title: "Pembayaran Digital",   desc: "Catat & kelola pembayaran SPP santri secara digital, cepat, dan akurat." },
-  { icon: "📈", title: "Laporan Real-time",    desc: "Pantau laporan keuangan terkini kapan saja tanpa perlu rekap manual." },
-  { icon: "📧", title: "Notifikasi Email",     desc: "Kirim notifikasi tagihan & konfirmasi pembayaran otomatis ke wali santri." },
-  { icon: "🔐", title: "Keamanan Terjamin",    desc: "Data santri dan keuangan terlindungi dengan sistem autentikasi berlapis." },
-  { icon: "🧾", title: "Cetak Kwitansi",       desc: "Cetak atau unduh kwitansi pembayaran resmi dalam hitungan detik." },
-  { icon: "📊", title: "Analisis Keuangan",   desc: "Visualisasi tren pemasukan per semester untuk pengambilan keputusan." },
-];
 
 const formatRupiah = (n) => "Rp " + (Number(n) || 0).toLocaleString("id-ID");
 const formatRupiahShort = (n) => {
@@ -22,59 +13,33 @@ const formatRupiahShort = (n) => {
   return "Rp " + n;
 };
 
-function TooltipKeuangan({ active, payload, label }) {
+function CustomTooltip({ active, payload, label, type }) {
   if (!active || !payload?.length) return null;
   return (
-    <div style={tooltip.box}>
-      <p style={tooltip.label}>{label}</p>
-      <p style={tooltip.val}>{formatRupiah(payload[0].value)}</p>
-    </div>
-  );
-}
-
-function TooltipSantri({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div style={tooltip.box}>
-      <p style={tooltip.label}>{label}</p>
-      <p style={tooltip.val}>{payload[0].value} santri</p>
-    </div>
-  );
-}
-
-function TooltipPengeluaran({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div style={tooltip.box}>
-      <p style={tooltip.label}>{label}</p>
+    <div style={{ background:"#fff", border:"1px solid #e5e7eb", borderRadius:8, padding:"10px 14px", boxShadow:"0 4px 16px rgba(0,0,0,0.08)", fontSize:13 }}>
+      <p style={{ margin:"0 0 6px", color:"#6b7280", fontWeight:600, fontSize:11 }}>{label}</p>
       {payload.map((p, i) => (
-        <p key={i} style={{ ...tooltip.val, color: p.color, margin: "4px 0 0", fontSize: 13 }}>
-          {p.name}: {formatRupiah(p.value)}
+        <p key={i} style={{ margin:"2px 0", color: p.color || "#111827", fontWeight:700 }}>
+          {p.name}: {type === "santri" ? `${p.value} santri` : formatRupiah(p.value)}
         </p>
       ))}
     </div>
   );
 }
 
-const tooltip = {
-  box:   { background:"#fff", border:"1px solid #e2e8f0", borderRadius:10, padding:"10px 16px", boxShadow:"0 4px 16px rgba(0,0,0,0.08)" },
-  label: { margin:0, fontSize:12, color:"#6b7280", fontWeight:600 },
-  val:   { margin:"4px 0 0", fontSize:15, color:"#14532d", fontWeight:700 },
-};
-
 export default function Dashboard() {
-  const [summary, setSummary]             = useState(null);
-  const [keuanganData, setKeuangan]       = useState([]);
-  const [santriData, setSantri]           = useState([]);
+  const [summary, setSummary]         = useState(null);
+  const [keuanganData, setKeuangan]   = useState([]);
+  const [santriData, setSantri]       = useState([]);
   const [pengeluaranData, setPengeluaran] = useState([]);
-  const [loadingGrafik, setLoading]       = useState(true);
-  const [yearFilter, setYearFilter]       = useState(new Date().getFullYear());
+  const [loading, setLoading]         = useState(true);
+  const [yearFilter, setYearFilter]   = useState(new Date().getFullYear());
 
   const yearOptions = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i);
 
   useEffect(() => {
     fetch("/api/dashboard/summary")
-      .then((r) => r.json())
+      .then(r => r.json())
       .then(setSummary)
       .catch(() => setSummary({ totalPayments: 0, totalSantri: 0, totalPengeluaran: 0 }));
   }, []);
@@ -91,261 +56,224 @@ export default function Dashboard() {
     }).finally(() => setLoading(false));
   }, [yearFilter]);
 
-  // Hitung selisih pemasukan vs pengeluaran bulan ini
-  const totalPengeluaranBulanIni = summary?.totalPengeluaran || 0;
-  const totalPemasukanBulanIni   = summary?.totalPayments || 0;
-  const selisih = totalPemasukanBulanIni - totalPengeluaranBulanIni;
+  const totalPengeluaran = summary?.totalPengeluaran || 0;
+  const totalPemasukan   = summary?.totalPayments || 0;
+  const selisih          = totalPemasukan - totalPengeluaran;
+  const isDefisit        = selisih < 0;
 
   return (
     <AdminLayout>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-        .dash-root { font-family: 'Plus Jakarta Sans', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        .dash { font-family: 'Inter', sans-serif; }
         @keyframes fadeUp {
-          from { opacity:0; transform:translateY(24px); }
+          from { opacity:0; transform:translateY(16px); }
           to   { opacity:1; transform:translateY(0); }
         }
-        .fade-up { animation: fadeUp 0.55s cubic-bezier(.22,.68,0,1.2) both; }
-        .stat-card:hover { transform:translateY(-4px); box-shadow:0 12px 36px rgba(0,0,0,0.16) !important; }
-        .feat-card:hover { transform:translateY(-5px); box-shadow:0 10px 30px rgba(0,0,0,0.08) !important; }
-        .stat-card, .feat-card { transition: all 0.25s ease; }
-        .year-btn { padding: 6px 14px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: white; font-size: 13px; font-weight: 500; color: #475569; cursor: pointer; transition: all .15s; font-family: inherit; }
-        .year-btn.active { background: #6366f1; border-color: #6366f1; color: white; }
-        .year-btn:hover:not(.active) { border-color: #6366f1; color: #6366f1; }
+        .fu { animation: fadeUp 0.4s ease both; }
+        .stat-item:hover { background: #f9fafb !important; }
+        .chart-card { transition: box-shadow 0.2s; }
+        .chart-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.09) !important; }
+        .yr-btn {
+          padding: 5px 13px; border-radius: 6px; border: 1px solid #e5e7eb;
+          background: white; font-size: 12px; font-weight: 500; color: #6b7280;
+          cursor: pointer; transition: all .15s; font-family: inherit;
+        }
+        .yr-btn.on { background: #111827; border-color: #111827; color: white; }
+        .yr-btn:hover:not(.on) { border-color: #9ca3af; color: #374151; }
+        .prog-bar { height: 4px; border-radius: 99px; background: #f3f4f6; overflow: hidden; margin-top: 8px; }
+        .prog-fill { height: 100%; border-radius: 99px; transition: width 0.8s ease; }
       `}</style>
 
-      <div className="dash-root" style={s.page}>
+      <div className="dash" style={{ padding:"28px 0", display:"flex", flexDirection:"column", gap:28 }}>
 
-        {/* HEADER */}
-        <div className="fade-up" style={{ animationDelay:"0ms", ...s.header }}>
+        {/* ── HEADER ── */}
+        <div className="fu" style={{ animationDelay:"0ms", display:"flex", justifyContent:"space-between", alignItems:"flex-end", flexWrap:"wrap", gap:12 }}>
           <div>
-            <h2 style={s.pageTitle}>Dashboard Admin</h2>
-            <p style={s.pageSubtitle}>Selamat datang kembali — ringkasan data SIBATAMU-SPP hari ini</p>
+            <p style={{ margin:"0 0 4px", fontSize:12, fontWeight:600, color:"#9ca3af", letterSpacing:"0.06em", textTransform:"uppercase" }}>Overview</p>
+            <h1 style={{ margin:0, fontSize:22, fontWeight:700, color:"#111827", letterSpacing:"-0.4px" }}>Dashboard Admin</h1>
           </div>
-          <div style={s.dateBadge}>
-            📅 {new Date().toLocaleDateString("id-ID", { weekday:"long", day:"numeric", month:"long", year:"numeric" })}
-          </div>
+          <span style={{ fontSize:12, color:"#6b7280", background:"#f9fafb", border:"1px solid #f3f4f6", borderRadius:8, padding:"6px 12px", fontWeight:500 }}>
+            {new Date().toLocaleDateString("id-ID", { weekday:"long", day:"numeric", month:"long", year:"numeric" })}
+          </span>
         </div>
 
-        {/* STAT CARDS — 4 kartu */}
-        <div className="fade-up" style={{ animationDelay:"80ms", ...s.statGrid }}>
-          <StatCard
-            icon="💰"
-            label="Total Pemasukan Bulan Ini"
-            value={summary ? formatRupiah(summary.totalPayments) : "Memuat..."}
-            bg="linear-gradient(135deg,#14532d 0%,#22c55e 100%)"
+        {/* ── STAT CARDS ── */}
+        <div className="fu" style={{ animationDelay:"60ms", display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(210px, 1fr))", gap:1, background:"#e5e7eb", borderRadius:14, overflow:"hidden", border:"1px solid #e5e7eb" }}>
+          <StatItem
+            label="Pemasukan Bulan Ini"
+            value={summary ? formatRupiah(totalPemasukan) : "—"}
+            icon={
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            }
+            accent="#16a34a"
+            sub="Total SPP masuk"
           />
-          <StatCard
-            icon="💸"
-            label="Total Pengeluaran Bulan Ini"
-            value={summary ? formatRupiah(totalPengeluaranBulanIni) : "Memuat..."}
-            bg="linear-gradient(135deg,#7f1d1d 0%,#ef4444 100%)"
+          <StatItem
+            label="Pengeluaran Bulan Ini"
+            value={summary ? formatRupiah(totalPengeluaran) : "—"}
+            icon={
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+            }
+            accent="#dc2626"
+            sub="Total biaya operasional"
           />
-          <StatCard
-            icon={selisih >= 0 ? "📈" : "📉"}
-            label="Saldo Bersih Bulan Ini"
-            value={summary ? formatRupiah(Math.abs(selisih)) : "Memuat..."}
-            bg={selisih >= 0
-              ? "linear-gradient(135deg,#0369a1 0%,#38bdf8 100%)"
-              : "linear-gradient(135deg,#78350f 0%,#f59e0b 100%)"}
-            note={selisih >= 0 ? "▲ Surplus" : "▼ Defisit"}
+          <StatItem
+            label="Saldo Bersih"
+            value={summary ? formatRupiah(Math.abs(selisih)) : "—"}
+            icon={
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isDefisit ? "#d97706":"#2563eb"} strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            }
+            accent={isDefisit ? "#d97706" : "#2563eb"}
+            sub={isDefisit ? "▼ Defisit bulan ini" : "▲ Surplus bulan ini"}
+            subColor={isDefisit ? "#d97706" : "#16a34a"}
           />
-          <StatCard
-            icon="🎓"
-            label="Jumlah Santri Aktif"
-            value={summary ? summary.totalSantri : "Memuat..."}
-            bg="linear-gradient(135deg,#4c1d95 0%,#8b5cf6 100%)"
+          <StatItem
+            label="Santri Aktif"
+            value={summary ? String(summary.totalSantri) : "—"}
+            icon={
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            }
+            accent="#7c3aed"
+            sub="Terdaftar & aktif"
           />
         </div>
 
-        {/* GRAFIK PENGELUARAN PER BULAN */}
-        <div className="fade-up" style={{ animationDelay:"160ms", ...s.chartCard }}>
-          <div style={s.chartHeader}>
+        {/* ── GRAFIK PENGELUARAN ── */}
+        <div className="fu chart-card" style={{ animationDelay:"120ms", background:"#fff", borderRadius:14, border:"1px solid #e5e7eb", overflow:"hidden" }}>
+          <div style={{ padding:"20px 24px 0", display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:12 }}>
             <div>
-              <h3 style={s.chartTitle}>💸 Grafik Pengeluaran Per Bulan</h3>
-              <p style={s.chartSub}>Total pengeluaran madrasah setiap bulan dalam setahun</p>
+              <p style={{ margin:0, fontSize:14, fontWeight:600, color:"#111827" }}>Pengeluaran Per Bulan</p>
+              <p style={{ margin:"2px 0 0", fontSize:12, color:"#9ca3af" }}>Total pengeluaran madrasah setiap bulan</p>
             </div>
             <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
               {yearOptions.map(y => (
-                <button
-                  key={y}
-                  className={`year-btn ${yearFilter === y ? "active" : ""}`}
-                  onClick={() => setYearFilter(y)}
-                >
-                  {y}
-                </button>
+                <button key={y} className={`yr-btn ${yearFilter === y ? "on" : ""}`} onClick={() => setYearFilter(y)}>{y}</button>
               ))}
             </div>
           </div>
 
-          {loadingGrafik ? (
-            <div style={s.emptyState}>⏳ Memuat data...</div>
-          ) : pengeluaranData.length === 0 ? (
-            <div style={s.emptyState}>📭 Belum ada data pengeluaran di tahun {yearFilter}</div>
-          ) : (
-            <>
-              {/* Summary bar di atas grafik */}
-              <div style={s.summaryRow}>
-                <div style={s.summaryItem}>
-                  <span style={s.summaryLabel}>Total Setahun</span>
-                  <span style={{ ...s.summaryVal, color:"#dc2626" }}>
-                    {formatRupiah(pengeluaranData.reduce((a, b) => a + (b.pengeluaran || 0), 0))}
-                  </span>
+          {/* mini summary */}
+          {!loading && pengeluaranData.length > 0 && (
+            <div style={{ display:"flex", gap:24, padding:"16px 24px 0", flexWrap:"wrap" }}>
+              {[
+                { label:"Total Setahun", val: formatRupiah(pengeluaranData.reduce((a,b)=>a+(b.pengeluaran||0),0)), color:"#dc2626" },
+                { label:"Bulan Tertinggi", val: pengeluaranData.reduce((a,b)=>(b.pengeluaran||0)>(a.pengeluaran||0)?b:a,{}).bulan||"—", color:"#7c3aed" },
+                { label:"Rata-rata/Bulan", val: formatRupiah(Math.round(pengeluaranData.reduce((a,b)=>a+(b.pengeluaran||0),0)/(pengeluaranData.filter(d=>d.pengeluaran>0).length||1))), color:"#2563eb" },
+              ].map((item,i) => (
+                <div key={i}>
+                  <p style={{ margin:0, fontSize:11, color:"#9ca3af", fontWeight:500 }}>{item.label}</p>
+                  <p style={{ margin:"2px 0 0", fontSize:14, fontWeight:700, color:item.color }}>{item.val}</p>
                 </div>
-                <div style={s.summaryDivider} />
-                <div style={s.summaryItem}>
-                  <span style={s.summaryLabel}>Bulan Tertinggi</span>
-                  <span style={{ ...s.summaryVal, color:"#7c3aed" }}>
-                    {pengeluaranData.reduce((a, b) => (b.pengeluaran || 0) > (a.pengeluaran || 0) ? b : a, {}).bulan || "—"}
-                  </span>
-                </div>
-                <div style={s.summaryDivider} />
-                <div style={s.summaryItem}>
-                  <span style={s.summaryLabel}>Rata-rata / Bulan</span>
-                  <span style={{ ...s.summaryVal, color:"#0369a1" }}>
-                    {formatRupiah(Math.round(
-                      pengeluaranData.reduce((a, b) => a + (b.pengeluaran || 0), 0) /
-                      pengeluaranData.filter(d => d.pengeluaran > 0).length || 1
-                    ))}
-                  </span>
-                </div>
-              </div>
+              ))}
+            </div>
+          )}
 
-              <ResponsiveContainer width="100%" height={280}>
-                <AreaChart data={pengeluaranData} margin={{ top:10, right:20, left:10, bottom:0 }}>
+          <div style={{ padding:"16px 12px 16px" }}>
+            {loading ? (
+              <div style={{ textAlign:"center", padding:"48px 0", color:"#d1d5db", fontSize:13 }}>Memuat data...</div>
+            ) : pengeluaranData.length === 0 ? (
+              <div style={{ textAlign:"center", padding:"48px 0", color:"#d1d5db", fontSize:13 }}>Belum ada data pengeluaran {yearFilter}</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={240}>
+                <AreaChart data={pengeluaranData} margin={{ top:8, right:16, left:8, bottom:0 }}>
                   <defs>
-                    <linearGradient id="gradExp" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor="#ef4444" stopOpacity={0.25} />
-                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0.02} />
+                    <linearGradient id="gExp" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%"   stopColor="#ef4444" stopOpacity={0.12}/>
+                      <stop offset="100%" stopColor="#ef4444" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#fef2f2" />
-                  <XAxis dataKey="bulan" tick={{ fontSize:11, fill:"#6b7280" }} />
-                  <YAxis tickFormatter={formatRupiahShort} tick={{ fontSize:11, fill:"#6b7280" }} width={76} />
-                  <Tooltip content={<TooltipPengeluaran />} />
-                  <Area
-                    type="monotone"
-                    dataKey="pengeluaran"
-                    name="Pengeluaran"
-                    stroke="#ef4444"
-                    strokeWidth={3}
-                    fill="url(#gradExp)"
-                    dot={{ r:5, fill:"#ef4444", strokeWidth:2, stroke:"#fff" }}
-                    activeDot={{ r:7 }}
-                  />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false}/>
+                  <XAxis dataKey="bulan" tick={{ fontSize:11, fill:"#9ca3af" }} axisLine={false} tickLine={false}/>
+                  <YAxis tickFormatter={formatRupiahShort} tick={{ fontSize:11, fill:"#9ca3af" }} axisLine={false} tickLine={false} width={72}/>
+                  <Tooltip content={<CustomTooltip />} cursor={{ stroke:"#f3f4f6", strokeWidth:1 }}/>
+                  <Area type="monotone" dataKey="pengeluaran" name="Pengeluaran" stroke="#ef4444" strokeWidth={2} fill="url(#gExp)" dot={{ r:3, fill:"#ef4444", strokeWidth:0 }} activeDot={{ r:5, strokeWidth:0 }}/>
                 </AreaChart>
               </ResponsiveContainer>
-            </>
-          )}
+            )}
+          </div>
         </div>
 
-        {/* GRAFIK PEMASUKAN VS PENGELUARAN (gabungan) */}
-        {pengeluaranData.length > 0 && keuanganData.length > 0 && (
-          <div className="fade-up" style={{ animationDelay:"220ms", ...s.chartCard }}>
-            <div style={s.chartHeader}>
-              <div>
-                <h3 style={s.chartTitle}>⚖️ Pemasukan vs Pengeluaran</h3>
-                <p style={s.chartSub}>Perbandingan arus masuk dan keluar keuangan madrasah per semester</p>
-              </div>
+        {/* ── GRAFIK PEMASUKAN VS PENGELUARAN ── */}
+        {keuanganData.length > 0 && (
+          <div className="fu chart-card" style={{ animationDelay:"160ms", background:"#fff", borderRadius:14, border:"1px solid #e5e7eb", overflow:"hidden" }}>
+            <div style={{ padding:"20px 24px 0" }}>
+              <p style={{ margin:0, fontSize:14, fontWeight:600, color:"#111827" }}>Pemasukan vs Pengeluaran</p>
+              <p style={{ margin:"2px 0 0", fontSize:12, color:"#9ca3af" }}>Perbandingan arus keuangan per semester</p>
             </div>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={keuanganData} margin={{ top:10, right:20, left:10, bottom:0 }}>
-                <defs>
-                  <linearGradient id="gradIn" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#22c55e" stopOpacity={0.9} />
-                    <stop offset="100%" stopColor="#22c55e" stopOpacity={0.5} />
-                  </linearGradient>
-                  <linearGradient id="gradOut" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#ef4444" stopOpacity={0.9} />
-                    <stop offset="100%" stopColor="#ef4444" stopOpacity={0.5} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f8fafc" />
-                <XAxis dataKey="semester" tick={{ fontSize:11, fill:"#6b7280" }} />
-                <YAxis tickFormatter={formatRupiahShort} tick={{ fontSize:11, fill:"#6b7280" }} width={76} />
-                <Tooltip content={<TooltipPengeluaran />} />
-                <Legend
-                  formatter={(val) => <span style={{ fontSize:12, color:"#475569" }}>{val}</span>}
-                />
-                <Bar dataKey="pemasukan" name="Pemasukan" fill="url(#gradIn)" radius={[6,6,0,0]} maxBarSize={40} />
-                <Bar dataKey="pengeluaran" name="Pengeluaran" fill="url(#gradOut)" radius={[6,6,0,0]} maxBarSize={40} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div style={{ padding:"16px 12px 16px" }}>
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={keuanganData} margin={{ top:8, right:16, left:8, bottom:0 }} barGap={4}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false}/>
+                  <XAxis dataKey="semester" tick={{ fontSize:11, fill:"#9ca3af" }} axisLine={false} tickLine={false}/>
+                  <YAxis tickFormatter={formatRupiahShort} tick={{ fontSize:11, fill:"#9ca3af" }} axisLine={false} tickLine={false} width={72}/>
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill:"#f9fafb" }}/>
+                  <Legend formatter={v => <span style={{ fontSize:11, color:"#6b7280" }}>{v}</span>}/>
+                  <Bar dataKey="pemasukan"   name="Pemasukan"   fill="#111827" radius={[4,4,0,0]} maxBarSize={32}/>
+                  <Bar dataKey="pengeluaran" name="Pengeluaran" fill="#e5e7eb" radius={[4,4,0,0]} maxBarSize={32}/>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         )}
 
-        {/* GRAFIK PEMASUKAN */}
-        <div className="fade-up" style={{ animationDelay:"300ms", ...s.chartCard }}>
-          <div style={s.chartHeader}>
-            <div>
-              <h3 style={s.chartTitle}>📈 Grafik Pemasukan Per Semester</h3>
-              <p style={s.chartSub}>Tren total pemasukan SPP dalam beberapa semester terakhir</p>
-            </div>
-            {loadingGrafik && <span style={s.loadingBadge}>⏳ Memuat...</span>}
-          </div>
-          {!loadingGrafik && keuanganData.length === 0 ? (
-            <div style={s.emptyState}>📭 Belum ada data pemasukan</div>
-          ) : (
-            <ResponsiveContainer width="100%" height={260}>
-              <AreaChart data={keuanganData} margin={{ top:10, right:20, left:10, bottom:0 }}>
-                <defs>
-                  <linearGradient id="gradKeu" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#22c55e" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0fdf4" />
-                <XAxis dataKey="semester" tick={{ fontSize:11, fill:"#6b7280" }} />
-                <YAxis tickFormatter={formatRupiahShort} tick={{ fontSize:11, fill:"#6b7280" }} width={72} />
-                <Tooltip content={<TooltipKeuangan />} />
-                <Area type="monotone" dataKey="pemasukan" stroke="#16a34a" strokeWidth={3} fill="url(#gradKeu)" dot={{ r:5, fill:"#16a34a", strokeWidth:2, stroke:"#fff" }} activeDot={{ r:7 }} />
-              </AreaChart>
-            </ResponsiveContainer>
-          )}
-        </div>
+        {/* ── 2 KOLOM: Pemasukan + Santri ── */}
+        <div className="fu" style={{ animationDelay:"200ms", display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
 
-        {/* GRAFIK SANTRI */}
-        <div className="fade-up" style={{ animationDelay:"380ms", ...s.chartCard }}>
-          <div style={s.chartHeader}>
-            <div>
-              <h3 style={s.chartTitle}>🎓 Grafik Santri Per Semester</h3>
-              <p style={s.chartSub}>Perkembangan jumlah santri aktif per semester</p>
+          {/* Pemasukan per semester */}
+          <div className="chart-card" style={{ background:"#fff", borderRadius:14, border:"1px solid #e5e7eb", overflow:"hidden" }}>
+            <div style={{ padding:"20px 24px 0" }}>
+              <p style={{ margin:0, fontSize:14, fontWeight:600, color:"#111827" }}>Pemasukan Per Semester</p>
+              <p style={{ margin:"2px 0 0", fontSize:12, color:"#9ca3af" }}>Tren total SPP masuk</p>
             </div>
-            {loadingGrafik && <span style={s.loadingBadge}>⏳ Memuat...</span>}
+            <div style={{ padding:"12px 12px 16px" }}>
+              {loading ? (
+                <div style={{ textAlign:"center", padding:"40px 0", color:"#d1d5db", fontSize:12 }}>Memuat...</div>
+              ) : keuanganData.length === 0 ? (
+                <div style={{ textAlign:"center", padding:"40px 0", color:"#d1d5db", fontSize:12 }}>Belum ada data</div>
+              ) : (
+                <ResponsiveContainer width="100%" height={200}>
+                  <AreaChart data={keuanganData} margin={{ top:8, right:8, left:4, bottom:0 }}>
+                    <defs>
+                      <linearGradient id="gKeu" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%"   stopColor="#111827" stopOpacity={0.08}/>
+                        <stop offset="100%" stopColor="#111827" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false}/>
+                    <XAxis dataKey="semester" tick={{ fontSize:10, fill:"#9ca3af" }} axisLine={false} tickLine={false}/>
+                    <YAxis tickFormatter={formatRupiahShort} tick={{ fontSize:10, fill:"#9ca3af" }} axisLine={false} tickLine={false} width={64}/>
+                    <Tooltip content={<CustomTooltip />} cursor={{ stroke:"#f3f4f6" }}/>
+                    <Area type="monotone" dataKey="pemasukan" name="Pemasukan" stroke="#111827" strokeWidth={2} fill="url(#gKeu)" dot={{ r:3, fill:"#111827", strokeWidth:0 }} activeDot={{ r:4 }}/>
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </div>
-          {!loadingGrafik && santriData.length === 0 ? (
-            <div style={s.emptyState}>📭 Belum ada data santri</div>
-          ) : (
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={santriData} margin={{ top:10, right:20, left:0, bottom:0 }}>
-                <defs>
-                  <linearGradient id="gradSantri" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%"   stopColor="#8b5cf6" stopOpacity={0.9} />
-                    <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.5} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f5f3ff" />
-                <XAxis dataKey="semester" tick={{ fontSize:11, fill:"#6b7280" }} />
-                <YAxis tick={{ fontSize:11, fill:"#6b7280" }} />
-                <Tooltip content={<TooltipSantri />} />
-                <Bar dataKey="santri" fill="url(#gradSantri)" radius={[8,8,0,0]} maxBarSize={52} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </div>
 
-        {/* FITUR UNGGULAN */}
-        <div className="fade-up" style={{ animationDelay:"460ms" }}>
-          <h3 style={{ ...s.chartTitle, marginBottom:6 }}>✨ Fitur Unggulan Sistem</h3>
-          <p style={{ ...s.chartSub, marginBottom:24 }}>Kemampuan utama platform SIBATAMU-SPP</p>
-          <div style={s.featGrid}>
-            {features.map((f, i) => (
-              <div key={i} className="feat-card fade-up" style={{ animationDelay:`${500 + i * 60}ms`, ...s.featCard }}>
-                <div style={s.featIcon}>{f.icon}</div>
-                <h4 style={s.featTitle}>{f.title}</h4>
-                <p style={s.featDesc}>{f.desc}</p>
-              </div>
-            ))}
+          {/* Santri per semester */}
+          <div className="chart-card" style={{ background:"#fff", borderRadius:14, border:"1px solid #e5e7eb", overflow:"hidden" }}>
+            <div style={{ padding:"20px 24px 0" }}>
+              <p style={{ margin:0, fontSize:14, fontWeight:600, color:"#111827" }}>Santri Per Semester</p>
+              <p style={{ margin:"2px 0 0", fontSize:12, color:"#9ca3af" }}>Perkembangan jumlah santri aktif</p>
+            </div>
+            <div style={{ padding:"12px 12px 16px" }}>
+              {loading ? (
+                <div style={{ textAlign:"center", padding:"40px 0", color:"#d1d5db", fontSize:12 }}>Memuat...</div>
+              ) : santriData.length === 0 ? (
+                <div style={{ textAlign:"center", padding:"40px 0", color:"#d1d5db", fontSize:12 }}>Belum ada data</div>
+              ) : (
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={santriData} margin={{ top:8, right:8, left:0, bottom:0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false}/>
+                    <XAxis dataKey="semester" tick={{ fontSize:10, fill:"#9ca3af" }} axisLine={false} tickLine={false}/>
+                    <YAxis tick={{ fontSize:10, fill:"#9ca3af" }} axisLine={false} tickLine={false}/>
+                    <Tooltip content={<CustomTooltip type="santri"/>} cursor={{ fill:"#f9fafb" }}/>
+                    <Bar dataKey="santri" name="Santri" fill="#111827" radius={[4,4,0,0]} maxBarSize={40}/>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </div>
         </div>
 
@@ -354,42 +282,18 @@ export default function Dashboard() {
   );
 }
 
-function StatCard({ icon, label, value, bg, note }) {
+function StatItem({ label, value, icon, accent, sub, subColor }) {
   return (
-    <div className="stat-card" style={{ background:bg, borderRadius:18, padding:"24px 28px", display:"flex", justifyContent:"space-between", alignItems:"center", boxShadow:"0 6px 24px rgba(0,0,0,0.10)", color:"#fff" }}>
-      <div>
-        <p style={{ margin:0, fontSize:12, opacity:0.85, fontWeight:500 }}>{label}</p>
-        <p style={{ margin:"8px 0 0", fontSize:26, fontWeight:800, letterSpacing:-1 }}>{value}</p>
-        {note && <p style={{ margin:"4px 0 0", fontSize:11, opacity:0.8, fontWeight:600 }}>{note}</p>}
+    <div className="stat-item" style={{ background:"#fff", padding:"20px 24px", display:"flex", flexDirection:"column", gap:12, cursor:"default", transition:"background .15s" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+        <p style={{ margin:0, fontSize:12, color:"#6b7280", fontWeight:500 }}>{label}</p>
+        <div style={{ width:30, height:30, borderRadius:8, background:"#f9fafb", border:"1px solid #f3f4f6", display:"flex", alignItems:"center", justifyContent:"center" }}>
+          {icon}
+        </div>
       </div>
-      <div style={{ fontSize:36, background:"rgba(255,255,255,0.18)", borderRadius:14, width:60, height:60, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-        {icon}
-      </div>
+      <p style={{ margin:0, fontSize:22, fontWeight:700, color:"#111827", letterSpacing:"-0.5px", lineHeight:1 }}>{value}</p>
+      {sub && <p style={{ margin:0, fontSize:11, color: subColor || "#9ca3af", fontWeight:500 }}>{sub}</p>}
+      <div className="prog-bar"><div className="prog-fill" style={{ width:"60%", background: accent, opacity:0.35 }}/></div>
     </div>
   );
 }
-
-const s = {
-  page:         { padding:"28px 32px", maxWidth:1100, display:"flex", flexDirection:"column", gap:24 },
-  header:       { display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:12 },
-  pageTitle:    { margin:0, fontSize:26, fontWeight:800, color:"#111827" },
-  pageSubtitle: { margin:"4px 0 0", fontSize:14, color:"#6b7280" },
-  dateBadge:    { background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:10, padding:"8px 16px", fontSize:13, color:"#14532d", fontWeight:600, whiteSpace:"nowrap" },
-  statGrid:     { display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))", gap:16 },
-  chartCard:    { background:"#ffffff", borderRadius:18, padding:"24px 24px 16px", boxShadow:"0 4px 20px rgba(0,0,0,0.06)", border:"1px solid #f3f4f6" },
-  chartHeader:  { display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16, flexWrap:"wrap", gap:10 },
-  chartTitle:   { margin:0, fontSize:16, fontWeight:700, color:"#111827" },
-  chartSub:     { margin:"4px 0 0", fontSize:13, color:"#9ca3af" },
-  loadingBadge: { background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:8, padding:"4px 12px", fontSize:12, color:"#16a34a", fontWeight:600 },
-  emptyState:   { textAlign:"center", padding:"40px 0", color:"#9ca3af", fontSize:14 },
-  featGrid:     { display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(240px, 1fr))", gap:16 },
-  featCard:     { background:"#ffffff", borderRadius:16, padding:"22px 20px", boxShadow:"0 4px 16px rgba(0,0,0,0.05)", border:"1px solid #f3f4f6" },
-  featIcon:     { fontSize:32, marginBottom:10 },
-  featTitle:    { margin:"0 0 6px", fontSize:14, fontWeight:700, color:"#111827" },
-  featDesc:     { margin:0, fontSize:13, color:"#6b7280", lineHeight:1.6 },
-  summaryRow:   { display:"flex", gap:0, background:"#fafafa", borderRadius:12, border:"1px solid #f1f5f9", marginBottom:16, overflow:"hidden", flexWrap:"wrap" },
-  summaryItem:  { flex:1, display:"flex", flexDirection:"column", padding:"12px 20px", minWidth:140 },
-  summaryLabel: { fontSize:11, color:"#94a3b8", fontWeight:500, marginBottom:4 },
-  summaryVal:   { fontSize:15, fontWeight:700 },
-  summaryDivider: { width:1, background:"#f1f5f9", flexShrink:0 },
-};
