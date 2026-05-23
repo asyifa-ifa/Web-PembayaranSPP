@@ -412,18 +412,11 @@ export default function PaymentPage() {
               <h3>{students.length} <span className="stat-unit">Santri</span></h3>
             </div>
           </div>
-          <div className="stat-card border-green">
-            <div className="stat-icon bg-green">✅</div>
-            <div>
-              <p className="stat-label">Hasil Filter Pencarian</p>
-              <h3>{filteredStudents.length} <span className="stat-unit">Santri Cocok</span></h3>
-            </div>
-          </div>
           <div className="stat-card border-amber">
             <div className="stat-icon bg-amber">🏦</div>
             <div>
-              <p className="stat-label">Gateway Pembayaran</p>
-              <h3>Midtrans <span className="stat-unit">Sandbox</span></h3>
+              <p className="stat-label">Jenis Pembayaran</p>
+              <h3>Tunai & Transfer</h3>
             </div>
           </div>
         </div>
@@ -504,7 +497,7 @@ export default function PaymentPage() {
                     <td style={{ fontWeight: "600", color: "#1e293b" }}>{s.name}</td>
                     <td style={{ textAlign: "center" }}>
                       <button className="btn-detail" onClick={() => openDetail(s.id)}>
-                        👁️ Detail & Bayar
+                        Detail & Bayar
                       </button>
                     </td>
                   </tr>
