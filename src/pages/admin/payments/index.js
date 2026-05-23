@@ -143,7 +143,7 @@ export default function PaymentPage() {
   const cekTransaksi = async (billId) => {
     setCekLoadingId(billId);
     try {
-      const res = await fetch(`/api/payments/midtrans-check/${billId}`, {
+      const res = await fetch(`/api/payments/midtrans-check?billId=${billId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
