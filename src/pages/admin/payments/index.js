@@ -23,6 +23,10 @@ export default function PaymentPage() {
   const [tambahItems, setTambahItems] = useState([]);
   const [loadingTambah, setLoadingTambah] = useState(false);
 
+  // Mode tambah tagihan: "individu" atau "kelas"
+  const [tambahMode, setTambahMode] = useState("individu");
+  const [tambahTargetKelas, setTambahTargetKelas] = useState("");
+
   // State untuk searchable dropdown di dalam modal tambah tagihan
   const [searchSantri, setSearchSantri] = useState("");
   const [openDropdown, setOpenDropdown] = useState(false);
@@ -83,6 +87,19 @@ export default function PaymentPage() {
   };
 
   // =============================================
+  // RESET MODAL HELPER
+  // =============================================
+  const resetModal = () => {
+    setShowTambah(false);
+    setTambahStudentId("");
+    setTambahItems([]);
+    setSearchSantri("");
+    setOpenDropdown(false);
+    setTambahMode("individu");
+    setTambahTargetKelas("");
+  };
+
+  // =============================================
   // MIDTRANS SANDBOX — Buat transaksi baru
   // =============================================
   const bayarMidtrans = async (billId) => {
@@ -99,9 +116,7 @@ export default function PaymentPage() {
         return;
       }
 
-      // Snap Midtrans: buka popup atau redirect
       if (data.snapToken) {
-        // Gunakan Snap.js (pastikan sudah load di _document.js atau _app.js)
         if (window.snap) {
           window.snap.pay(data.snapToken, {
             onSuccess: async (result) => {
@@ -123,7 +138,6 @@ export default function PaymentPage() {
             },
           });
         } else {
-          // Fallback: redirect ke payment URL jika Snap.js tidak tersedia
           alert("Snap.js tidak tersedia. Mengarahkan ke halaman pembayaran...");
           window.open(data.redirectUrl, "_blank");
         }
@@ -158,7 +172,6 @@ export default function PaymentPage() {
           `Nominal  : Rp ${data.grossAmount ? Number(data.grossAmount).toLocaleString("id-ID") : "-"}\n\n` +
           (data.message || "")
         );
-        // Refresh detail setelah cek (status mungkin sudah berubah)
         await openDetail(selectedStudent.id);
       } else {
         alert("Gagal cek transaksi: " + (data.message || "Error tidak diketahui"));
@@ -218,7 +231,7 @@ export default function PaymentPage() {
   };
 
   const handleTambahTagihan = async () => {
-    if (!tambahStudentId) return alert("Pilih santri dulu");
+    if (tambahMode === "individu" && !tambahStudentId) return alert("Pilih santri dulu");
     if (tambahItems.length === 0) return alert("Pilih minimal satu jenis tagihan");
 
     setLoadingTambah(true);
@@ -228,18 +241,42 @@ export default function PaymentPage() {
         amount: cleanAmount(item.amount)
       }));
 
-      const res = await fetch("/api/bills/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ studentId: tambahStudentId, items: cleanItems }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-      alert("✅ Tagihan berhasil dibuat!");
-      setShowTambah(false);
-      setTambahStudentId("");
-      setTambahItems([]);
-      setSearchSantri("");
+      let res, data;
+
+      if (tambahMode === "individu") {
+        // Kirim ke satu santri
+        res = await fetch("/api/bills/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ studentId: tambahStudentId, items: cleanItems }),
+        });
+        data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+        alert("✅ Tagihan berhasil dibuat!");
+      } else {
+        // Kirim ke semua santri atau per kelas
+        const targetLabel = tambahTargetKelas
+          ? classes.find(c => String(c.id) === String(tambahTargetKelas))?.name || "kelas terpilih"
+          : "SEMUA SANTRI";
+        const konfirmasi = confirm(
+          `⚠️ Konfirmasi!\n\nAnda akan membuat tagihan untuk ${targetLabel}.\nApakah Anda yakin?`
+        );
+        if (!konfirmasi) { setLoadingTambah(false); return; }
+
+        res = await fetch("/api/bills/create-bulk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            classId: tambahTargetKelas || null,
+            items: cleanItems
+          }),
+        });
+        data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+        alert(`✅ Tagihan berhasil dibuat untuk ${data.count || "semua"} santri!`);
+      }
+
+      resetModal();
       loadStudents(filterClass, filterYear);
     } catch (err) {
       alert("Error: " + err.message);
@@ -331,7 +368,6 @@ export default function PaymentPage() {
     ? students.find(s => s.id == tambahStudentId)?.name
     : null;
 
-  // Tagihan yang ditampilkan di tabel: hanya UNPAID dan PENDING (bukan PAID)
   const activeBills = (selectedStudent?.bills || []).filter(
     b => b.status === "UNPAID" || b.status === "PENDING"
   );
@@ -343,6 +379,11 @@ export default function PaymentPage() {
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentStudents = filteredStudents.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+
+  // Label untuk konfirmasi bulk
+  const bulkTargetLabel = tambahTargetKelas
+    ? classes.find(c => String(c.id) === String(tambahTargetKelas))?.name || "Kelas Terpilih"
+    : "Semua Santri";
 
   return (
     <AdminLayout>
@@ -512,69 +553,112 @@ export default function PaymentPage() {
               <div className="modal-header">
                 <div>
                   <h3>📋 Buat Tagihan Baru</h3>
-                  <p className="modal-sub">Pilih santri dan lampirkan beberapa tipe tagihan sekaligus.</p>
+                  <p className="modal-sub">Pilih santri individu, per kelas, atau kirim ke semua santri sekaligus.</p>
                 </div>
-                <button className="close-x" onClick={() => {
-                  setShowTambah(false);
-                  setTambahItems([]);
-                  setTambahStudentId("");
-                  setSearchSantri("");
-                  setOpenDropdown(false);
-                }}>✕</button>
+                <button className="close-x" onClick={resetModal}>✕</button>
               </div>
 
-              {/* SEARCHABLE DROPDOWN */}
-              <div className="form-group" ref={dropdownRef}>
-                <label className="form-label">Pilih Santri Penerima</label>
-                <div style={{ position: "relative" }}>
-                  <input
-                    type="text"
-                    placeholder="🔍 Ketik nama atau NIS santri..."
-                    value={tambahStudentId ? selectedSantriName : searchSantri}
-                    onChange={e => {
-                      setSearchSantri(e.target.value);
-                      setOpenDropdown(true);
-                      if (tambahStudentId) setTambahStudentId("");
-                    }}
-                    onFocus={() => setOpenDropdown(true)}
-                    className="form-input search-input-icon"
-                  />
-                  {tambahStudentId && (
-                    <span
-                      onClick={() => {
-                        setTambahStudentId("");
-                        setSearchSantri("");
+              {/* ===== TAB MODE SELECTOR ===== */}
+              <div className="mode-tab-wrapper">
+                <button
+                  className={`mode-tab ${tambahMode === "individu" ? "active" : ""}`}
+                  onClick={() => setTambahMode("individu")}
+                >
+                  👤 Per Santri
+                </button>
+                <button
+                  className={`mode-tab ${tambahMode === "kelas" ? "active" : ""}`}
+                  onClick={() => setTambahMode("kelas")}
+                >
+                  🏫 Per Kelas / Semua
+                </button>
+              </div>
+
+              {/* ===== MODE INDIVIDU: Searchable Dropdown ===== */}
+              {tambahMode === "individu" && (
+                <div className="form-group" ref={dropdownRef}>
+                  <label className="form-label">Pilih Santri Penerima</label>
+                  <div style={{ position: "relative" }}>
+                    <input
+                      type="text"
+                      placeholder="🔍 Ketik nama atau NIS santri..."
+                      value={tambahStudentId ? selectedSantriName : searchSantri}
+                      onChange={e => {
+                        setSearchSantri(e.target.value);
                         setOpenDropdown(true);
+                        if (tambahStudentId) setTambahStudentId("");
                       }}
-                      style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "#94a3b8" }}
-                    >✕</span>
+                      onFocus={() => setOpenDropdown(true)}
+                      className="form-input search-input-icon"
+                    />
+                    {tambahStudentId && (
+                      <span
+                        onClick={() => {
+                          setTambahStudentId("");
+                          setSearchSantri("");
+                          setOpenDropdown(true);
+                        }}
+                        style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "#94a3b8" }}
+                      >✕</span>
+                    )}
+                  </div>
+
+                  {openDropdown && (
+                    <ul className="dropdown-list" style={{ position: "absolute", width: "100%", zIndex: 50, background: "white", border: "1px solid #e2e8f0", borderRadius: "8px", marginTop: "4px", maxHeight: "200px", overflowY: "auto", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" }}>
+                      {modalFilteredStudents.length === 0 ? (
+                        <li style={{ padding: "10px 14px", color: "#64748b" }}>😕 Santri tidak ditemukan</li>
+                      ) : (
+                        modalFilteredStudents.map(s => (
+                          <li
+                            key={s.id}
+                            onClick={() => {
+                              setTambahStudentId(s.id);
+                              setSearchSantri("");
+                              setOpenDropdown(false);
+                            }}
+                            className="dropdown-item"
+                            style={{ padding: "10px 14px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9" }}
+                          >
+                            <span style={{ fontWeight: "500", color: "#1e293b" }}>{s.name}</span>
+                            <span className="badge-class" style={{ fontSize: "11px" }}>{s.class?.name || "-"}</span>
+                          </li>
+                        ))
+                      )}
+                    </ul>
                   )}
                 </div>
+              )}
 
-                {openDropdown && (
-                  <ul className="dropdown-list" style={{ position: "absolute", width: "100%", zIndex: 50, background: "white", border: "1px solid #e2e8f0", borderRadius: "8px", marginTop: "4px", maxHeight: "200px", overflowY: "auto", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" }}>
-                    {modalFilteredStudents.length === 0 ? (
-                      <li style={{ padding: "10px 14px", color: "#64748b" }}>😕 Santri tidak ditemukan</li>
+              {/* ===== MODE KELAS / SEMUA ===== */}
+              {tambahMode === "kelas" && (
+                <div className="form-group">
+                  <label className="form-label">Target Penerima Tagihan</label>
+                  <select
+                    className="form-input"
+                    value={tambahTargetKelas}
+                    onChange={e => setTambahTargetKelas(e.target.value)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <option value="">🌐 Semua Santri (Seluruh Kelas)</option>
+                    {classes.map(c => (
+                      <option key={c.id} value={c.id}>🏫 {c.name}</option>
+                    ))}
+                  </select>
+                  <div className={`bulk-info-banner ${tambahTargetKelas ? "info" : "warning"}`}>
+                    {tambahTargetKelas ? (
+                      <>
+                        <span>📌</span>
+                        <span>Tagihan akan dikirim ke <strong>semua santri di {bulkTargetLabel}</strong>.</span>
+                      </>
                     ) : (
-                      modalFilteredStudents.map(s => (
-                        <li
-                          key={s.id}
-                          onClick={() => {
-                            setTambahStudentId(s.id);
-                            setSearchSantri("");
-                            setOpenDropdown(false);
-                          }}
-                          className="dropdown-item"
-                          style={{ padding: "10px 14px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9" }}
-                        >
-                          <span style={{ fontWeight: "500", color: "#1e293b" }}>{s.name}</span>
-                          <span className="badge-class" style={{ fontSize: "11px" }}>{s.class?.name || "-"}</span>
-                        </li>
-                      ))
+                      <>
+                        <span>⚠️</span>
+                        <span>Tagihan akan dikirim ke <strong>SEMUA santri</strong> di seluruh kelas. Harap periksa kembali.</span>
+                      </>
                     )}
-                  </ul>
-                )}
-              </div>
+                  </div>
+                </div>
+              )}
 
               {/* LIST PILIHAN JENIS TAGIHAN */}
               <div className="form-group">
@@ -621,17 +705,16 @@ export default function PaymentPage() {
               </div>
 
               <div className="modal-actions">
-                <button className="btn-batal" onClick={() => {
-                  setShowTambah(false);
-                  setTambahItems([]);
-                  setTambahStudentId("");
-                  setSearchSantri("");
-                  setOpenDropdown(false);
-                }}>
+                <button className="btn-batal" onClick={resetModal}>
                   Batalkan
                 </button>
                 <button className="btn-simpan" onClick={handleTambahTagihan} disabled={loadingTambah}>
-                  {loadingTambah ? "Menyimpan..." : "💾 Simpan & Rilis Tagihan"}
+                  {loadingTambah
+                    ? "Menyimpan..."
+                    : tambahMode === "kelas"
+                      ? `📤 Kirim ke ${bulkTargetLabel}`
+                      : "💾 Simpan & Rilis Tagihan"
+                  }
                 </button>
               </div>
             </div>
@@ -678,11 +761,6 @@ export default function PaymentPage() {
 
               <div className="section-divider" />
 
-              {/* =============================================
-                  DAFTAR TAGIHAN AKTIF
-                  Hanya tampil: UNPAID dan PENDING
-                  PAID tidak ditampilkan (sudah masuk riwayat)
-              ============================================= */}
               <h4>📋 Daftar Tagihan Aktif (Belum Lunas)</h4>
               {activeBills.length === 0 ? (
                 <p className="empty-subtext">🟢 Aman! Belum ada tagihan aktif untuk santri ini.</p>
@@ -719,7 +797,6 @@ export default function PaymentPage() {
                             </td>
                             <td style={{ textAlign: "center" }}>
                               <div className="action-flex-gap">
-                                {/* Tombol bayar via Midtrans hanya untuk UNPAID */}
                                 {!isPending && (
                                   <button
                                     className="btn-midtrans"
@@ -729,7 +806,6 @@ export default function PaymentPage() {
                                     🏦 Bayar
                                   </button>
                                 )}
-                                {/* Cek Status Transaksi */}
                                 <button
                                   className="btn-cek"
                                   onClick={() => cekTransaksi(b.id)}
@@ -738,7 +814,6 @@ export default function PaymentPage() {
                                 >
                                   {cekLoadingId === b.id ? "⏳..." : "🔍 Cek"}
                                 </button>
-                                {/* Hapus Tagihan */}
                                 <button
                                   className="btn-hapus-icon"
                                   onClick={() => hapusBill(b.id)}
@@ -758,10 +833,6 @@ export default function PaymentPage() {
 
               <div className="section-divider" />
 
-              {/* =============================================
-                  LOG RIWAYAT PEMBAYARAN
-                  Status selalu tampil "LUNAS"
-              ============================================= */}
               <h4>💰 Log Jejak Riwayat Pembayaran</h4>
               {selectedStudent.payments.length === 0 ? (
                 <p className="empty-subtext">Belum ada jejak riwayat pembayaran terekam.</p>
@@ -791,7 +862,6 @@ export default function PaymentPage() {
                               {p.method === "CASH" ? "💵 Tunai" : "🏦 Transfer"}
                             </span>
                           </td>
-                          {/* Status selalu LUNAS di riwayat */}
                           <td style={{ textAlign: "center" }}>
                             <span className="status-badge paid">✅ LUNAS</span>
                           </td>
@@ -959,7 +1029,6 @@ export default function PaymentPage() {
         }
         .btn-detail:hover { background: #e2e8f0; }
 
-        /* Bayar Midtrans */
         .btn-midtrans {
           background: #0e7490; color: white;
           border: none; padding: 5px 11px;
@@ -968,7 +1037,6 @@ export default function PaymentPage() {
         }
         .btn-midtrans:hover { background: #0c6280; }
 
-        /* Cek Transaksi */
         .btn-cek {
           background: #f0f9ff; border: 1px solid #bae6fd; color: #0369a1;
           padding: 5px 10px; border-radius: 6px;
@@ -977,14 +1045,12 @@ export default function PaymentPage() {
         .btn-cek:hover { background: #e0f2fe; }
         .btn-cek:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        /* Hapus Icon */
         .btn-hapus-icon {
           background: #fef2f2; border: 1px solid #fecaca; color: #991b1b;
           padding: 5px 8px; border-radius: 6px; cursor: pointer;
         }
         .btn-hapus-icon:hover { background: #fee2e2; }
 
-        /* Cetak */
         .btn-cetak {
           background: #f1f5f9; border: 1px solid #cbd5e1; color: #334155;
           padding: 5px 10px; border-radius: 6px; font-size: 12px;
@@ -992,7 +1058,6 @@ export default function PaymentPage() {
         }
         .btn-cetak:hover { background: #e2e8f0; }
 
-        /* Hapus small */
         .btn-hapus-small {
           background: #fef2f2; border: 1px solid #fecaca; color: #991b1b;
           padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 12px;
@@ -1009,11 +1074,64 @@ export default function PaymentPage() {
           padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer;
         }
         .btn-simpan:hover { background: #22522e; }
+        .btn-simpan:disabled { opacity: 0.7; cursor: not-allowed; }
         .btn-tutup {
           background: #f1f5f9; border: 1px solid #cbd5e1; color: #475569;
           padding: 10px 20px; border-radius: 8px; font-weight: 500; cursor: pointer;
         }
         .btn-tutup:hover { background: #e2e8f0; }
+
+        /* ===== MODE TAB SELECTOR ===== */
+        .mode-tab-wrapper {
+          display: flex;
+          background: #f1f5f9;
+          border-radius: 10px;
+          padding: 4px;
+          gap: 4px;
+          margin-bottom: 20px;
+        }
+        .mode-tab {
+          flex: 1;
+          padding: 9px 12px;
+          border-radius: 8px;
+          border: none;
+          font-weight: 600;
+          font-size: 13px;
+          cursor: pointer;
+          transition: all 0.2s;
+          background: transparent;
+          color: #64748b;
+        }
+        .mode-tab.active {
+          background: white;
+          color: #2e6b3e;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+        .mode-tab:hover:not(.active) {
+          background: #e2e8f0;
+          color: #334155;
+        }
+
+        /* ===== BULK INFO BANNER ===== */
+        .bulk-info-banner {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          padding: 10px 14px;
+          border-radius: 8px;
+          font-size: 13px;
+          margin-top: 8px;
+        }
+        .bulk-info-banner.info {
+          background: #eff6ff;
+          color: #1d4ed8;
+          border: 1px solid #bfdbfe;
+        }
+        .bulk-info-banner.warning {
+          background: #fffbeb;
+          color: #92400e;
+          border: 1px solid #fde68a;
+        }
 
         /* ===== MODAL ===== */
         .modal-backdrop {
@@ -1043,6 +1161,7 @@ export default function PaymentPage() {
         .form-input {
           width: 100%; padding: 10px 12px;
           border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; outline: none;
+          box-sizing: border-box;
         }
         .form-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,131,246,0.1); }
         .dropdown-item:hover { background: #f8fafc; }
