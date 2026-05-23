@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 export default function Home() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false); // State pemicu animasi transisi keluar
+
 
   useEffect(() => {
     const style = document.createElement("style");
@@ -26,30 +26,6 @@ export default function Home() {
         0%   { transform: translateY(0px); }
         50%  { transform: translateY(-10px); }
         100% { transform: translateY(0px); }
-      }
-
-      /* ANIMASI SAPUAN TRANSISI DARI KIRI KE KANAN (SMOOTH & ELEGAN) */
-      @keyframes slideOutOverlay {
-        0%   { transform: translateX(-100%); }
-        100% { transform: translateX(0); }
-      }
-
-      .page-transition-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(135deg, #14532d, #16a34a);
-        z-index: 9999;
-        transform: translateX(-100%); /* Default sembunyi di luar layar sebelah kiri */
-        pointer-events: none;
-      }
-
-      .page-transition-overlay.active {
-        pointer-events: auto;
-        /* Menggunakan cubic-bezier penutup layar yang sangat halus */
-        animation: slideOutOverlay 0.5s cubic-bezier(0.76, 0, 0.24, 1) forwards;
       }
 
       .hero-text-anim { animation: fadeSlideLeft 0.9s cubic-bezier(.22,.68,0,1.2) both; }
@@ -309,13 +285,9 @@ export default function Home() {
     return () => document.head.removeChild(style);
   }, []);
 
-  // Fungsi memicu animasi sapuan horizontal ke kanan, lalu berpindah halaman
-  const handleNavigateToLogin = () => {
+    const handleNavigateToLogin = () => {
     setMenuOpen(false);
-    setIsTransitioning(true);
-    setTimeout(() => {
-      router.push("/login");
-    }, 450); 
+    router.push("/login");
   };
 
   function scrollTo(id) {
@@ -372,8 +344,6 @@ export default function Home() {
 
   return (
     <div>
-      {/* OVERLAY HIT BOX ANIMASI TRANSISI HORIZONTAL */}
-      <div className={`page-transition-overlay ${isTransitioning ? "active" : ""}`} />
 
       {/* NAVBAR */}
       <nav className="navbar">
