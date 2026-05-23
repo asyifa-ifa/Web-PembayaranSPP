@@ -422,7 +422,7 @@ export default function Home() {
             {[
               { icon: "📍", label: "Alamat", val: "Ds. Sumberjo, Kec. Sanankulon,\nKab. Blitar, Jawa Timur" },
               { icon: "📧", label: "Email", val: "madrasahtaribiyatulsumberjo@gmail.com" },
-              { icon: "📱", label: "Telepon / WhatsApp", val: "08xxxxxxxxxx" },
+              { icon: "📱", label: "Telepon / WhatsApp", val: "085646767238" },
             ].map((item, i) => (
               <div key={i} className="contact-item">
                 <div className="contact-icon">{item.icon}</div>
