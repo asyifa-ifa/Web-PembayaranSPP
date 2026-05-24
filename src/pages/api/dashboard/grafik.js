@@ -2,79 +2,64 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// Helper: tentukan semester dari tanggal
-function getSemester(date) {
-  const month = new Date(date).getMonth() + 1; // 1-12
-  const year = new Date(date).getFullYear();
-  // Ganjil: Juli–Desember, Genap: Januari–Juni
-  const label = month >= 7 ? "Ganjil" : "Genap";
-  return `${label} ${year}`;
-}
-
-// Urutkan semester secara kronologis
-function sortSemester(a, b) {
-  const parse = (s) => {
-    const [label, year] = s.split(" ");
-    return parseInt(year) * 10 + (label === "Ganjil" ? 1 : 0);
-  };
-  return parse(a.semester) - parse(b.semester);
+// Helper: tentukan tahun ajaran dari tanggal
+// Juli–Des → X/X+1, Jan–Juni → (X-1)/X
+function getTahunAjaran(date) {
+  const d = new Date(date);
+  const month = d.getMonth() + 1;
+  const year = d.getFullYear();
+  return month >= 7 ? `${year}/${year + 1}` : `${year - 1}/${year}`;
 }
 
 export default async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).end();
 
   try {
-    // ── GRAFIK KEUANGAN ──
-    // Ambil semua pembayaran yang sudah lunas
+    // Ambil semua pembayaran SUCCESS
     const payments = await prisma.payment.findMany({
-      where: { status: "lunas" },
-      select: { amount: true, createdAt: true },
+      where: { status: "SUCCESS" },
+      select: { amount: true, createdAt: true, academicYear: true },
     });
 
-    // Kelompokkan per semester
-    const keuanganMap = {};
-    for (const p of payments) {
-      const sem = getSemester(p.createdAt);
-      keuanganMap[sem] = (keuanganMap[sem] || 0) + Number(p.amount);
-    }
-
-    const keuanganData = Object.entries(keuanganMap)
-      .map(([semester, pemasukan]) => ({ semester, pemasukan }))
-      .sort(sortSemester);
-
-    // ── GRAFIK SANTRI ──
-    // Ambil semua santri dengan tanggal daftar
-    const santriList = await prisma.santri.findMany({
-      select: { createdAt: true },
+    // Ambil semua pengeluaran
+    const expenses = await prisma.expense.findMany({
+      select: { amount: true, date: true },
     });
 
-    // Hitung jumlah santri kumulatif per semester
-    // (berapa santri yang sudah terdaftar sampai semester itu)
-    const semesterSet = new Set([
-      ...payments.map((p) => getSemester(p.createdAt)),
-      ...santriList.map((s) => getSemester(s.createdAt)),
+    // Kumpulkan semua tahun ajaran unik dari kedua sumber
+    const semuaTahunAjaran = new Set([
+      ...payments.map((p) =>
+        p.academicYear || getTahunAjaran(p.createdAt)
+      ),
+      ...expenses.map((e) => getTahunAjaran(e.date)),
     ]);
 
-    const allSemesters = Array.from(semesterSet).sort((a, b) =>
-      sortSemester({ semester: a }, { semester: b })
-    );
+    // Map pemasukan per tahun ajaran
+    const pemasukanMap = {};
+    for (const p of payments) {
+      const ta = p.academicYear || getTahunAjaran(p.createdAt);
+      pemasukanMap[ta] = (pemasukanMap[ta] || 0) + Number(p.amount);
+    }
 
-    const santriData = allSemesters.map((sem) => {
-      // Hitung santri yang sudah terdaftar SAMPAI akhir semester ini
-      const [label, year] = sem.split(" ");
-      const isGanjil = label === "Ganjil";
-      // Batas akhir semester: Ganjil = Des, Genap = Juni
-      const endMonth = isGanjil ? 12 : 6;
-      const endDate = new Date(parseInt(year), endMonth, 0); // last day
+    // Map pengeluaran per tahun ajaran
+    const pengeluaranMap = {};
+    for (const e of expenses) {
+      const ta = getTahunAjaran(e.date);
+      pengeluaranMap[ta] = (pengeluaranMap[ta] || 0) + Number(e.amount);
+    }
 
-      const count = santriList.filter(
-        (s) => new Date(s.createdAt) <= endDate
-      ).length;
+    // Gabung & urutkan kronologis
+    const keuanganData = Array.from(semuaTahunAjaran)
+      .map((ta) => ({
+        semester: ta, // key tetap "semester" biar frontend tidak perlu diubah
+        pemasukan: pemasukanMap[ta] || 0,
+        pengeluaran: pengeluaranMap[ta] || 0,
+      }))
+      .sort((a, b) =>
+        parseInt(a.semester.split("/")[0]) - parseInt(b.semester.split("/")[0])
+      );
 
-      return { semester: sem, santri: count };
-    });
-
-    return res.status(200).json({ keuanganData, santriData });
+    return res.status(200).json({ keuanganData });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Gagal mengambil data grafik" });
