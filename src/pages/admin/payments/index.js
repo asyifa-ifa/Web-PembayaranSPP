@@ -792,11 +792,11 @@ export default function PaymentPage() {
                               <div className="action-flex-gap">
                                 {!isPending && (
                                   <button
-                                    className="btn-midtrans"
-                                    onClick={() => bayarMidtrans(b.id)}
-                                    title="Bayar via Midtrans"
+                                    className="btn-tunai"
+                                    onClick={() => router.push(`/admin/payments/manual?billId=${b.id}&studentId=${selectedStudent.id}`)}
+                                    title="Bayar Tunai"
                                   >
-                                    🏦 Bayar
+                                    💵 Tunai
                                   </button>
                                 )}
                                 <button
