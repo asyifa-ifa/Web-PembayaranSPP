@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import AdminLayout from "@/components/AdminLayout";
+import { useRouter } from "next/router";
 
 const cleanAmount = (amount) => {
   if (!amount) return "0";
@@ -38,6 +39,8 @@ export default function PaymentPage() {
 
   // State untuk loading cek transaksi per bill
   const [cekLoadingId, setCekLoadingId] = useState(null);
+
+  const router = useRouter();
 
   useEffect(() => {
     fetch("/api/payment-types").then(r => r.json()).then(setPaymentTypes);
@@ -1228,6 +1231,14 @@ export default function PaymentPage() {
         .empty-subtext { color: #64748b; font-size: 14px; margin: 8px 0; }
         .text-success { color: #16a34a; font-weight: 600; font-size: 13px; }
         .justify-center { justify-content: center; }
+
+        .btn-tunai {
+        background: #f0fdf4; border: 1px solid #86efac; color: #15803d;
+        padding: 5px 11px; border-radius: 6px;
+        font-weight: 600; font-size: 12px;
+        cursor: pointer; white-space: nowrap; transition: background 0.15s;
+        }
+      .btn-tunai:hover { background: #dcfce7; }
       `}</style>
     </AdminLayout>
   );

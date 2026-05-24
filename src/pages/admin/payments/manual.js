@@ -9,6 +9,7 @@ const cleanAmount = (amount) => {
 
 export default function ManualPayment() {
   const router = useRouter();
+  const [billIdFromQuery, setBillIdFromQuery] = useState(null);
   const [students, setStudents] = useState([]);
   const [paymentTypes, setPaymentTypes] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState("");
@@ -25,20 +26,43 @@ export default function ManualPayment() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch("/api/students/list").then((r) => r.json()).then(setStudents);
-    fetch("/api/payment-types").then((r) => r.json()).then(setPaymentTypes);
-  }, []);
+  fetch("/api/students/list").then((r) => r.json()).then(setStudents);
+  fetch("/api/payment-types").then((r) => r.json()).then(setPaymentTypes);
+}, []);
 
-  useEffect(() => {
-    if (!selectedStudent) { setBills([]); setSelectedStudentData(null); return; }
-    fetch(`/api/students/${selectedStudent}/detail`)
-      .then((r) => r.json())
-      .then((data) => {
-        setSelectedStudentData(data);
-        const unpaid = data.bills?.filter((b) => b.status === "UNPAID") || [];
-        setBills(unpaid);
-      });
-  }, [selectedStudent]);
+// Baca query params dari URL saat redirect dari halaman payments
+useEffect(() => {
+  const { billId, studentId } = router.query;
+  if (studentId) setSelectedStudent(String(studentId));
+  if (billId) setBillIdFromQuery(Number(billId));
+}, [router.query]);
+
+useEffect(() => {
+  if (!selectedStudent) { setBills([]); setSelectedStudentData(null); return; }
+  fetch(`/api/students/${selectedStudent}/detail`)
+    .then((r) => r.json())
+    .then((data) => {
+      setSelectedStudentData(data);
+      const unpaid = data.bills?.filter((b) => b.status === "UNPAID") || [];
+      setBills(unpaid);
+
+      // Auto-select bill & isi form jika datang dari redirect
+      // Ambil langsung dari router.query supaya tidak kena timing issue
+      const billIdParam = router.query.billId ? Number(router.query.billId) : null;
+      if (billIdParam) {
+        const bill = unpaid.find((b) => b.id === billIdParam);
+        if (bill) {
+          setSelectedBillId(bill.id);
+          setForm((prev) => ({
+            ...prev,
+            paymentTypeId: String(bill.paymentTypeId),
+            amount: String(bill.amount),
+            academicYear: data.classHistories?.[0]?.academicYear || data.entryYear || "",
+          }));
+        }
+      }
+    });
+}, [selectedStudent, router.query]);
 
   const handleBillSelect = (billId) => {
     const bill = bills.find((b) => b.id === Number(billId));
