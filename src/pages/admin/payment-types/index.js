@@ -72,8 +72,8 @@ export default function PaymentTypes() {
         {/* Header */}
         <div className="page-header">
           <div>
-            <h1>Jenis Pembayaran</h1>
-            <span>Master Data / Jenis Pembayaran</span>
+            <h1>Jenis Tagihan</h1>
+            <span>Master Data / Jenis Tagihan</span>
           </div>
           <div className="count-box">
             Total Data: {types.length}
@@ -82,10 +82,10 @@ export default function PaymentTypes() {
 
         {/* Form Tambah */}
         <div className="card">
-          <h3>Tambah Jenis Pembayaran</h3>
+          <h3>Tambah Jenis Tagihan</h3>
           <form onSubmit={handleSubmit} className="form">
             <div className="field">
-              <label>Nama Pembayaran</label>
+              <label>Nama Tagihan</label>
               <input
                 type="text"
                 placeholder="SPP Bulanan"
@@ -112,7 +112,7 @@ export default function PaymentTypes() {
 
         {/* Table */}
         <div className="card">
-          <h3>Daftar Jenis Pembayaran</h3>
+          <h3>Daftar Jenis Tagihan</h3>
 
           {types.length === 0 ? (
             <p className="empty">Belum ada data</p>
@@ -176,10 +176,10 @@ export default function PaymentTypes() {
         {showEdit && (
           <div className="modal-backdrop">
             <div className="modal">
-              <h4>Edit Jenis Pembayaran</h4>
+              <h4>Edit Jenis Tagihan</h4>
 
               <form onSubmit={handleUpdate}>
-                <label>Nama Pembayaran</label>
+                <label>Nama Tagihan</label>
                 <input
                   type="text"
                   value={editData.name}

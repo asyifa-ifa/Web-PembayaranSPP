@@ -57,10 +57,8 @@ export default function AccountsPage() {
   const totalPages       = Math.ceil(filteredStudents.length / itemsPerPage);
 
   // ── Statistik ──────────────────────────────────────────────
-  const statsTotal    = students.length;
-  const statsActive   = students.filter(s => s.login?.isActive === true).length;
-  const statsInactive = students.filter(s => s.login && s.login.isActive === false).length;
-  const statsNoAkun   = students.filter(s => !s.login).length;
+  const statsTotal  = students.length;
+  const statsActive = students.filter(s => s.login?.isActive === true).length;
 
   // ── Handlers ───────────────────────────────────────────────
   const openCreateModal = (student) => {
@@ -137,19 +135,41 @@ export default function AccountsPage() {
           <p className="page-subtitle">Manajemen hak akses & status login santri</p>
         </div>
 
-        {/* STATS */}
+        {/* STATS CARDS MODERN */}
         <div className="stats-grid">
           {[
-            { icon: "👥", val: statsTotal,    label: "Total Santri",   cls: "stat-total"    },
-            { icon: "🟢", val: statsActive,   label: "Akun Aktif",     cls: "stat-active"   },
-            { icon: "🔴", val: statsInactive, label: "Akun Nonaktif",  cls: "stat-inactive" },
-            { icon: "❌", val: statsNoAkun,   label: "Belum Ada Akun", cls: "stat-none"     },
+            { 
+              val: statsTotal, 
+              label: "Total Santri", 
+              cls: "stat-total",
+              icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              )
+            },
+            { 
+              val: statsActive, 
+              label: "Akun Aktif", 
+              cls: "stat-active",
+              icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+              )
+            },
           ].map((s, i) => (
-            <div key={i} className={`stat-card ${s.cls}`}>
-              <div className="stat-icon">{s.icon}</div>
+            <div key={i} className="stat-card">
               <div>
-                <div className="stat-value">{s.val}</div>
                 <div className="stat-label">{s.label}</div>
+                <div className="stat-value">{s.val}</div>
+              </div>
+              <div className={`stat-icon-box ${s.cls}`}>
+                {s.icon}
               </div>
             </div>
           ))}
@@ -358,21 +378,47 @@ export default function AccountsPage() {
 
       <style jsx>{`
         .page-wrapper { padding: 24px; max-width: 1280px; margin: 0 auto; font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; }
-        .page-header { margin-bottom: 20px; }
+        .page-header { margin-bottom: 24px; }
         .page-title { margin: 0; font-size: 22px; font-weight: 700; color: #0f172a; letter-spacing: -.5px; }
         .page-subtitle { margin: 4px 0 0; font-size: 13px; color: #64748b; }
 
-        /* STATS */
-        .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
-        .stat-card { background: white; border-radius: 12px; padding: 16px 18px; display: flex; align-items: center; gap: 13px; box-shadow: 0 1px 3px rgba(0,0,0,.05); border: 1px solid #e2e8f0; transition: .2s; }
-        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.07); }
-        .stat-icon { font-size: 22px; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #f8fafc; }
-        .stat-value { font-size: 24px; font-weight: 700; color: #0f172a; line-height: 1; }
-        .stat-label { font-size: 12px; color: #64748b; margin-top: 4px; font-weight: 500; }
-        .stat-total    { border-left: 4px solid #64748b; }
-        .stat-active   { border-left: 4px solid #10b981; }
-        .stat-inactive { border-left: 4px solid #ef4444; }
-        .stat-none     { border-left: 4px solid #94a3b8; }
+        /* STATS GRIDS - Menggunakan 2 Kolom Seimbang */
+        .stats-grid { 
+          display: grid; 
+          grid-template-columns: repeat(2, 1fr); 
+          gap: 16px; 
+          margin-bottom: 24px; 
+        }
+        .stat-card { 
+          background: white; 
+          border-radius: 14px; 
+          padding: 18px 22px; 
+          display: flex; 
+          align-items: center; 
+          justify-content: space-between;
+          box-shadow: 0 2px 4px rgba(0,0,0,.02); 
+          border: 1px solid #e2e8f0; 
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .stat-card:hover { 
+          transform: translateY(-2px); 
+          border-color: #10b981;
+          box-shadow: 0 6px 18px rgba(16,185,129,0.08); 
+        }
+        .stat-label { font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 6px; }
+        .stat-value { font-size: 28px; font-weight: 800; color: #0f172a; line-height: 1; }
+        
+        /* Ikon Pengganti Emoji Modern */
+        .stat-icon-box { 
+          width: 46px; 
+          height: 46px; 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          border-radius: 12px; 
+        }
+        .stat-total { background: #f1f5f9; color: #475569; }
+        .stat-active { background: #ecfdf5; color: #10b981; }
 
         /* FILTER */
         .filter-bar { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
@@ -458,9 +504,8 @@ export default function AccountsPage() {
         .btn-modal-submit:hover:not(:disabled) { background: #059669; }
         .btn-modal-submit:disabled { opacity: .5; cursor: not-allowed; }
 
-        @media (max-width: 1024px) { .stats-grid { grid-template-columns: repeat(2,1fr); } }
         @media (max-width: 640px) {
-          .stats-grid { grid-template-columns: 1fr 1fr; }
+          .stats-grid { grid-template-columns: 1fr; }
           .table-footer-pagination { flex-direction: column; align-items: center; }
           .page-wrapper { padding: 16px; }
         }

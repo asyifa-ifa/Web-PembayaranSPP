@@ -97,7 +97,7 @@ export default function ManualPayment() {
         <div className="page-header">
           <div className="header-badge">💵 Tunai / Cash</div>
           <div>
-            <h1 className="page-title">Input Pembayaran Manual</h1>
+            <h1 className="page-title">Pembayaran Tunai</h1>
             <p className="page-subtitle">Catat pembayaran tunai santri secara langsung</p>
           </div>
         </div>
@@ -209,9 +209,9 @@ export default function ManualPayment() {
               </div>
 
               <div className="fields-grid">
-                {/* Jenis Pembayaran */}
+                {/* Jenis Tagihan */}
                 <div className="field">
-                  <label className="field-label">Jenis Pembayaran</label>
+                  <label className="field-label">Jenis Tagihan</label>
                   <select
                     className="field-select"
                     value={form.paymentTypeId}

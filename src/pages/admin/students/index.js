@@ -84,13 +84,6 @@ export default function StudentList() {
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentStudents = filteredStudents.slice(indexOfFirstItem, indexOfLastItem);
 
-  // Helper label & style status
-  const statusConfig = {
-    ACTIVE:    { label: "Aktif",    bg: "#edf7ef", color: "#1a6b35", border: "#c3dfc9", em: "🟢" },
-    GRADUATED: { label: "Lulus",    bg: "#e3f0ff", color: "#1565c0", border: "#90caf9", em: "🎓" },
-    DROPPED:   { label: "Nonaktif", bg: "#fff0f0", color: "#c62828", border: "#fecaca", em: "🔴" },
-  };
-
   // Hitung jumlah per status untuk summary
   const countActive    = students.filter(s => s.status === "ACTIVE").length;
   const countGraduated = students.filter(s => s.status === "GRADUATED").length;
@@ -124,21 +117,61 @@ export default function StudentList() {
 
         .header-right { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
-        /* Summary cards */
+        /* Summary cards modern & profesional */
         .summary-row {
-          display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 16px;
+          margin-bottom: 24px;
         }
         .summary-card {
-          flex: 1; min-width: 120px;
-          background: #fff; border: 1.5px solid #e4e9e6; border-radius: 12px;
-          padding: 12px 16px; cursor: pointer; transition: .15s;
-          display: flex; align-items: center; gap: 10px;
+          background: #ffffff;
+          border: 1px solid #e4e9e6;
+          border-radius: 14px;
+          padding: 16px 20px;
+          cursor: pointer;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
         }
-        .summary-card:hover { border-color: #3a8f50; background: #f7faf8; }
-        .summary-card.active-filter { border-color: #3a8f50; background: #f0fdf4; }
-        .summary-em { font-size: 20px; }
-        .summary-label { font-size: 11px; font-weight: 700; color: #9ab5a3; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 2px; }
-        .summary-val { font-size: 20px; font-weight: 800; color: #1a3d28; line-height: 1; }
+        .summary-card:hover {
+          border-color: #3a8f50;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(58, 143, 80, 0.08);
+        }
+        .summary-card.active-filter {
+          border-color: #3a8f50;
+          background: #f0fdf4;
+          box-shadow: 0 4px 12px rgba(58, 143, 80, 0.06);
+        }
+        .summary-label {
+          font-size: 12px;
+          font-weight: 600;
+          color: #6b8c76;
+          margin-bottom: 6px;
+        }
+        .summary-val {
+          font-size: 28px;
+          font-weight: 800;
+          color: #1a3d28;
+          line-height: 1;
+        }
+
+        /* Wrapper Ikon Pengganti Emoji */
+        .summary-icon-box {
+          width: 44px;
+          height: 44px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .icon-all { background: #f0f5f1; color: #3a8f50; }
+        .icon-active { background: #edf7ef; color: #1a6b35; }
+        .icon-graduated { background: #e3f0ff; color: #1565c0; }
+        .icon-dropped { background: #fff0f0; color: #c62828; }
 
         .toolbar {
           display: flex; align-items: center; justify-content: space-between;
@@ -208,13 +241,6 @@ export default function StudentList() {
           color: #2e6b3e; border: 1px solid #c3dfc9;
         }
 
-        /* Status badge */
-        .status-badge {
-          display: inline-flex; align-items: center; gap: 4px;
-          padding: 3px 10px; border-radius: 20px;
-          font-size: 11px; font-weight: 700; border: 1px solid; white-space: nowrap;
-        }
-
         /* Status select dropdown di tabel */
         .status-select {
           padding: 4px 24px 4px 8px; border-radius: 20px;
@@ -262,7 +288,6 @@ export default function StudentList() {
           .page-header { flex-direction: column; align-items: flex-start; }
           .toolbar { flex-direction: column; align-items: flex-start; }
           .search-input { width: 100%; }
-          .summary-row { gap: 8px; }
         }
       `}</style>
 
@@ -282,20 +307,69 @@ export default function StudentList() {
         {/* SUMMARY CARDS — klik untuk filter cepat */}
         <div className="summary-row">
           {[
-            { key: "",          label: "Semua",    val: students.length, em: "👥" },
-            { key: "ACTIVE",    label: "Aktif",    val: countActive,     em: "🟢" },
-            { key: "GRADUATED", label: "Lulus",    val: countGraduated,  em: "🎓" },
-            { key: "DROPPED",   label: "Nonaktif", val: countDropped,    em: "🔴" },
+            { 
+              key: "", 
+              label: "Total Santri", 
+              val: students.length, 
+              className: "icon-all",
+              icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              )
+            },
+            { 
+              key: "ACTIVE", 
+              label: "Santri Aktif", 
+              val: countActive, 
+              className: "icon-active",
+              icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+              )
+            },
+            { 
+              key: "GRADUATED", 
+              label: "Santri Lulus", 
+              val: countGraduated, 
+              className: "icon-graduated",
+              icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+                  <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"></path>
+                </svg>
+              )
+            },
+            { 
+              key: "DROPPED", 
+              label: "Santri Nonaktif", 
+              val: countDropped, 
+              className: "icon-dropped",
+              icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="15" y1="9" x2="9" y2="15"></line>
+                  <line x1="9" y1="9" x2="15" y2="15"></line>
+                </svg>
+              )
+            },
           ].map(item => (
             <div
               key={item.key}
               className={`summary-card ${filterStatus === item.key ? "active-filter" : ""}`}
               onClick={() => { setFilterStatus(item.key); setCurrentPage(1); }}
             >
-              <span className="summary-em">{item.em}</span>
               <div>
                 <div className="summary-label">{item.label}</div>
                 <div className="summary-val">{item.val}</div>
+              </div>
+              <div className={`summary-icon-box ${item.className}`}>
+                {item.icon}
               </div>
             </div>
           ))}
