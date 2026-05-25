@@ -208,12 +208,22 @@ useEffect(() => {
                         onClick={() => handleBillSelect(b.id)}
                       >
                         <div className="bill-left">
-                          <div className="bill-check">{selectedBillId === b.id ? "✓" : ""}</div>
-                          <div>
-                            <div className="bill-name">{b.paymentType.name}</div>
-                            <div className="bill-due">Jatuh tempo: {b.dueDate ? new Date(b.dueDate).toLocaleDateString("id-ID") : "-"}</div>
+                        <div className="bill-check">{selectedBillId === b.id ? "✓" : ""}</div>
+                        <div>
+                          <div className="bill-name">
+                            {b.paymentType.name}
+                            {b.month && (
+                              <span style={{ marginLeft: 8, fontSize: 11, background: "#dbeafe", color: "#1d4ed8", padding: "1px 8px", borderRadius: 20, fontWeight: 600 }}>
+                                {b.month}
+                              </span>
+                            )}
                           </div>
-                        </div>
+                          <div className="bill-due">
+                            {b.academicYear && <span style={{ marginRight: 8, color: "#6b7280" }}>TA: {b.academicYear}</span>}
+                            Jatuh tempo: {b.dueDate ? new Date(b.dueDate).toLocaleDateString("id-ID") : "-"}
+                          </div>
+                        </div>  {/* ← pastikan ada ini */}
+                      </div>
                         <div className="bill-amount">Rp {formatRupiah(b.amount)}</div>
                       </div>
                     ))}
