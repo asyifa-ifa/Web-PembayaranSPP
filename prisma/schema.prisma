@@ -136,6 +136,10 @@ model Bill {
   dueDate       DateTime?
   createdAt     DateTime    @default(now())
 
+  month         String?     // "Juli", "Agustus", dst — hanya untuk SPP
+  academicYear  String?     // "2024/2025"
+  
+
   payments      Payment[]
 }
 
@@ -167,6 +171,7 @@ model Payment {
   status PaymentStatus @default(PENDING)
 
   academicYear String?
+  month        String? 
 
   gatewayRef String? // id transaksi midtrans
   note       String? // catatan admin (manual cash)

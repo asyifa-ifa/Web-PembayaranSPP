@@ -5,7 +5,6 @@ export default async function handler(req, res) {
 
   try {
     const { studentId, items } = req.body
-    // items = [{ paymentTypeId, amount, dueDate }]
 
     if (!studentId || !items || items.length === 0) {
       return res.status(400).json({ message: "Data tidak lengkap" })
@@ -20,6 +19,8 @@ export default async function handler(req, res) {
             amount: Number(item.amount),
             dueDate: item.dueDate ? new Date(item.dueDate) : null,
             status: "UNPAID",
+            month: item.month || null,
+            academicYear: item.academicYear || null,
           },
         })
       )

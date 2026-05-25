@@ -39,6 +39,13 @@ export default function PaymentPage() {
 
   // State untuk loading cek transaksi per bill
   const [cekLoadingId, setCekLoadingId] = useState(null);
+  // State untuk tahun ajaran dan bulan di modal tambah tagihan
+  const [tambahAcademicYear, setTambahAcademicYear] = useState("");
+  const [selectedBulanSPP, setSelectedBulanSPP] = useState([]);
+  const SEMUA_BULAN = [
+    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+  ];
 
   const router = useRouter();
 
@@ -93,14 +100,16 @@ export default function PaymentPage() {
   // RESET MODAL HELPER
   // =============================================
   const resetModal = () => {
-    setShowTambah(false);
-    setTambahStudentId("");
-    setTambahItems([]);
-    setSearchSantri("");
-    setOpenDropdown(false);
-    setTambahMode("individu");
-    setTambahTargetKelas("");
-  };
+  setShowTambah(false);
+  setTambahStudentId("");
+  setTambahItems([]);
+  setSearchSantri("");
+  setOpenDropdown(false);
+  setTambahMode("individu");
+  setTambahTargetKelas("");
+  setTambahAcademicYear("");
+  setSelectedBulanSPP([]);
+};
 
   // =============================================
   // MIDTRANS SANDBOX — Buat transaksi baru
@@ -232,61 +241,101 @@ export default function PaymentPage() {
       i.paymentTypeId === id ? { ...i, [field]: value } : i
     ));
   };
-
+  const toggleBulanSPP = (bln) => {
+  setSelectedBulanSPP(prev =>
+    prev.includes(bln) ? prev.filter(b => b !== bln) : [...prev, bln]
+    );
+  };
   const handleTambahTagihan = async () => {
-    if (tambahMode === "individu" && !tambahStudentId) return alert("Pilih santri dulu");
-    if (tambahItems.length === 0) return alert("Pilih minimal satu jenis tagihan");
+  if (tambahMode === "individu" && !tambahStudentId) return alert("Pilih santri dulu");
+  if (tambahItems.length === 0 && selectedBulanSPP.length === 0) return alert("Pilih minimal satu jenis tagihan");
+  if (!tambahAcademicYear) return alert("Pilih tahun ajaran dulu");
 
-    setLoadingTambah(true);
-    try {
-      const cleanItems = tambahItems.map(item => ({
+  // Cek apakah ada SPP dipilih tapi bulannya belum dipilih
+  const adaSPP = tambahItems.some(i => {
+    const pt = paymentTypes.find(p => p.id === i.paymentTypeId);
+    return pt?.isMonthly;
+  });
+  if (adaSPP && selectedBulanSPP.length === 0) return alert("Pilih minimal satu bulan untuk SPP");
+
+  setLoadingTambah(true);
+  try {
+    // Pisahkan item SPP dan non-SPP
+    const itemNonSPP = tambahItems
+      .filter(i => {
+        const pt = paymentTypes.find(p => p.id === i.paymentTypeId);
+        return !pt?.isMonthly;
+      })
+      .map(item => ({
         ...item,
-        amount: cleanAmount(item.amount)
+        amount: cleanAmount(item.amount),
+        month: null,
+        academicYear: tambahAcademicYear,
       }));
 
-      let res, data;
+    const itemSPP = tambahItems
+      .filter(i => {
+        const pt = paymentTypes.find(p => p.id === i.paymentTypeId);
+        return pt?.isMonthly;
+      });
 
-      if (tambahMode === "individu") {
-        // Kirim ke satu santri
-        res = await fetch("/api/bills/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ studentId: tambahStudentId, items: cleanItems }),
+    // Buat item SPP per bulan yang dipilih
+    const itemSPPPerBulan = [];
+    for (const item of itemSPP) {
+      for (const bln of selectedBulanSPP) {
+        itemSPPPerBulan.push({
+          ...item,
+          amount: cleanAmount(item.amount),
+          month: bln,
+          academicYear: tambahAcademicYear,
         });
-        data = await res.json();
-        if (!res.ok) throw new Error(data.message);
-        alert("✅ Tagihan berhasil dibuat!");
-      } else {
-        // Kirim ke semua santri atau per kelas
-        const targetLabel = tambahTargetKelas
-          ? classes.find(c => String(c.id) === String(tambahTargetKelas))?.name || "kelas terpilih"
-          : "SEMUA SANTRI";
-        const konfirmasi = confirm(
-          `⚠️ Konfirmasi!\n\nAnda akan membuat tagihan untuk ${targetLabel}.\nApakah Anda yakin?`
-        );
-        if (!konfirmasi) { setLoadingTambah(false); return; }
-
-        res = await fetch("/api/bills/create-bulk", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            classId: tambahTargetKelas || null,
-            items: cleanItems
-          }),
-        });
-        data = await res.json();
-        if (!res.ok) throw new Error(data.message);
-        alert(`✅ Tagihan berhasil dibuat untuk ${data.count || "semua"} santri!`);
       }
-
-      resetModal();
-      loadStudents(filterClass, filterYear);
-    } catch (err) {
-      alert("Error: " + err.message);
-    } finally {
-      setLoadingTambah(false);
     }
-  };
+
+    const allItems = [...itemNonSPP, ...itemSPPPerBulan];
+    if (allItems.length === 0) return alert("Tidak ada tagihan yang dibuat");
+
+    let res, data;
+
+    if (tambahMode === "individu") {
+      res = await fetch("/api/bills/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ studentId: tambahStudentId, items: allItems }),
+      });
+      data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      alert(`✅ Tagihan berhasil dibuat! (${allItems.length} tagihan)`);
+    } else {
+      const targetLabel = tambahTargetKelas
+        ? classes.find(c => String(c.id) === String(tambahTargetKelas))?.name || "kelas terpilih"
+        : "SEMUA SANTRI";
+      const konfirmasi = confirm(
+        `⚠️ Konfirmasi!\n\nAnda akan membuat tagihan untuk ${targetLabel}.\nTotal ${allItems.length} jenis tagihan per santri.\nApakah Anda yakin?`
+      );
+      if (!konfirmasi) { setLoadingTambah(false); return; }
+
+      res = await fetch("/api/bills/create-bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classId: tambahTargetKelas || null,
+          items: allItems,
+        }),
+      });
+      data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      alert(`✅ Tagihan berhasil dibuat untuk ${data.count || "semua"} santri!`);
+    }
+
+    resetModal();
+    loadStudents(filterClass, filterYear);
+  } catch (err) {
+    alert("Error: " + err.message);
+  } finally {
+    setLoadingTambah(false);
+  }
+};
 
   // =============================================
   // FORMAT & CETAK KWITANSI
@@ -656,49 +705,109 @@ export default function PaymentPage() {
                 </div>
               )}
 
-              {/* LIST PILIHAN JENIS TAGIHAN */}
-              <div className="form-group">
-                <label className="form-label">Pilih Tipe & Atur Nominal Tagihan</label>
-                <div className="pt-container">
-                  {paymentTypes.map(pt => {
-                    const selected = tambahItems.find(i => i.paymentTypeId === pt.id);
-                    return (
-                      <div key={pt.id} className={`pt-item ${selected ? "active" : ""}`}>
-                        <div className="pt-main-info">
-                          <label className="pt-checkbox-label">
-                            <input type="checkbox" checked={!!selected} onChange={() => toggleItem(pt)} />
-                            <span className="pt-name">{pt.name}</span>
-                          </label>
-                          <span className="pt-default">Default: Rp {formatRupiah(pt.amount)}</span>
-                        </div>
-                        {selected && (
-                          <div className="pt-inputs-row">
-                            <div style={{ flex: 1 }}>
-                              <span className="input-hint">Nominal Custom (Rp)</span>
-                              <input
-                                type="number"
-                                placeholder="Nominal (Rp)"
-                                value={selected.amount}
-                                onChange={e => updateItem(pt.id, "amount", e.target.value)}
-                                className="form-input"
-                              />
-                            </div>
-                            <div style={{ flex: 1 }}>
-                              <span className="input-hint">Tanggal Jatuh Tempo</span>
-                              <input
-                                type="date"
-                                value={selected.dueDate}
-                                onChange={e => updateItem(pt.id, "dueDate", e.target.value)}
-                                className="form-input"
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+              {/* TAHUN AJARAN */}
+<div className="form-group">
+  <label className="form-label">Tahun Ajaran <span style={{color:"#ef4444"}}>*</span></label>
+  <select
+    className="form-input"
+    value={tambahAcademicYear}
+    onChange={e => setTambahAcademicYear(e.target.value)}
+  >
+    <option value="">-- Pilih Tahun Ajaran --</option>
+    {academicYears.map(y => (
+      <option key={y} value={y}>{y}</option>
+    ))}
+  </select>
+</div>
+
+  {/* LIST PILIHAN JENIS TAGIHAN */}
+  <div className="form-group">
+    <label className="form-label">Pilih Tipe & Atur Nominal Tagihan</label>
+    <div className="pt-container">
+      {paymentTypes.map(pt => {
+        const selected = tambahItems.find(i => i.paymentTypeId === pt.id);
+        const isSPP = pt.isMonthly;
+        return (
+          <div key={pt.id} className={`pt-item ${selected ? "active" : ""}`}>
+            <div className="pt-main-info">
+              <label className="pt-checkbox-label">
+                <input type="checkbox" checked={!!selected} onChange={() => toggleItem(pt)} />
+                <span className="pt-name">{pt.name}</span>
+                {isSPP && (
+                  <span style={{ fontSize: "10px", background: "#dbeafe", color: "#1d4ed8", padding: "1px 6px", borderRadius: "9999px", fontWeight: 600 }}>
+                    SPP/Bulan
+                  </span>
+                )}
+              </label>
+              <span className="pt-default">Default: Rp {formatRupiah(pt.amount)}</span>
+            </div>
+            {selected && (
+              <div className="pt-inputs-row">
+                <div style={{ flex: 1 }}>
+                  <span className="input-hint">Nominal Custom (Rp)</span>
+                  <input
+                    type="number"
+                    placeholder="Nominal (Rp)"
+                    value={selected.amount}
+                    onChange={e => updateItem(pt.id, "amount", e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <span className="input-hint">Tanggal Jatuh Tempo</span>
+                  <input
+                    type="date"
+                    value={selected.dueDate}
+                    onChange={e => updateItem(pt.id, "dueDate", e.target.value)}
+                    className="form-input"
+                  />
                 </div>
               </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  </div>
+
+  {/* PILIH BULAN SPP — muncul jika ada SPP dipilih */}
+  {tambahItems.some(i => paymentTypes.find(p => p.id === i.paymentTypeId)?.isMonthly) && (
+    <div className="form-group">
+      <label className="form-label">
+        📅 Pilih Bulan SPP
+        <span style={{ fontSize: 11, color: "#64748b", fontWeight: 400, marginLeft: 6 }}>
+          ({selectedBulanSPP.length} bulan dipilih → {selectedBulanSPP.length} tagihan)
+        </span>
+      </label>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
+        {SEMUA_BULAN.map(bln => (
+          <button
+            key={bln}
+            type="button"
+            onClick={() => toggleBulanSPP(bln)}
+            style={{
+              padding: "6px 14px",
+              borderRadius: 8,
+              border: selectedBulanSPP.includes(bln) ? "2px solid #16a34a" : "1px solid #cbd5e1",
+              background: selectedBulanSPP.includes(bln) ? "#dcfce7" : "white",
+              color: selectedBulanSPP.includes(bln) ? "#15803d" : "#334155",
+              fontWeight: selectedBulanSPP.includes(bln) ? 700 : 400,
+              fontSize: 13,
+              cursor: "pointer",
+              transition: "all .15s",
+            }}
+          >
+                {selectedBulanSPP.includes(bln) ? "✓ " : ""}{bln}
+              </button>
+            ))}
+          </div>
+          {selectedBulanSPP.length > 0 && (
+            <div style={{ marginTop: 8, padding: "8px 12px", background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 8, fontSize: 12, color: "#15803d" }}>
+              ✅ Akan dibuat <strong>{selectedBulanSPP.length} tagihan SPP</strong>: {selectedBulanSPP.join(", ")}
+            </div>
+          )}
+        </div>
+      )}
 
               <div className="modal-actions">
                 <button className="btn-batal" onClick={resetModal}>

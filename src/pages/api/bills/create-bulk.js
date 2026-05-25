@@ -1,11 +1,8 @@
 import { PrismaClient } from "@prisma/client";
-
 const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" });
-  }
+  if (req.method !== "POST") return res.status(405).json({ message: "Method not allowed" });
 
   const { classId, items } = req.body;
 
@@ -14,31 +11,36 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Ambil semua santri sesuai filter kelas (atau semua jika classId null)
     const students = await prisma.student.findMany({
       where: classId ? { classId: Number(classId) } : {},
       select: { id: true },
     });
 
     if (students.length === 0) {
-      return res.status(404).json({ message: "Tidak ada santri ditemukan untuk target ini" });
+      return res.status(404).json({ message: "Tidak ada santri ditemukan" });
     }
 
-    // Buat tagihan untuk setiap santri
     let totalCreated = 0;
 
     for (const student of students) {
       for (const item of items) {
-        // Cek apakah tagihan dengan tipe yang sama sudah ada dan belum lunas
-        const existing = await prisma.bill.findFirst({
-          where: {
-            studentId: student.id,
-            paymentTypeId: Number(item.paymentTypeId),
-            status: { in: ["UNPAID", "PENDING"] },
-          },
-        });
+        // Untuk SPP: cek duplikat berdasarkan bulan + tahun ajaran
+        // Untuk non-SPP: cek duplikat berdasarkan paymentTypeId saja
+        const whereClause = item.month
+          ? {
+              studentId: student.id,
+              paymentTypeId: Number(item.paymentTypeId),
+              month: item.month,
+              academicYear: item.academicYear || null,
+              status: { in: ["UNPAID", "PENDING"] },
+            }
+          : {
+              studentId: student.id,
+              paymentTypeId: Number(item.paymentTypeId),
+              status: { in: ["UNPAID", "PENDING"] },
+            };
 
-        // Skip jika sudah ada tagihan aktif untuk tipe yang sama
+        const existing = await prisma.bill.findFirst({ where: whereClause });
         if (existing) continue;
 
         await prisma.bill.create({
@@ -48,6 +50,8 @@ export default async function handler(req, res) {
             amount: Number(item.amount),
             dueDate: item.dueDate ? new Date(item.dueDate) : null,
             status: "UNPAID",
+            month: item.month || null,
+            academicYear: item.academicYear || null,
           },
         });
 
