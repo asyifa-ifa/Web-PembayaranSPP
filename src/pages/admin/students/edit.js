@@ -11,6 +11,7 @@ export default function EditStudent() {
 
   const [form, setForm] = useState({
     name: "",
+    nis:"",
     nisn: "",
     gender: "",
     phone: "",
@@ -47,6 +48,7 @@ export default function EditStudent() {
         setClasses(cls);
         setForm({
           name: stu.name || "",
+          nis: stu.nis || "",
           nisn: stu.nisn || "",
           gender: stu.gender || "",
           phone: stu.phone || "",
@@ -316,13 +318,22 @@ export default function EditStudent() {
               </div>
 
               <div className="field">
-                <label>NISN <span className="req">*</span></label>
+                <label>NIS <span className="req">*</span></label>
                 <input
                   placeholder="Nomor Induk Siswa"
-                  value={form.nisn}
-                  onChange={e => handleChange("nisn", e.target.value.replace(/\D/g, ""))}
+                  value={form.nis}
+                  onChange={e => handleChange("nis", e.target.value.replace(/\D/g, ""))}
                   required
                 />
+              </div>
+              <div className="field">
+              <label>NISN</label>
+              <input
+                placeholder="Nomor Induk Siswa Nasional"
+                value={form.nisn}
+                onChange={e => handleChange("nisn", e.target.value.replace(/\D/g, ""))}
+              />
+                <span className="hint">Kosongkan jika belum ada</span>
               </div>
 
               <div className="field">

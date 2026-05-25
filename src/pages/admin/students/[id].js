@@ -277,8 +277,12 @@ export default function StudentDetail() {
           </div>
           <div className="section-body">
             <div className="info-row">
+              <span className="info-label">NIS</span>
+              <span className="info-value">{student.nis || <span className="muted">-</span>}</span>
+            </div>
+            <div className="info-row">
               <span className="info-label">NISN</span>
-              <span className="info-value">{student.nisn || "-"}</span>
+              <span className="info-value">{student.nisn || <span className="muted">-</span>}</span>
             </div>
             <div className="info-row">
               <span className="info-label">Tempat, Tgl Lahir</span>
