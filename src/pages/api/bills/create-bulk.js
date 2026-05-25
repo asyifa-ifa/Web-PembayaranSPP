@@ -20,48 +20,57 @@ export default async function handler(req, res) {
       return res.status(404).json({ message: "Tidak ada santri ditemukan" });
     }
 
-    let totalCreated = 0;
+    // Ambil semua bill yang sudah ada sekaligus (1 query)
+    const existingBills = await prisma.bill.findMany({
+      where: {
+        studentId: { in: students.map(s => s.id) },
+        paymentTypeId: { in: items.map(i => Number(i.paymentTypeId)) },
+        status: "UNPAID",
+      },
+      select: {
+        studentId: true,
+        paymentTypeId: true,
+        month: true,
+        academicYear: true,
+      },
+    });
 
+    // Buat set untuk cek duplikat dengan cepat
+    const existingSet = new Set(
+      existingBills.map(b =>
+        `${b.studentId}-${b.paymentTypeId}-${b.month || ""}-${b.academicYear || ""}`
+      )
+    );
+
+    // Buat semua data yang perlu diinsert
+    const toCreate = [];
     for (const student of students) {
       for (const item of items) {
-        const whereClause = item.month
-          ? {
-              studentId: student.id,
-              paymentTypeId: Number(item.paymentTypeId),
-              month: item.month,
-              academicYear: item.academicYear || null,
-              status: "UNPAID",
-            }
-          : {
-              studentId: student.id,
-              paymentTypeId: Number(item.paymentTypeId),
-              status: "UNPAID",
-            };
+        const key = `${student.id}-${Number(item.paymentTypeId)}-${item.month || ""}-${item.academicYear || ""}`;
+        if (existingSet.has(key)) continue;
 
-        const existing = await prisma.bill.findFirst({ where: whereClause });
-        if (existing) continue;
-
-        await prisma.bill.create({
-          data: {
-            studentId: student.id,
-            paymentTypeId: Number(item.paymentTypeId),
-            amount: Number(item.amount),
-            dueDate: item.dueDate ? new Date(item.dueDate) : null,
-            status: "UNPAID",
-            month: item.month || null,
-            academicYear: item.academicYear || null,
-          },
+        toCreate.push({
+          studentId: student.id,
+          paymentTypeId: Number(item.paymentTypeId),
+          amount: Number(item.amount),
+          dueDate: item.dueDate ? new Date(item.dueDate) : null,
+          status: "UNPAID",
+          month: item.month || null,
+          academicYear: item.academicYear || null,
         });
-
-        totalCreated++;
       }
+    }
+
+    // Insert semua sekaligus (1 query)
+    if (toCreate.length > 0) {
+      await prisma.bill.createMany({ data: toCreate });
     }
 
     return res.status(200).json({
       success: true,
       count: students.length,
-      totalBillsCreated: totalCreated,
-      message: `Berhasil membuat ${totalCreated} tagihan untuk ${students.length} santri`,
+      totalBillsCreated: toCreate.length,
+      message: `Berhasil membuat ${toCreate.length} tagihan untuk ${students.length} santri`,
     });
   } catch (error) {
     console.error("Error create-bulk bills:", error);
