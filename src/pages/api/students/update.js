@@ -8,7 +8,6 @@ export default async function handler(req, res) {
   }
 
   const session = await getServerSession(req, res, authOptions);
-
   if (!session) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -16,6 +15,7 @@ export default async function handler(req, res) {
   const {
     id,
     name,
+    nis,
     nisn,
     gender,
     phone,
@@ -29,44 +29,28 @@ export default async function handler(req, res) {
   } = req.body;
 
   try {
-    // 🔥 VALIDASI NISN UNIK (PENTING)
-    const existing = await prisma.student.findFirst({
-      where: {
-        AND: [
-          { nisn },
-          { NOT: { id: Number(id) } }
-        ]
-      },
-    });
-
-    if (existing) {
-      return res.status(400).json({
-        error: "NISN sudah digunakan santri lain",
-      });
-    }
-
     const student = await prisma.student.update({
       where: { id: Number(id) },
       data: {
         name,
-        nisn,
+        nis:        nis        || null,
+        nisn:       nisn       || null,
         gender,
-        phone,
-        email,
-        address,
-        birthplace,
-        birthdate: birthdate ? new Date(birthdate) : null,
-        guardian,
-        classId: classId ? Number(classId) : null,
-        entryYear: entryYear ? Number(entryYear) : null,
+        phone:      phone      || null,
+        email:      email      || null,
+        address:    address    || null,
+        birthplace: birthplace || null,
+        birthdate:  birthdate  ? new Date(birthdate) : null,
+        guardian:   guardian   || null,
+        classId:    classId    ? Number(classId) : null,
+        // ✅ simpan sebagai String, bukan Number — agar "2024/2025" tidak jadi NaN
+        entryYear:  entryYear  ? String(entryYear).trim() : null,
       },
     });
 
     return res.status(200).json(student);
   } catch (error) {
     console.error("Update error:", error);
-    return res.status(500).json({
-      error: "Gagal update data santri",
-    });
+    return res.status(500).json({ error: "Gagal update data santri" });
   }
 }
