@@ -24,20 +24,18 @@ export default async function handler(req, res) {
 
     for (const student of students) {
       for (const item of items) {
-        // Untuk SPP: cek duplikat berdasarkan bulan + tahun ajaran
-        // Untuk non-SPP: cek duplikat berdasarkan paymentTypeId saja
         const whereClause = item.month
           ? {
               studentId: student.id,
               paymentTypeId: Number(item.paymentTypeId),
               month: item.month,
               academicYear: item.academicYear || null,
-              status: { in: ["UNPAID", "PENDING"] },
+              status: "UNPAID",
             }
           : {
               studentId: student.id,
               paymentTypeId: Number(item.paymentTypeId),
-              status: { in: ["UNPAID", "PENDING"] },
+              status: "UNPAID",
             };
 
         const existing = await prisma.bill.findFirst({ where: whereClause });
