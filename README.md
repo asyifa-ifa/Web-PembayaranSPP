@@ -1,40 +1,209 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+<div align="center">
 
-## Getting Started
+<img src="public/logo-sibatamu.png" alt="Sibatamu Logo" width="120" />
 
-First, run the development server:
+# 🏫 SIBATAMU-SPP Sumberjo
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### Sistem Informasi Pembayaran SPP Madrasah Sumberjo
+
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?style=for-the-badge&logo=prisma)](https://www.prisma.io/)
+[![TailwindCSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
+[![Midtrans](https://img.shields.io/badge/Midtrans-Payment-003580?style=for-the-badge)](https://midtrans.com/)
+[![Vercel](https://img.shields.io/badge/Deployed-Vercel-000000?style=for-the-badge&logo=vercel)](https://vercel.com/)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+
+> Platform digital untuk manajemen dan pembayaran SPP madrasah secara modern, cepat, dan transparan.
+
+**[🌐 Live Demo](https://sibatamu-spp-sumberjo.vercel.app)** • **[📖 Dokumentasi](#)** • **[🐛 Laporkan Bug](https://github.com/asyifa-ifa/Web-PembayaranSPP/issues)**
+
+</div>
+
+---
+
+## ✨ Fitur Unggulan
+
+| Fitur | Deskripsi |
+|-------|-----------|
+| 💳 **Pembayaran Online** | Integrasi Midtrans untuk pembayaran SPP via transfer, e-wallet, QRIS, dll |
+| 📧 **Notifikasi Email** | Konfirmasi pembayaran otomatis via Nodemailer |
+| 👨‍💼 **Dashboard Admin** | Kelola data santri, tagihan, dan laporan secara terpusat |
+| 👩‍🏫 **Dashboard Kepala** | Pantau rekap pembayaran dan statistik keseluruhan |
+| 🎓 **Dashboard Santri** | Santri dapat melihat tagihan, riwayat pembayaran, dan bayar SPP langsung secara online |
+| 📊 **Laporan Keuangan** | Laporan pembayaran SPP per bulan/tahun |
+| 🔐 **Autentikasi Aman** | Sistem login berbasis role (Admin, Kepala, Santri) |
+| 📱 **Responsif** | Tampilan optimal di semua perangkat |
+
+---
+
+## 🛠️ Tech Stack
+
+```
+Frontend   : Next.js · TailwindCSS · React
+Backend    : Next.js API Routes · Node.js
+Database   : Prisma ORM · MySQL/PostgreSQL
+Payment    : Midtrans Payment Gateway
+Email      : Nodemailer
+Hosting    : Vercel + Hostinger (Domain)
+Scheduler  : Cron Jobs (auto-generate tagihan)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `pages/index.js`. The page auto-updates as you edit the file.
+## 🚀 Instalasi & Menjalankan Lokal
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.js`.
+### Prasyarat
+- Node.js `v18+`
+- npm / yarn
+- Database MySQL atau PostgreSQL
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+### Langkah-langkah
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**1. Clone repository**
+```bash
+git clone https://github.com/asyifa-ifa/Web-PembayaranSPP.git
+cd Web-PembayaranSPP
+```
 
-## Learn More
+**2. Install dependencies**
+```bash
+npm install
+```
 
-To learn more about Next.js, take a look at the following resources:
+**3. Buat file `.env`**
+```env
+# Database
+DATABASE_URL="mysql://user:password@localhost:3306/sibatamu_spp"
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+# Midtrans
+MIDTRANS_SERVER_KEY=your_server_key
+MIDTRANS_CLIENT_KEY=your_client_key
+NEXT_PUBLIC_MIDTRANS_CLIENT_KEY=your_client_key
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Nodemailer
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASS=your_app_password
 
-## Deploy on Vercel
+# App
+NEXTAUTH_SECRET=your_secret
+NEXTAUTH_URL=http://localhost:3000
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**4. Migrasi database**
+```bash
+npx prisma migrate dev
+npx prisma generate
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+**5. Jalankan development server**
+```bash
+npm run dev
+```
+
+Buka [http://localhost:3000](http://localhost:3000) di browser kamu.
+
+---
+
+## 📁 Struktur Project
+
+```
+sibatamu-spp-sumberjo/
+├── public/              # Aset statis (logo, gambar)
+├── src/
+│   ├── components/      # Komponen reusable
+│   │   ├── ui/          # UI primitives
+│   │   ├── AdminLayout  # Layout halaman admin
+│   │   └── KepalaLayout # Layout halaman kepala
+│   ├── lib/             # Utility & helper
+│   │   ├── prisma.js    # Prisma client
+│   │   ├── midtrans.js  # Midtrans config
+│   │   ├── mailer.js    # Nodemailer config
+│   │   └── cron.js      # Cron job scheduler
+│   └── pages/
+│       ├── api/         # API Routes
+│       ├── admin/       # Halaman admin
+│       │   ├── accounts/
+│       │   ├── bills/
+│       │   └── notifications/
+│       └── santri/      # Halaman santri
+│           ├── dashboard/   # Ringkasan tagihan & status
+│           ├── tagihan/     # Daftar tagihan SPP
+│           ├── pembayaran/  # Bayar SPP via Midtrans
+│           └── riwayat/     # Riwayat transaksi
+├── prisma/
+│   └── schema.prisma    # Schema database
+└── .env                 # Environment variables
+```
+
+---
+
+## 👥 Hak Akses Per Role
+
+| Role | Akses |
+|------|-------|
+| 👨‍💼 **Admin** | Kelola data santri, generate tagihan, kelola akun, lihat semua laporan |
+| 👩‍🏫 **Kepala** | Lihat statistik, rekap pembayaran, laporan keuangan keseluruhan |
+| 🎓 **Santri** | Lihat tagihan pribadi, bayar SPP online via Midtrans, lihat riwayat transaksi, terima notifikasi email |
+
+---
+
+## 💳 Alur Pembayaran Santri
+
+```
+Santri Login → Dashboard → Lihat Tagihan SPP
+     → Klik Bayar → Pilih Metode Pembayaran (Midtrans)
+          → Transfer / QRIS / E-Wallet
+               → Konfirmasi Otomatis → Email Dikirim ✅
+```
+
+---
+
+## 🌐 Deployment
+
+Project ini di-deploy menggunakan **Vercel** dan akan menggunakan domain dari **Hostinger**.
+
+```bash
+# Push ke branch main untuk auto-deploy ke production
+git push origin main
+
+# Push ke branch lain untuk preview deployment
+git push origin nama-branch
+```
+
+---
+
+## 🤝 Kontribusi
+
+Kontribusi sangat terbuka! Silakan:
+
+1. Fork repository ini
+2. Buat branch fitur (`git checkout -b fitur/NamaFitur`)
+3. Commit perubahan (`git commit -m 'Tambah fitur X'`)
+4. Push ke branch (`git push origin fitur/NamaFitur`)
+5. Buat Pull Request
+
+---
+
+## 👩‍💻 Author
+
+**Asyifa Ifa** — [@asyifa-ifa](https://github.com/asyifa-ifa)
+
+> Project ini dikembangkan sebagai bagian dari **Skripsi** untuk membantu digitalisasi administrasi pembayaran SPP di Madrasah Sumberjo.
+
+---
+
+## 📄 Lisensi
+
+Didistribusikan di bawah Lisensi MIT. Lihat [`LICENSE`](LICENSE) untuk informasi lebih lanjut.
+
+---
+
+<div align="center">
+
+Made with ❤️ for Madrasah Sumberjo
+
+⭐ **Jangan lupa kasih star kalau project ini membantu!** ⭐
+
+</div>
