@@ -13,7 +13,6 @@ export default async function handler(req, res) {
       return res.status(401).json({ message: "Belum login" });
     }
 
-    // Cari student dari session (sama seperti dashboard)
     const student = await prisma.student.findFirst({
       where: {
         OR: [
@@ -30,7 +29,7 @@ export default async function handler(req, res) {
 
     const { phone, email, address } = req.body;
 
-    // Update student — middleware prisma otomatis sync email ke login
+    // Update student
     const updated = await prisma.student.update({
       where: { id: student.id },
       data: {
@@ -39,6 +38,14 @@ export default async function handler(req, res) {
         ...(address !== undefined && { address }),
       },
     });
+
+    // Sync email ke login secara manual
+    if (email) {
+      await prisma.login.updateMany({
+        where: { studentId: student.id },
+        data: { email },
+      });
+    }
 
     return res.status(200).json({ success: true, student: updated });
 
