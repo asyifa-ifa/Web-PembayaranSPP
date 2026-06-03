@@ -12,6 +12,7 @@ export default function AccountsPage() {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [selectedLoginId, setSelectedLoginId] = useState(null);
   const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -62,39 +63,41 @@ export default function AccountsPage() {
 
   // ── Handlers ───────────────────────────────────────────────
   const openCreateModal = (student) => {
-    setSelectedStudent(student);
-    setPassword("");
-    setIsEdit(false);
-    setShowModal(true);
-  };
+  setSelectedStudent(student);
+  setPassword("");
+  setEmail("");
+  setIsEdit(false);
+  setShowModal(true);
+};
 
   const submitCreate = async () => {
-    await fetch("/api/admin/accounts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ studentId: selectedStudent.id, password }),
-    });
-    setShowModal(false);
-    fetchStudents();
-  };
+  await fetch("/api/admin/accounts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ studentId: selectedStudent.id, password, email }),
+  });
+  setShowModal(false);
+  fetchStudents();
+};
 
   const openEditModal = (student) => {
-    setSelectedStudent(student);
-    setSelectedLoginId(student.login.id);
-    setPassword("");
-    setIsEdit(true);
-    setShowModal(true);
-  };
+  setSelectedStudent(student);
+  setSelectedLoginId(student.login.id);
+  setPassword("");
+  setEmail(student.login.email || "");  
+  setIsEdit(true);
+  setShowModal(true);
+};
 
   const submitUpdate = async () => {
-    await fetch(`/api/admin/accounts/${selectedLoginId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
-    setShowModal(false);
-    fetchStudents();
-  };
+  await fetch(`/api/admin/accounts/${selectedLoginId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password, email }),
+  });
+  setShowModal(false);
+  fetchStudents();
+};
 
   const deleteAccount = async (loginId) => {
     if (!confirm("Yakin ingin menghapus akun ini?")) return;
@@ -329,7 +332,7 @@ export default function AccountsPage() {
               <div className="modal-header">
                 <div className="modal-icon">{isEdit ? "🔑" : "👤"}</div>
                 <div>
-                  <h3 className="modal-title">{isEdit ? "Reset Password" : "Buat Akun Baru"}</h3>
+                  <h3 className="modal-title">{isEdit ? "Reset Akun" : "Buat Akun Baru"}</h3>
                   <p className="modal-subtitle">
                     {selectedStudent?.name}
                     {selectedStudent?.nis && <span className="modal-nis-badge">· {selectedStudent.nis}</span>}
@@ -338,15 +341,35 @@ export default function AccountsPage() {
                 <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
               </div>
 
+              {/* INFO USERNAME */}
+              {isEdit && selectedStudent?.login?.username && (
+                <div className="modal-info">
+                  <span>👤</span>
+                  <span>Username: <code>{selectedStudent.login.username}</code></span>
+                </div>
+              )}
               {!isEdit && selectedStudent?.nis && (
                 <div className="modal-info">
                   <span>🎫</span>
-                  <span>Username otomatis: <code>{selectedStudent.nis}</code></span>
+                  <span>Username otomatis akan digenerate</span>
                 </div>
               )}
 
               <div className="modal-body">
-                <label className="input-label">Password Baru</label>
+                {/* EMAIL */}
+                <label className="input-label">Email</label>
+                <div className="input-wrap" style={{marginBottom: 14}}>
+                  <input
+                    type="email"
+                    placeholder="Masukkan email..."
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    className="modal-input"
+                  />
+                </div>
+
+                {/* PASSWORD */}
+                <label className="input-label">Password {isEdit && <span style={{color:"#94a3b8", fontWeight:400}}>(kosongkan jika tidak diubah)</span>}</label>
                 <div className="input-wrap">
                   <input
                     type={showPassword ? "text" : "password"}
@@ -366,7 +389,7 @@ export default function AccountsPage() {
                 <button
                   className="btn-modal-submit"
                   onClick={isEdit ? submitUpdate : submitCreate}
-                  disabled={!password}
+                  disabled={isEdit ? !email : (!password || !email)}
                 >
                   Simpan
                 </button>

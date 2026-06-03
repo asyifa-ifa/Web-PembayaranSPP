@@ -20,9 +20,9 @@ export default async function handler(req, res) {
 
     /* ================= POST ================= */
     if (req.method === "POST") {
-      const { studentId, password } = req.body;
+      const { studentId, password, email } = req.body;
 
-      if (!studentId || !password) {
+      if (!studentId || !password || !email) {
         return res.status(400).json({ message: "Data tidak lengkap" });
       }
 
@@ -110,6 +110,7 @@ export default async function handler(req, res) {
             password: hashedPassword,
             role: "SANTRI",
             studentId,
+            email,
           },
         });
       } catch (err) {

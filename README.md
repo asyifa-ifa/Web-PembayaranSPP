@@ -174,17 +174,6 @@ git push origin nama-branch
 
 ---
 
-## 🤝 Kontribusi
-
-Kontribusi sangat terbuka! Silakan:
-
-1. Fork repository ini
-2. Buat branch fitur (`git checkout -b fitur/NamaFitur`)
-3. Commit perubahan (`git commit -m 'Tambah fitur X'`)
-4. Push ke branch (`git push origin fitur/NamaFitur`)
-5. Buat Pull Request
-
----
 
 ## 👩‍💻 Author
 

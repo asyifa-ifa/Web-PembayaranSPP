@@ -4,10 +4,10 @@ import bcrypt from "bcryptjs";
 export default async function handler(req, res) {
   const { id } = req.query;
 
-  // UPDATE password atau isActive
+  // UPDATE password, email, atau isActive
   if (req.method === "PUT") {
     try {
-      const { password, isActive } = req.body;
+      const { password, isActive, email } = req.body;
       const updateData = {};
 
       if (password) {
@@ -15,6 +15,9 @@ export default async function handler(req, res) {
       }
       if (typeof isActive === "boolean") {
         updateData.isActive = isActive;
+      }
+      if (email) {
+        updateData.email = email;
       }
 
       await prisma.login.update({
