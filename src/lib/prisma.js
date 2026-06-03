@@ -2,16 +2,13 @@ import { PrismaClient } from '@prisma/client'
 
 const globalForPrisma = global
 
-if (!globalForPrisma.prisma) {
-  const prisma = new PrismaClient()
+const prisma = globalForPrisma.prisma ?? new PrismaClient()
 
-  /* ============================================
-     MIDDLEWARE — Auto Sync
-  ============================================ */
+// Pasang middleware hanya jika belum dipasang
+if (!prisma._middlewares?.length) {
   prisma.$use(async (params, next) => {
-    const result = await next(params) // jalankan query asli dulu
+    const result = await next(params)
 
-    // STUDENT UPDATE → sync ke tabel lain
     if (params.model === "Student" && params.action === "update") {
       const data      = params.args?.data
       const studentId = params.args?.where?.id
@@ -26,8 +23,10 @@ if (!globalForPrisma.prisma) {
 
     return result
   })
+}
 
+if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma
 }
 
-export default globalForPrisma.prisma
+export default prisma
