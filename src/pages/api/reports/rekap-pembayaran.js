@@ -14,21 +14,19 @@ export default async function handler(req, res) {
 
     const where = {}
 
-    if (status === "PAID") where.status = "SUCCESS"
-    if (status === "UNPAID") where.status = "FAILED"
+    // Filter status dari tabel Bill
+    if (status === "PAID")   where.status = "PAID"
+    if (status === "UNPAID") where.status = "UNPAID"
 
     if (paymentTypeId) where.paymentTypeId = parseInt(paymentTypeId)
+
+    if (academicYear) where.academicYear = academicYear
 
     if (classId) {
       where.student = { classId: parseInt(classId) }
     }
 
-    // ✅ Filter langsung dari field academicYear di tabel Payment
-    if (academicYear) {
-      where.academicYear = academicYear
-    }
-
-    const payments = await prisma.payment.findMany({
+    const bills = await prisma.bill.findMany({
       where,
       include: {
         student: {
@@ -41,6 +39,12 @@ export default async function handler(req, res) {
         },
         paymentType: {
           select: { id: true, name: true, amount: true }
+        },
+        payments: {
+          where: { status: "SUCCESS" },
+          select: { createdAt: true, method: true, amount: true },
+          orderBy: { createdAt: "desc" },
+          take: 1,
         }
       },
       orderBy: [
@@ -49,9 +53,16 @@ export default async function handler(req, res) {
       ]
     })
 
-    const result = payments.map(p => ({
-      ...p,
-      status: p.status === "SUCCESS" ? "PAID" : "UNPAID"
+    const result = bills.map(b => ({
+      id:          b.id,
+      amount:      b.amount,
+      status:      b.status, 
+      academicYear: b.academicYear,
+      month:       b.month,
+      dueDate:     b.dueDate,
+      createdAt:   b.payments[0]?.createdAt || b.createdAt, 
+      student:     b.student,
+      paymentType: b.paymentType,
     }))
 
     return res.status(200).json(result)
