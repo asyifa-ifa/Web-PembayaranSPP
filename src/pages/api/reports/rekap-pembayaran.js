@@ -10,62 +10,97 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { classId, paymentTypeId, status, academicYear } = req.query
+    const { classId, academicYear } = req.query
 
-    const where = {}
+    const whereStudent = {}
+    if (classId) whereStudent.classId = parseInt(classId)
 
-    // Filter status dari tabel Bill
-    if (status === "PAID")   where.status = "PAID"
-    if (status === "UNPAID") where.status = "UNPAID"
+    const whereBill = {}
+    if (academicYear) whereBill.academicYear = academicYear
 
-    if (paymentTypeId) where.paymentTypeId = parseInt(paymentTypeId)
-
-    if (academicYear) where.academicYear = academicYear
-
-    if (classId) {
-      where.student = { classId: parseInt(classId) }
-    }
-
-    const bills = await prisma.bill.findMany({
-      where,
-      include: {
-        student: {
-          select: {
-            id: true,
-            name: true,
-            nis: true,
-            class: { select: { id: true, name: true } }
-          }
-        },
-        paymentType: {
-          select: { id: true, name: true, amount: true }
-        },
-        payments: {
-          where: { status: "SUCCESS" },
-          select: { createdAt: true, method: true, amount: true },
-          orderBy: { createdAt: "desc" },
-          take: 1,
-        }
+    // Ambil semua santri beserta tagihan mereka
+    const students = await prisma.student.findMany({
+      where: {
+        status: "ACTIVE",
+        ...whereStudent,
       },
-      orderBy: [
-        { student: { name: "asc" } },
-        { createdAt: "desc" }
-      ]
+      include: {
+        class: { select: { id: true, name: true } },
+        bills: {
+          where: whereBill,
+          include: {
+            paymentType: { select: { id: true, name: true } },
+          },
+          orderBy: { createdAt: "asc" },
+        },
+      },
+      orderBy: { name: "asc" },
     })
 
-    const result = bills.map(b => ({
-      id:          b.id,
-      amount:      b.amount,
-      status:      b.status, 
-      academicYear: b.academicYear,
-      month:       b.month,
-      dueDate:     b.dueDate,
-      createdAt:   b.payments[0]?.createdAt || b.createdAt, 
-      student:     b.student,
-      paymentType: b.paymentType,
-    }))
+    
+    const kolomSet = new Map() // key → label
+    for (const s of students) {
+      for (const b of s.bills) {
+        const isMonthly = b.month !== null
+        const key = isMonthly
+          ? `${b.paymentType.name}__${b.month}` 
+          : `${b.paymentType.name}__`            
+        const label = isMonthly
+          ? `${b.paymentType.name} - ${b.month}`
+          : b.paymentType.name
+        if (!kolomSet.has(key)) kolomSet.set(key, label)
+      }
+    }
 
-    return res.status(200).json(result)
+    // Urutkan: SPP bulanan dulu (urut bulan), lalu non-SPP
+    const URUTAN_BULAN = [
+      "Juli","Agustus","September","Oktober","November","Desember",
+      "Januari","Februari","Maret","April","Mei","Juni"
+    ]
+    const kolom = Array.from(kolomSet.entries())
+      .sort(([keyA, labelA], [keyB, labelB]) => {
+        const [namaA, bulanA] = keyA.split("__")
+        const [namaB, bulanB] = keyB.split("__")
+        if (bulanA && bulanB) {
+          return URUTAN_BULAN.indexOf(bulanA) - URUTAN_BULAN.indexOf(bulanB)
+        }
+        if (bulanA) return -1
+        if (bulanB) return 1
+        return labelA.localeCompare(labelB)
+      })
+      .map(([key, label]) => ({ key, label }))
+
+    // Bangun data per santri
+    const result = students.map(s => {
+      const billMap = {}
+      let totalTagihan = 0
+      let lunas = 0
+      let belum = 0
+
+      for (const b of s.bills) {
+        const isMonthly = b.month !== null
+        const key = isMonthly
+          ? `${b.paymentType.name}__${b.month}`
+          : `${b.paymentType.name}__`
+
+        billMap[key] = b.status 
+        totalTagihan += b.amount
+        if (b.status === "PAID") lunas++
+        else belum++
+      }
+
+      return {
+        id:          s.id,
+        name:        s.name,
+        kelas:       s.class?.name || "-",
+        tagihan:     billMap,  
+        totalTagihan,
+        lunas,
+        belum,
+      }
+    })
+
+    return res.status(200).json({ kolom, santri: result })
   } catch (e) {
     console.error(e)
     return res.status(500).json({ message: "Gagal mengambil data", detail: e.message })
