@@ -13,25 +13,15 @@ export default async function handler(req, res) {
       return res.status(401).json({ message: "Belum login" });
     }
 
-    // ✅ Hanya masukkan kondisi yang benar-benar ada nilainya
-    const orConditions = [];
+    // ✅ Gunakan studentId saja, lebih aman dan akurat
+    const studentId = session.user.studentId ? Number(session.user.studentId) : null;
 
-    if (session.user.studentId) {
-      orConditions.push({ id: Number(session.user.studentId) });
-    }
-    if (session.user.nis) {
-      orConditions.push({ nis: session.user.nis });
-    }
-    if (session.user.email) {
-      orConditions.push({ email: session.user.email });
-    }
-
-    if (orConditions.length === 0) {
+    if (!studentId) {
       return res.status(401).json({ message: "Session tidak valid" });
     }
 
-    const student = await prisma.student.findFirst({
-      where: { OR: orConditions },
+    const student = await prisma.student.findUnique({
+      where: { id: studentId },
       include: { class: true },
     });
 
@@ -39,8 +29,6 @@ export default async function handler(req, res) {
       return res.status(404).json({ 
         message: "Data santri tidak ditemukan",
         debug: { 
-          nis: session.user.nis,
-          email: session.user.email,
           studentId: session.user.studentId,
           name: session.user.name,
         }
@@ -59,11 +47,10 @@ export default async function handler(req, res) {
       orderBy: { createdAt: "desc" },
     });
 
-   // Ganti baris return res.status(200) yang ada dengan ini:
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-      return res.status(200).json({ student, bills, payments });
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    return res.status(200).json({ student, bills, payments });
 
   } catch (error) {
     console.error("DASHBOARD API ERROR:", error);
