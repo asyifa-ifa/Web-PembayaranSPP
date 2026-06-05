@@ -13,15 +13,25 @@ export default async function handler(req, res) {
       return res.status(401).json({ message: "Belum login" });
     }
 
-    // Cari student by id (dari session) atau by email (Google login)
+    // ✅ Hanya masukkan kondisi yang benar-benar ada nilainya
+    const orConditions = [];
+
+    if (session.user.studentId) {
+      orConditions.push({ id: Number(session.user.studentId) });
+    }
+    if (session.user.nis) {
+      orConditions.push({ nis: session.user.nis });
+    }
+    if (session.user.email) {
+      orConditions.push({ email: session.user.email });
+    }
+
+    if (orConditions.length === 0) {
+      return res.status(401).json({ message: "Session tidak valid" });
+    }
+
     const student = await prisma.student.findFirst({
-      where: {
-        OR: [
-          { nis: session.user.nis || "" },
-          { email: session.user.email || "" },
-          { id: session.user.studentId ? Number(session.user.studentId) : -1 },
-        ],
-      },
+      where: { OR: orConditions },
       include: { class: true },
     });
 
