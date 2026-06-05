@@ -59,7 +59,11 @@ export default async function handler(req, res) {
       orderBy: { createdAt: "desc" },
     });
 
-    return res.status(200).json({ student, bills, payments });
+   // Ganti baris return res.status(200) yang ada dengan ini:
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      return res.status(200).json({ student, bills, payments });
 
   } catch (error) {
     console.error("DASHBOARD API ERROR:", error);

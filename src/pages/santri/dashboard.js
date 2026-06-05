@@ -27,23 +27,30 @@ export default function Dashboard() {
     setTimeout(() => setToast(null), 4000);
   };
 
-  const fetchData = async () => {
-  console.log("Fetching from:", "/api/santri/dashboard");
-  const res = await fetch("/api/santri/dashboard");
-  console.log("Response status:", res.status);
-  if (res.status === 401) { router.push("/login"); return; }
-  if (res.status === 404) { console.log("404! Response:", await res.text()); return; }
-  const data = await res.json();
-    setStudent(data.student);
-    setBills(data.bills || []);
-    setPayments(data.payments || []);
-    setSelectedIds([]);
-    setEditForm({
-      phone:   data.student?.phone   || "",
-      email:   data.student?.email   || "",
-      address: data.student?.address || "",
-    });
-  };
+  // Ganti fetchData yang ada dengan ini:
+    const fetchData = async () => {
+      console.log("Fetching from:", "/api/santri/dashboard");
+      const res = await fetch("/api/santri/dashboard", {
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache",
+          "Pragma": "no-cache",
+        },
+      });
+      console.log("Response status:", res.status);
+      if (res.status === 401) { router.push("/login"); return; }
+      if (res.status === 404) { console.log("404! Response:", await res.text()); return; }
+      const data = await res.json();
+      setStudent(data.student);
+      setBills(data.bills || []);
+      setPayments(data.payments || []);
+      setSelectedIds([]);
+      setEditForm({
+        phone:   data.student?.phone   || "",
+        email:   data.student?.email   || "",
+        address: data.student?.address || "",
+      });
+    };
 
   // ── BAYAR SINGLE ──────────────────────────────────────────────────────────
   const handleBayar = async (bill) => {
