@@ -7,6 +7,18 @@ const BASE_URL = process.env.MIDTRANS_IS_PRODUCTION === "true"
 
 const authHeader = "Basic " + Buffer.from(SERVER_KEY + ":").toString("base64")
 
+// Daftar metode pembayaran yang diizinkan (hanya Virtual Account)
+const ENABLED_PAYMENTS = [
+  "bca_va",
+  "bni_va",
+  "bri_va",
+  "permata_va",
+  "cimb_va",
+  "danamon_va",
+  "bsi_va",
+  "other_va",
+]
+
 /**
  * Buat transaksi Snap Midtrans
  * Returns: { token, redirect_url } jika sukses
@@ -38,6 +50,7 @@ export async function createMidtransTransaction({
       first_name: name,
       email: email,
     },
+    enabled_payments: ENABLED_PAYMENTS,
     callbacks: {
       finish: returnUrl,
     },
@@ -97,6 +110,7 @@ export async function createSnapToken({
       first_name: name,
       email: email,
     },
+    enabled_payments: ENABLED_PAYMENTS,
     // Tidak perlu callbacks.finish karena kita pakai onSuccess di Snap.js
     notification_url: `${process.env.NEXTAUTH_URL}/api/payments/midtrans-callback`,
   }
