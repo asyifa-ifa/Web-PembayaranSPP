@@ -351,7 +351,7 @@ export default function Home() {
           <img src="/logo-sibatamu.png" alt="logo" className="nav-logo-img"
             onError={e => e.target.style.display = "none"} />
           <div>
-            <div className="nav-brand-name">SIBATAMU-SPP</div>
+            <div className="nav-brand-name">SIBATAMU</div>
             <div className="nav-brand-sub">Madrasah Tarbiyatul Mubalighin</div>
           </div>
         </div>
@@ -388,10 +388,10 @@ export default function Home() {
             <span className="hero-badge">🌿 SISTEM TERPERCAYA & MODERN</span>
             <h1 className="hero-title">
               Kelola Pembayaran<br />
-              <span className="hero-accent">SPP Lebih Mudah</span>
+              <span className="hero-accent">PembayaranLebih Mudah</span>
             </h1>
             <p className="hero-desc">
-              Platform pembayaran SPP digital yang transparan, efisien, dan mudah
+              Platform pembayaran digital yang transparan, efisien, dan mudah
               digunakan untuk seluruh civitas Madrasah Tarbiyatul Mubalighin Sumberjo.
             </p>
             <div className="hero-btns">
@@ -416,7 +416,7 @@ export default function Home() {
       {/* KONTAK */}
       <section id="kontak" className="contact-section">
         <h2 className="section-title">📞 Kontak Kami</h2>
-        <p className="section-sub">Hubungi kami untuk informasi lebih lanjut tentang sistem SPP Digital.</p>
+        <p className="section-sub">Hubungi kami untuk informasi lebih lanjut tentang Sistem Pembayaran Digital.</p>
         <div className="contact-grid">
           <div className="contact-card">
             {[
