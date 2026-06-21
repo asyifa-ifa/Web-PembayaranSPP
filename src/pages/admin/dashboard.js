@@ -22,7 +22,7 @@ const COLORS = {
 const features = [
   { 
     title: "Pembayaran Digital",   
-    desc: "Catat & kelola pembayaran SPP santri secara digital, cepat, dan akurat.",
+    desc: "Catat & kelola pembayaran santri secara digital, cepat, dan akurat.",
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={COLORS.greenSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="2" y="5" width="20" height="14" rx="2" />
@@ -189,7 +189,7 @@ export default function Dashboard() {
           <div>
             <p style={{ margin:"0 0 2px", fontSize:11, fontWeight:600, color: COLORS.greenSoft, letterSpacing:"0.08em", textTransform:"uppercase" }}>Overview</p>
             <h1 style={{ margin:0, fontSize:24, fontWeight:700, color: COLORS.textBlack, letterSpacing:"-0.5px" }}>Dashboard Admin</h1>
-            <p style={{ margin:"4px 0 0", fontSize:13, color: COLORS.textMuted }}>Ringkasan data SIBATAMU-SPP hari ini</p>
+            <p style={{ margin:"4px 0 0", fontSize:13, color: COLORS.textMuted }}>Ringkasan data SIBATAMUhari ini</p>
           </div>
           <span style={{ fontSize:12, color: COLORS.textBlack, background: COLORS.card, border:`1px solid ${COLORS.border}`, borderRadius:8, padding:"8px 16px", fontWeight:500, boxShadow:"0 2px 8px rgba(0,0,0,0.02)" }}>
             {new Date().toLocaleDateString("id-ID", { weekday:"long", day:"numeric", month:"long", year:"numeric" })}

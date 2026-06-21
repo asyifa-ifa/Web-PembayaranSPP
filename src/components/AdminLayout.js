@@ -298,7 +298,7 @@ export default function AdminLayout({ children }) {
               onError={e => { e.target.style.display="none"; e.target.nextSibling.style.display="flex"; }} />
             <div className="brand-logo-fallback" style={{ display:"none" }}>🌿</div>
             <div className="brand-text">
-              <span className="brand-name">SIBATAMU-SPP</span>
+              <span className="brand-name">SIBATAMU</span>
               <span className="brand-sub">Tarbiyatul Mubalighin</span>
             </div>
           </div>

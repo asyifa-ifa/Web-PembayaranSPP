@@ -378,7 +378,8 @@ export default function Dashboard() {
 
         .topbar{background:#fff;border-bottom:1px solid #e4ede6;height:58px;padding:0 20px;width:100%;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 1px 6px rgba(0,0,0,.04)}
         .tb-brand{display:flex;align-items:center;gap:9px}
-        .tb-logo{width:32px;height:32px;background:linear-gradient(135deg,#1a3d28,#3a8f50);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+        .tb-logo{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;background:transparent}
+        .tb-logo img{width:32px;height:32px;object-fit:contain;border-radius:9px}
         .tb-name{font-family:'Lora',serif;font-size:16px;font-weight:700;color:#1a3d28}
         .tb-name span{color:#3a8f50}
         .tb-right{display:flex;align-items:center;gap:10px}
@@ -575,6 +576,7 @@ export default function Dashboard() {
           .hero{padding:34px 36px 76px}
           .ct{padding:0 28px}
         }
+    
       `}</style>
 
       {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
