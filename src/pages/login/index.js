@@ -468,23 +468,23 @@ export default function Login() {
         <div className="brand-overlay">
           <img 
             src="/logo-sibatamu.png" 
-            alt="SIBATAMU-SPP Logo" 
+            alt="SIBATAMU Logo" 
             className="brand-logo"
             onError={e => e.target.style.display = "none"} 
           />
           <div className="brand-text">
-            <h3>SIBATAMU-SPP</h3>
+            <h3>SIBATAMU</h3>
             <span>Tarbiyatul Mubalighin Sumberjo</span>
           </div>
         </div>
 
         <div className="quote-box">
-          <h1>Kelola Pembayaran SPP Lebih Mudah & Modern</h1>
+          <h1>Kelola Pembayaran Lebih Mudah & Modern</h1>
           <p>Platform administrasi keuangan digital terintegrasi untuk kenyamanan santri, wali santri, dan pengurus madrasah.</p>
         </div>
 
         <div className="visual-footer">
-          © 2026 SIBATAMU-SPP · Madrasah Tarbiyatul Mubalighin
+          © 2026 SIBATAMU · Madrasah Tarbiyatul Mubalighin
         </div>
       </div>
 
@@ -580,12 +580,12 @@ export default function Login() {
           <div className="info-notice">
             <span style={{ fontSize: 14 }}>ℹ️</span>
             <span className="info-text">
-              Login Google hanya berlaku bagi santri dengan alamat email yang telah didaftarkan sebelumnya oleh Administrator.
-            </span>
+            Login hanya berlaku bagi santri yang telah ditambahkan oleh Administrator.
+          </span>
           </div>
 
           <div className="mobile-footer">
-            © 2026 SIBATAMU-SPP · Madrasah Tarbiyatul Mubalighin
+            © 2026 SIBATAMU · Madrasah Tarbiyatul Mubalighin
           </div>
         </div>
       </div>
