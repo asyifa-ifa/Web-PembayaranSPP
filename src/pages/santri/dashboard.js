@@ -583,8 +583,10 @@ export default function Dashboard() {
         {/* TOPBAR */}
         <div className="topbar">
           <div className="tb-brand">
-            <div className="tb-logo">🌿</div>
-            <div className="tb-name">SIBATAMU<span>-SPP</span></div>
+            <div className="tb-logo">
+              <img src="/logo-sibatamu.png" alt="Logo SIBATAMU" />
+            </div>
+            <div className="tb-name">SIBATAMU</div>
           </div>
           <div className="tb-right">
             <span className="tb-user">Halo, {student.name?.split(" ")[0]} 👋</span>
